@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Игра - Разгильдяй</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/game.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div class="game-container">
+        <!-- Игровой стол -->
+        <div class="table-container">
+            <div class="table-overlay"></div>
+            <div class="table oval-table">
+                <!-- Колода карт по центру -->
+                <div class="card-deck">
+                    <div class="card-pile deck">
+                        <div class="card card-back"></div>
+                        <div class="card-count">52</div>
+                    </div>
+                    <div class="card-pile discard"></div>
+                </div>
+                
+                <!-- Контейнер для игроков -->
+                <div class="players-container">
+                    <!-- Игроки будут добавлены динамически через JavaScript -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Панель управления игрой -->
+        <div class="game-controls">
+            <div class="current-player-info">
+                <div class="avatar-container">
+                    <div class="player-avatar"></div>
+                    <div class="player-indicator">Ваш ход</div>
+                </div>
+                <div class="player-name">Игрок 1</div>
+            </div>
+            
+            <div class="action-buttons">
+                <button id="draw-card" class="game-btn">Взять карту</button>
+                <button id="play-card" class="game-btn" disabled>Сыграть</button>
+                <button id="pass-turn" class="game-btn">Пропустить</button>
+            </div>
+            
+            <div class="player-hand">
+                <!-- Карты на руке будут добавлены динамически -->
+            </div>
+        </div>
+        
+        <!-- Модальное окно с настройками -->
+        <div class="game-modal" id="settings-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Настройки игры</h3>
+                    <button class="close-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="setting-item">
+                        <label for="sound-toggle">Звук</label>
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="sound-toggle" checked>
+                            <span class="toggle-slider"></span>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <label for="animation-toggle">Анимации</label>
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="animation-toggle" checked>
+                            <span class="toggle-slider"></span>
+                        </div>
+                    </div>
+                    <button id="leave-game" class="game-btn warning">Покинуть игру</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Плавающая кнопка настроек -->
+        <button class="settings-btn" id="open-settings">
+            <span class="settings-icon">⚙️</span>
+        </button>
+    </div>
+
+    <!-- Шаблоны для динамических элементов -->
+    <template id="player-template">
+        <div class="player">
+            <div class="player-avatar">
+                <img src="" alt="Аватар игрока">
+            </div>
+            <div class="player-cards">
+                <span class="card-count">0</span>
+            </div>
+            <div class="player-name"></div>
+            <div class="player-active-indicator"></div>
+        </div>
+    </template>
+    
+    <template id="card-template">
+        <div class="card">
+            <div class="card-inner">
+                <div class="card-front">
+                    <div class="card-value"></div>
+                    <div class="card-suit"></div>
+                </div>
+                <div class="card-back"></div>
+            </div>
+        </div>
+    </template>
+
+    <script src="js/game.js"></script>
+</body>
+</html> 

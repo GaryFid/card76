@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Настройка игры - Разгильдяй</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/game-setup.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Разгильдяй</h1>
+            <p>Настройка игры</p>
+        </header>
+        
+        <main>
+            <div class="setup-container">
+                <div class="setup-title">
+                    <h2>Выберите количество игроков</h2>
+                </div>
+                
+                <div class="player-count-selector">
+                    <div class="player-count-display">
+                        <div class="player-count-value">4</div>
+                        <div class="player-icons">
+                            <div class="player-icon active"></div>
+                            <div class="player-icon active"></div>
+                            <div class="player-icon active"></div>
+                            <div class="player-icon active"></div>
+                            <div class="player-icon"></div>
+                            <div class="player-icon"></div>
+                            <div class="player-icon"></div>
+                            <div class="player-icon"></div>
+                            <div class="player-icon"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="player-count-slider">
+                        <input type="range" id="player-count" min="4" max="9" value="4" step="1">
+                        <div class="slider-labels">
+                            <span>4</span>
+                            <span>5</span>
+                            <span>6</span>
+                            <span>7</span>
+                            <span>8</span>
+                            <span>9</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="game-options">
+                    <h3>Дополнительные настройки</h3>
+                    <div class="option-item">
+                        <label for="with-ai">Добавить ботов</label>
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="with-ai">
+                            <span class="toggle-slider"></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="action-buttons">
+                    <button id="start-game-btn" class="btn btn-primary">Начать игру</button>
+                    <button id="back-btn" class="btn btn-secondary">Назад</button>
+                </div>
+            </div>
+        </main>
+        
+        <footer>
+            <p>© 2023 Разгильдяй</p>
+        </footer>
+    </div>
+
+    <script src="js/game-setup.js"></script>
+</body>
+</html> 

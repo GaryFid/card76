@@ -179,6 +179,16 @@ async function startApp() {
     app.get('/register', (req, res) => {
       res.sendFile(path.join(__dirname, 'public', 'register.html'));
     });
+    
+    // Маршрут для страницы настройки игры
+    app.get('/game-setup', (req, res) => {
+      res.sendFile(path.join(__dirname, 'public', 'game-setup.html'));
+    });
+    
+    // Маршрут для игровой страницы
+    app.get('/game', (req, res) => {
+      res.sendFile(path.join(__dirname, 'public', 'game.html'));
+    });
 
     // Запуск веб-сервера
     app.listen(PORT, () => {
