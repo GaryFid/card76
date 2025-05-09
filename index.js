@@ -87,26 +87,6 @@ async function startApp() {
       console.log('MongoDB отключена в настройках');
     }
 
-    // Запуск бота (если не в тестовом режиме)
-    if (bot && config.enableBot && !config.testMode) {
-      try {
-        await bot.launch();
-        console.log('Бот запущен');
-      } catch (error) {
-        console.error('Ошибка запуска бота:', error);
-        if (process.env.NODE_ENV === 'production') {
-          console.error('Невозможно продолжить без работающего бота в production режиме');
-          process.exit(1);
-        } else {
-          console.warn('Продолжаем без Telegram бота - веб-интерфейс будет доступен');
-        }
-      }
-    } else if (config.testMode) {
-      console.log('Бот работает в тестовом режиме (без подключения к Telegram API)');
-    } else {
-      console.log('Бот отключен в настройках');
-    }
-
     // Веб-сервер для авторизации через OAuth
     const app = express();
     const PORT = config.port;
@@ -134,6 +114,37 @@ async function startApp() {
     // Инициализация Passport
     app.use(passport.initialize());
     app.use(passport.session());
+
+    // Запуск бота (если не в тестовом режиме)
+    if (bot && config.enableBot && !config.testMode) {
+      try {
+        // В продакшен-режиме используем webhook вместо long polling
+        if (process.env.NODE_ENV === 'production') {
+          const webhookUrl = `${config.baseUrl}/telegram-webhook`;
+          await bot.telegram.setWebhook(webhookUrl);
+          console.log(`Бот настроен на использование webhook: ${webhookUrl}`);
+          
+          // Добавляем обработчик webhook в Express
+          app.use(bot.webhookCallback('/telegram-webhook'));
+        } else {
+          // В режиме разработки используем long polling
+          await bot.launch();
+          console.log('Бот запущен в режиме long polling');
+        }
+      } catch (error) {
+        console.error('Ошибка запуска бота:', error);
+        if (process.env.NODE_ENV === 'production') {
+          console.error('Невозможно продолжить без работающего бота в production режиме');
+          process.exit(1);
+        } else {
+          console.warn('Продолжаем без Telegram бота - веб-интерфейс будет доступен');
+        }
+      }
+    } else if (config.testMode) {
+      console.log('Бот работает в тестовом режиме (без подключения к Telegram API)');
+    } else {
+      console.log('Бот отключен в настройках');
+    }
 
     // Маршруты для авторизации
     app.use('/auth', require('./routes/auth'));
