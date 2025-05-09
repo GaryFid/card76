@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const { User, Game } = require('../models');
 
+// Добавим парсер JSON для обработки тела запроса
+router.use(express.json());
+
 // Middleware для проверки авторизации
 const isAuthenticated = (req, res, next) => {
   if (req.isAuthenticated && req.isAuthenticated()) {
@@ -26,7 +29,26 @@ const isAuthenticated = (req, res, next) => {
 // Регистрация/авторизация пользователя
 router.post('/auth/register', async (req, res) => {
   try {
+    console.log('Получен запрос на регистрацию:', req.body);
+    
     const userData = req.body;
+    
+    // Проверяем наличие имени пользователя
+    if (!userData.username) {
+      return res.status(400).json({
+        success: false,
+        error: 'Имя пользователя обязательно'
+      });
+    }
+    
+    // Проверяем длину имени пользователя
+    if (userData.username.length < 4 && userData.type !== 'guest') {
+      return res.status(400).json({
+        success: false,
+        error: 'Имя должно содержать не менее 4 символов'
+      });
+    }
+    
     let user = null;
     
     // Определяем тип регистрации: обычная или гостевая

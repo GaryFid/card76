@@ -102,6 +102,10 @@ async function startApp() {
     // Настройка для обслуживания статических файлов мини-приложения
     app.use(express.static(path.join(__dirname, 'public')));
     
+    // Добавляем middleware для парсинга JSON в теле запроса
+    app.use(express.json());
+    app.use(express.urlencoded({ extended: true }));
+    
     // Настройка сессий с использованием файлового хранилища
     const sessionStore = new FileStore({
       path: path.join(__dirname, 'data', 'sessions'),

@@ -12,6 +12,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // Получаем элементы формы
     const registerForm = document.getElementById('register-form');
     const guestAuthBtn = document.getElementById('guest-auth');
+    const usernameInput = document.getElementById('username');
+    const errorMessage = document.createElement('div');
+    errorMessage.className = 'error-message';
+    errorMessage.style.color = 'red';
+    errorMessage.style.marginTop = '10px';
+    errorMessage.style.fontSize = '14px';
+    usernameInput.parentNode.appendChild(errorMessage);
 
     // Проверяем наличие сохраненного пользователя
     const savedUser = localStorage.getItem('user');
@@ -21,15 +28,29 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
 
+    // Валидация имени пользователя
+    function validateUsername(username) {
+        if (!username) {
+            return 'Пожалуйста, введите ваше имя';
+        }
+        if (username.length < 4) {
+            return 'Имя должно содержать не менее 4 символов';
+        }
+        return null; // Нет ошибок
+    }
+
     // Обработка обычной регистрации
     registerForm.addEventListener('submit', function(e) {
         e.preventDefault();
         
-        const username = document.getElementById('username').value.trim();
+        const username = usernameInput.value.trim();
+        const error = validateUsername(username);
         
-        if (!username) {
-            alert('Пожалуйста, введите ваше имя');
+        if (error) {
+            errorMessage.textContent = error;
             return;
+        } else {
+            errorMessage.textContent = '';
         }
         
         // Показываем индикатор загрузки
@@ -70,7 +91,9 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(response => {
             if (!response.ok) {
-                throw new Error('Ошибка при регистрации');
+                return response.json().then(data => {
+                    throw new Error(data.error || 'Ошибка при регистрации');
+                });
             }
             return response.json();
         })
@@ -92,7 +115,7 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             console.error('Ошибка:', error);
-            alert('Произошла ошибка при регистрации. Пожалуйста, попробуйте снова.');
+            errorMessage.textContent = error.message || 'Произошла ошибка при регистрации. Пожалуйста, попробуйте снова.';
             tgApp.MainButton.hide();
         });
     }
