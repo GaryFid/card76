@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: card76
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: BOT_TOKEN
+        sync: false
+      - key: MONGODB_URI
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: BASE_URL
+        fromService:
+          name: card76
+          type: web
+          property: url
+      - key: PORT
+        value: 10000
+      - key: APP_URL
+        fromService:
+          name: card76
+          type: web
+          property: url
+    healthCheckPath: /
+    autoDeploy: true 
