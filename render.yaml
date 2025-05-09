@@ -10,17 +10,11 @@ services:
       - key: SESSION_SECRET
         sync: false
       - key: BASE_URL
-        fromService:
-          name: card76
-          type: web
-          property: url
+        sync: false
       - key: PORT
         value: 10000
       - key: APP_URL
-        fromService:
-          name: card76
-          type: web
-          property: url
+        sync: false
       - key: NODE_ENV
         value: production
     healthCheckPath: /
