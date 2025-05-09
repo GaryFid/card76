@@ -7,8 +7,6 @@ services:
     envVars:
       - key: BOT_TOKEN
         sync: false
-      - key: MONGODB_URI
-        sync: false
       - key: SESSION_SECRET
         sync: false
       - key: BASE_URL
@@ -23,5 +21,35 @@ services:
           name: card76
           type: web
           property: url
+      - key: NODE_ENV
+        value: production
+      - key: USE_MYSQL
+        value: true
+      - key: MYSQL_HOST
+        fromDatabase:
+          name: card76-db
+          property: host
+      - key: MYSQL_PORT
+        fromDatabase:
+          name: card76-db
+          property: port
+      - key: MYSQL_USER
+        fromDatabase:
+          name: card76-db
+          property: user
+      - key: MYSQL_PASSWORD
+        fromDatabase:
+          name: card76-db
+          property: password
+      - key: MYSQL_DB
+        fromDatabase:
+          name: card76-db
+          property: database
     healthCheckPath: /
-    autoDeploy: true 
+    autoDeploy: true
+
+databases:
+  - name: card76-db
+    plan: free
+    type: mysql
+    version: "8" 

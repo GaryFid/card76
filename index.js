@@ -1,12 +1,13 @@
 require('dotenv').config();
 const express = require('express');
 const { Telegraf, Scenes, session } = require('telegraf');
-const mongoose = require('mongoose');
 const passport = require('passport');
 const expressSession = require('express-session');
-const MongoStore = require('connect-mongo');
 const config = require('./config');
 const path = require('path');
+const { testConnection, sequelize } = require('./config/database');
+const { syncModels } = require('./models');
+const SequelizeStore = require('connect-session-sequelize')(expressSession.Store);
 
 // Импорт сцен и обработчиков
 const { authScene } = require('./scenes/auth');
@@ -69,22 +70,33 @@ if (config.enableBot && !config.testMode) {
 // Асинхронная функция запуска приложения
 async function startApp() {
   try {
-    // Подключение к MongoDB (опционально)
-    if (config.useMongoDB) {
+    // Подключение к MySQL
+    if (config.useMySQL) {
       try {
-        await mongoose.connect(config.mongodbUri);
-        console.log('MongoDB подключена');
+        // Проверка подключения к базе данных
+        const connected = await testConnection();
+        if (connected) {
+          // Синхронизация моделей с базой данных
+          await syncModels();
+        } else {
+          if (process.env.NODE_ENV === 'production' && !config.testMode) {
+            console.error('Невозможно продолжить без MySQL в production режиме');
+            process.exit(1);
+          } else {
+            console.warn('Продолжаем без MySQL - данные НЕ будут сохраняться!');
+          }
+        }
       } catch (err) {
-        console.error('Ошибка подключения к MongoDB:', err);
+        console.error('Ошибка при работе с MySQL:', err);
         if (process.env.NODE_ENV === 'production' && !config.testMode) {
-          console.error('Невозможно продолжить без MongoDB в production режиме');
+          console.error('Невозможно продолжить без MySQL в production режиме');
           process.exit(1);
         } else {
-          console.warn('Продолжаем без MongoDB - данные НЕ будут сохраняться!');
+          console.warn('Продолжаем без MySQL - данные НЕ будут сохраняться!');
         }
       }
     } else {
-      console.log('MongoDB отключена в настройках');
+      console.log('MySQL отключена в настройках');
     }
 
     // Веб-сервер для авторизации через OAuth
@@ -101,12 +113,17 @@ async function startApp() {
       saveUninitialized: false
     };
 
-    // Добавляем MongoStore только если MongoDB подключена
-    if (mongoose.connection.readyState === 1) {
-      sessionConfig.store = MongoStore.create({
-        mongoUrl: config.mongodbUri,
-        collectionName: 'sessions'
+    // Добавляем SequelizeStore только если MySQL подключена
+    if (sequelize && sequelize.authenticate) {
+      const sessionStore = new SequelizeStore({
+        db: sequelize,
+        tableName: 'sessions'
       });
+      
+      // Синхронизируем таблицу сессий
+      sessionStore.sync();
+      
+      sessionConfig.store = sessionStore;
     }
 
     app.use(expressSession(sessionConfig));
@@ -155,7 +172,7 @@ async function startApp() {
     // Базовый маршрут
     app.get('/', (req, res) => {
       res.send(`Сервер карточной игры "Разгильдяй" запущен!
-      <br>Статус MongoDB: ${mongoose.connection.readyState === 1 ? 'Подключена' : 'Отключена'}
+      <br>Статус MySQL: ${(sequelize && sequelize.authenticate) ? 'Подключена' : 'Отключена'}
       <br>Статус бота: ${config.testMode ? 'Тестовый режим' : (bot ? 'Запущен' : 'Отключен')}`);
     });
 
@@ -172,15 +189,15 @@ async function startApp() {
     // Graceful shutdown
     process.once('SIGINT', () => {
       if (bot) bot.stop('SIGINT');
-      if (mongoose.connection.readyState === 1) {
-        mongoose.disconnect();
+      if (sequelize && sequelize.close) {
+        sequelize.close();
       }
     });
     
     process.once('SIGTERM', () => {
       if (bot) bot.stop('SIGTERM');
-      if (mongoose.connection.readyState === 1) {
-        mongoose.disconnect();
+      if (sequelize && sequelize.close) {
+        sequelize.close();
       }
     });
   } catch (error) {
