@@ -11,9 +11,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Получаем элементы формы
     const registerForm = document.getElementById('register-form');
-    const telegramAuthBtn = document.getElementById('telegram-auth');
-    const googleAuthBtn = document.getElementById('google-auth');
     const guestAuthBtn = document.getElementById('guest-auth');
+
+    // Проверяем наличие сохраненного пользователя
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+        // Перенаправляем на главную, если пользователь уже авторизован
+        window.location.href = '/webapp';
+        return;
+    }
 
     // Обработка обычной регистрации
     registerForm.addEventListener('submit', function(e) {
@@ -26,35 +32,15 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Отправляем данные на сервер
+        // Показываем индикатор загрузки
+        tgApp.MainButton.setText('Регистрация...');
+        tgApp.MainButton.show();
+        
+        // Отправляем данные на сервер для регистрации
         registerUser({
             username: username,
             type: 'basic'
         });
-    });
-
-    // Обработка авторизации через Telegram
-    telegramAuthBtn.addEventListener('click', function() {
-        // Если мы в Telegram WebApp, можем использовать данные пользователя
-        if (tgApp.initDataUnsafe && tgApp.initDataUnsafe.user) {
-            const user = tgApp.initDataUnsafe.user;
-            registerUser({
-                telegramId: user.id.toString(),
-                username: user.username || `${user.first_name || ''} ${user.last_name || ''}`.trim(),
-                firstName: user.first_name,
-                lastName: user.last_name,
-                type: 'telegram'
-            });
-        } else {
-            // Перенаправляем на страницу авторизации Telegram
-            window.location.href = '/auth/telegram';
-        }
-    });
-
-    // Обработка авторизации через Google
-    googleAuthBtn.addEventListener('click', function() {
-        // Перенаправляем на страницу авторизации Google
-        window.location.href = '/auth/google';
     });
 
     // Обработка входа как гость
@@ -62,6 +48,11 @@ document.addEventListener('DOMContentLoaded', function() {
         // Генерируем случайное имя гостя
         const guestName = 'Гость_' + Math.floor(Math.random() * 10000);
         
+        // Показываем индикатор загрузки
+        tgApp.MainButton.setText('Входим как гость...');
+        tgApp.MainButton.show();
+        
+        // Регистрируем гостя
         registerUser({
             username: guestName,
             type: 'guest'
@@ -70,10 +61,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Функция для отправки данных регистрации на сервер
     function registerUser(userData) {
-        // Показываем индикатор загрузки
-        tgApp.MainButton.setText('Загрузка...');
-        tgApp.MainButton.show();
-        
         fetch('/api/auth/register', {
             method: 'POST',
             headers: {
@@ -88,16 +75,20 @@ document.addEventListener('DOMContentLoaded', function() {
             return response.json();
         })
         .then(data => {
-            // Успешная регистрация, перенаправляем в меню
-            tgApp.MainButton.setText('Успешно!');
-            
-            // Сохраняем данные пользователя
-            localStorage.setItem('user', JSON.stringify(data.user));
-            
-            // Перенаправляем на главную страницу
-            setTimeout(() => {
-                window.location.href = '/webapp';
-            }, 1000);
+            if (data.success) {
+                // Успешная регистрация
+                tgApp.MainButton.setText('Успешно!');
+                
+                // Сохраняем данные пользователя
+                localStorage.setItem('user', JSON.stringify(data.user));
+                
+                // Перенаправляем на главную страницу
+                setTimeout(() => {
+                    window.location.href = '/webapp';
+                }, 1000);
+            } else {
+                throw new Error(data.error || 'Ошибка при регистрации');
+            }
         })
         .catch(error => {
             console.error('Ошибка:', error);

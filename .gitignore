@@ -34,4 +34,7 @@ Thumbs.db
 
 # Временные файлы MongoDB
 *.bson
-dump/ 
+dump/
+
+# Локальные данные
+data/ 

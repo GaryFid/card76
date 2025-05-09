@@ -110,6 +110,20 @@
     margin-right: 10px;
 }
 
+.disabled-auth-notice {
+    margin-top: 15px;
+    text-align: center;
+    padding: 10px;
+    border-radius: 8px;
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.disabled-auth-notice p {
+    margin: 0;
+    font-size: 14px;
+    color: rgba(0, 0, 0, 0.5);
+}
+
 /* Адаптивность */
 @media (max-width: 480px) {
     .register-container {

@@ -27,59 +27,57 @@ const isAuthenticated = (req, res, next) => {
 router.post('/auth/register', async (req, res) => {
   try {
     const userData = req.body;
-    
-    // Если это авторизация через Telegram, ищем по telegramId
-    if (userData.type === 'telegram' && userData.telegramId) {
-      let user = await User.findByTelegramId(userData.telegramId);
-      
-      if (user) {
-        // Обновляем данные пользователя
-        user = await user.update({
-          username: userData.username || user.username,
-          firstName: userData.firstName || user.firstName,
-          lastName: userData.lastName || user.lastName,
-          lastActive: new Date().toISOString()
-        });
-      } else {
-        // Создаем нового пользователя
-        user = await User.create({
-          telegramId: userData.telegramId,
-          username: userData.username,
-          firstName: userData.firstName,
-          lastName: userData.lastName,
-          authType: 'telegram'
-        });
-      }
-      
-      return res.json({ success: true, user });
-    }
-    
-    // Обычная регистрация или гостевой вход
     let user = null;
     
+    // Определяем тип регистрации: обычная или гостевая
     if (userData.type === 'guest') {
       // Создаем гостевого пользователя
       user = await User.create({
         username: userData.username,
         authType: 'guest'
       });
+      
+      console.log('Создан гостевой пользователь:', user.username);
     } else {
-      // Проверяем существование пользователя
+      // Проверяем существование пользователя с таким именем
       user = await User.findByUsername(userData.username);
       
-      if (!user) {
+      if (user) {
+        // Обновляем время последней активности
+        user = await user.update({
+          lastActive: new Date().toISOString()
+        });
+        
+        console.log('Вход существующего пользователя:', user.username);
+      } else {
         // Создаем нового пользователя
         user = await User.create({
           username: userData.username,
-          authType: userData.type || 'basic'
+          authType: 'basic'
         });
+        
+        console.log('Создан новый пользователь:', user.username);
       }
     }
     
-    res.json({ success: true, user });
+    // Отправляем успешный ответ с данными пользователя
+    res.json({ 
+      success: true, 
+      user: {
+        id: user.id,
+        username: user.username,
+        rating: user.rating,
+        gamesPlayed: user.gamesPlayed,
+        gamesWon: user.gamesWon,
+        authType: user.authType
+      } 
+    });
   } catch (error) {
     console.error('Ошибка регистрации API:', error);
-    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+    res.status(500).json({ 
+      success: false, 
+      error: 'Внутренняя ошибка сервера' 
+    });
   }
 });
 
