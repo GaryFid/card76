@@ -171,6 +171,11 @@ async function startApp() {
       res.sendFile(path.join(__dirname, 'public', 'index.html'));
     });
 
+    // Маршрут для страницы регистрации
+    app.get('/register', (req, res) => {
+      res.sendFile(path.join(__dirname, 'public', 'register.html'));
+    });
+
     // Запуск веб-сервера
     app.listen(PORT, () => {
       console.log(`Сервер запущен на порту ${PORT}`);

@@ -10,6 +10,7 @@ class User {
     this.rating = data.rating || 1000;
     this.gamesPlayed = data.gamesPlayed || 0;
     this.gamesWon = data.gamesWon || 0;
+    this.authType = data.authType || 'basic'; // basic, telegram, google, guest
     this.lastActive = data.lastActive || new Date().toISOString();
     this.createdAt = data.createdAt || new Date().toISOString();
   }
@@ -37,6 +38,13 @@ class User {
   static async findByTelegramId(telegramId) {
     const users = await readFromFile(USERS_FILE);
     const user = users.find(u => u.telegramId === telegramId);
+    return user ? new User(user) : null;
+  }
+
+  // Найти пользователя по имени пользователя
+  static async findByUsername(username) {
+    const users = await readFromFile(USERS_FILE);
+    const user = users.find(u => u.username === username);
     return user ? new User(user) : null;
   }
 

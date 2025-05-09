@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Регистрация - Разгильдяй</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/register.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Разгильдяй</h1>
+            <p>Регистрация в игре</p>
+        </header>
+        
+        <main>
+            <div class="register-container">
+                <div class="register-form">
+                    <form id="register-form">
+                        <div class="form-group">
+                            <label for="username">Ваше имя</label>
+                            <input type="text" id="username" name="username" placeholder="Введите ваше имя" required>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">Зарегистрироваться</button>
+                    </form>
+                </div>
+                
+                <div class="auth-divider">
+                    <span>или войдите через</span>
+                </div>
+                
+                <div class="social-auth">
+                    <button id="telegram-auth" class="btn btn-telegram">
+                        <img src="img/telegram-icon.svg" alt="Telegram" class="social-icon">
+                        Войти через Telegram
+                    </button>
+                    
+                    <button id="google-auth" class="btn btn-google">
+                        <img src="img/google-icon.svg" alt="Google" class="social-icon">
+                        Войти через Google
+                    </button>
+                    
+                    <button id="guest-auth" class="btn btn-guest">
+                        Продолжить как гость
+                    </button>
+                </div>
+            </div>
+        </main>
+        
+        <footer>
+            <p>© 2023 Разгильдяй</p>
+        </footer>
+    </div>
+
+    <script src="js/register.js"></script>
+</body>
+</html> 

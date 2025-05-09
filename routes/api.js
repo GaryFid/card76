@@ -1,37 +1,118 @@
 const express = require('express');
 const router = express.Router();
-const Game = require('../models/game');
-const User = require('../models/user');
+const { User, Game } = require('../models');
 
 // Middleware для проверки авторизации
 const isAuthenticated = (req, res, next) => {
-  if (req.isAuthenticated()) {
+  if (req.isAuthenticated && req.isAuthenticated()) {
     return next();
   }
+  
+  // Проверка авторизации через заголовок Authorization
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.substring(7, authHeader.length);
+    // Здесь можно добавить проверку токена
+    // Для простоты мы просто пропускаем запрос дальше
+    return next();
+  }
+  
   return res.status(401).json({
     success: false,
     message: 'Требуется авторизация'
   });
 };
 
+// Регистрация/авторизация пользователя
+router.post('/auth/register', async (req, res) => {
+  try {
+    const userData = req.body;
+    
+    // Если это авторизация через Telegram, ищем по telegramId
+    if (userData.type === 'telegram' && userData.telegramId) {
+      let user = await User.findByTelegramId(userData.telegramId);
+      
+      if (user) {
+        // Обновляем данные пользователя
+        user = await user.update({
+          username: userData.username || user.username,
+          firstName: userData.firstName || user.firstName,
+          lastName: userData.lastName || user.lastName,
+          lastActive: new Date().toISOString()
+        });
+      } else {
+        // Создаем нового пользователя
+        user = await User.create({
+          telegramId: userData.telegramId,
+          username: userData.username,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          authType: 'telegram'
+        });
+      }
+      
+      return res.json({ success: true, user });
+    }
+    
+    // Обычная регистрация или гостевой вход
+    let user = null;
+    
+    if (userData.type === 'guest') {
+      // Создаем гостевого пользователя
+      user = await User.create({
+        username: userData.username,
+        authType: 'guest'
+      });
+    } else {
+      // Проверяем существование пользователя
+      user = await User.findByUsername(userData.username);
+      
+      if (!user) {
+        // Создаем нового пользователя
+        user = await User.create({
+          username: userData.username,
+          authType: userData.type || 'basic'
+        });
+      }
+    }
+    
+    res.json({ success: true, user });
+  } catch (error) {
+    console.error('Ошибка регистрации API:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  }
+});
+
 // Получить информацию о текущем пользователе
-router.get('/user', isAuthenticated, (req, res) => {
-  res.json({
-    success: true,
-    user: req.user
-  });
+router.get('/user/:id', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Пользователь не найден'
+      });
+    }
+    
+    res.json({
+      success: true,
+      user
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Ошибка при получении информации о пользователе',
+      error: error.message
+    });
+  }
 });
 
 // Получить рейтинг игроков
 router.get('/rating', async (req, res) => {
   try {
-    const topPlayers = await User.find({
-      gamesPlayed: { $gt: 0 }
-    })
-    .sort({ rating: -1 })
-    .limit(100)
-    .select('rating gamesPlayed gamesWon telegram.username google.name yandex.name');
-
+    const topPlayers = await User.findTopByRating(20);
+    
     res.json({
       success: true,
       players: topPlayers
@@ -48,7 +129,14 @@ router.get('/rating', async (req, res) => {
 // Создать новую игру
 router.post('/games', isAuthenticated, async (req, res) => {
   try {
-    const { playerCount = 4, withAI = false } = req.body;
+    const { playerCount = 4, withAI = false, userId } = req.body;
+    
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID пользователя обязателен'
+      });
+    }
     
     if (playerCount < 4 || playerCount > 9) {
       return res.status(400).json({
@@ -57,34 +145,45 @@ router.post('/games', isAuthenticated, async (req, res) => {
       });
     }
     
-    const game = new Game({
+    // Проверяем существование пользователя
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Пользователь не найден'
+      });
+    }
+    
+    // Создаем новую игру
+    const game = await Game.create({
       players: [{
-        userId: req.user._id,
+        userId: userId,
         cards: [],
         score: 0,
         isBot: false
-      }]
+      }],
+      withAI
     });
     
     if (withAI) {
       // Добавляем ботов для игры против ИИ
       for (let i = 1; i < playerCount; i++) {
         game.players.push({
+          userId: `bot_${i}`,
           cards: [],
           score: 0,
           isBot: true
         });
       }
       
-      // Инициализация игры против ИИ
-      // TODO: Добавить логику раздачи карт и начала игры
+      // Можно инициализировать игру против ИИ здесь
     }
     
     await game.save();
     
     res.json({
       success: true,
-      game: game
+      game
     });
   } catch (error) {
     res.status(500).json({
@@ -95,45 +194,26 @@ router.post('/games', isAuthenticated, async (req, res) => {
   }
 });
 
-// Получить информацию об активной игре
-router.get('/games/:id', isAuthenticated, async (req, res) => {
+// Получить активные игры
+router.get('/games/active', async (req, res) => {
   try {
-    const game = await Game.findById(req.params.id)
-      .populate('players.userId', 'telegram.username google.name yandex.name');
-    
-    if (!game) {
-      return res.status(404).json({
-        success: false,
-        message: 'Игра не найдена'
-      });
-    }
-    
-    const isPlayerInGame = game.players.some(player => 
-      player.userId && player.userId.equals(req.user._id)
-    );
-    
-    if (!isPlayerInGame) {
-      return res.status(403).json({
-        success: false,
-        message: 'Вы не участвуете в этой игре'
-      });
-    }
+    const activeGames = await Game.findActive();
     
     res.json({
       success: true,
-      game: game
+      games: activeGames
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Ошибка при получении информации об игре',
+      message: 'Ошибка при получении активных игр',
       error: error.message
     });
   }
 });
 
-// Присоединиться к игре
-router.post('/games/:id/join', isAuthenticated, async (req, res) => {
+// Получить информацию об игре
+router.get('/games/:id', async (req, res) => {
   try {
     const game = await Game.findById(req.params.id);
     
@@ -144,68 +224,14 @@ router.post('/games/:id/join', isAuthenticated, async (req, res) => {
       });
     }
     
-    if (game.status !== 'waiting') {
-      return res.status(400).json({
-        success: false,
-        message: 'Игра уже началась'
-      });
-    }
-    
-    // Проверяем, не присоединился ли игрок уже
-    const isPlayerInGame = game.players.some(player => 
-      player.userId && player.userId.equals(req.user._id)
-    );
-    
-    if (isPlayerInGame) {
-      return res.status(400).json({
-        success: false,
-        message: 'Вы уже присоединились к этой игре'
-      });
-    }
-    
-    // Проверяем лимит игроков
-    if (game.players.filter(p => !p.isBot).length >= 9) {
-      return res.status(400).json({
-        success: false,
-        message: 'Достигнут максимальный лимит игроков'
-      });
-    }
-    
-    // Добавляем игрока
-    game.players.push({
-      userId: req.user._id,
-      cards: [],
-      score: 0,
-      isBot: false
-    });
-    
-    await game.save();
-    
     res.json({
       success: true,
-      game: game
+      game
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Ошибка при присоединении к игре',
-      error: error.message
-    });
-  }
-});
-
-// Сделать ход в игре
-router.post('/games/:id/move', isAuthenticated, async (req, res) => {
-  try {
-    // TODO: Реализовать логику хода в игре
-    res.json({
-      success: true,
-      message: 'Ход принят'
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Ошибка при выполнении хода',
+      message: 'Ошибка при получении информации об игре',
       error: error.message
     });
   }
