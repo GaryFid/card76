@@ -5,9 +5,9 @@ const passport = require('passport');
 const expressSession = require('express-session');
 const config = require('./config');
 const path = require('path');
-const { testConnection, sequelize } = require('./config/database');
+const { testConnection } = require('./config/database');
 const { syncModels } = require('./models');
-const SequelizeStore = require('connect-session-sequelize')(expressSession.Store);
+const FileStore = require('session-file-store')(expressSession);
 
 // Импорт сцен и обработчиков
 const { authScene } = require('./scenes/auth');
@@ -70,33 +70,29 @@ if (config.enableBot && !config.testMode) {
 // Асинхронная функция запуска приложения
 async function startApp() {
   try {
-    // Подключение к MySQL
-    if (config.useMySQL) {
-      try {
-        // Проверка подключения к базе данных
-        const connected = await testConnection();
-        if (connected) {
-          // Синхронизация моделей с базой данных
-          await syncModels();
-        } else {
-          if (process.env.NODE_ENV === 'production' && !config.testMode) {
-            console.error('Невозможно продолжить без MySQL в production режиме');
-            process.exit(1);
-          } else {
-            console.warn('Продолжаем без MySQL - данные НЕ будут сохраняться!');
-          }
-        }
-      } catch (err) {
-        console.error('Ошибка при работе с MySQL:', err);
+    // Инициализация локального хранилища JSON
+    try {
+      // Проверка доступа к хранилищу
+      const connected = await testConnection();
+      if (connected) {
+        // Синхронизация моделей
+        await syncModels();
+      } else {
         if (process.env.NODE_ENV === 'production' && !config.testMode) {
-          console.error('Невозможно продолжить без MySQL в production режиме');
+          console.error('Невозможно продолжить без доступа к хранилищу в production режиме');
           process.exit(1);
         } else {
-          console.warn('Продолжаем без MySQL - данные НЕ будут сохраняться!');
+          console.warn('Проблемы с доступом к хранилищу - данные могут НЕ сохраняться!');
         }
       }
-    } else {
-      console.log('MySQL отключена в настройках');
+    } catch (err) {
+      console.error('Ошибка при работе с хранилищем:', err);
+      if (process.env.NODE_ENV === 'production' && !config.testMode) {
+        console.error('Невозможно продолжить без доступа к хранилищу в production режиме');
+        process.exit(1);
+      } else {
+        console.warn('Проблемы с доступом к хранилищу - данные могут НЕ сохраняться!');
+      }
     }
 
     // Веб-сервер для авторизации через OAuth
@@ -106,27 +102,21 @@ async function startApp() {
     // Настройка для обслуживания статических файлов мини-приложения
     app.use(express.static(path.join(__dirname, 'public')));
     
-    // Настройка сессий
-    const sessionConfig = {
+    // Настройка сессий с использованием файлового хранилища
+    const sessionStore = new FileStore({
+      path: path.join(__dirname, 'data', 'sessions'),
+      ttl: 86400 // 1 день
+    });
+    
+    app.use(expressSession({
+      store: sessionStore,
       secret: config.sessionSecret,
       resave: false,
-      saveUninitialized: false
-    };
-
-    // Добавляем SequelizeStore только если MySQL подключена
-    if (sequelize && sequelize.authenticate) {
-      const sessionStore = new SequelizeStore({
-        db: sequelize,
-        tableName: 'sessions'
-      });
-      
-      // Синхронизируем таблицу сессий
-      sessionStore.sync();
-      
-      sessionConfig.store = sessionStore;
-    }
-
-    app.use(expressSession(sessionConfig));
+      saveUninitialized: false,
+      cookie: { 
+        maxAge: 86400000 // 1 день
+      }
+    }));
 
     // Инициализация Passport
     app.use(passport.initialize());
@@ -172,7 +162,7 @@ async function startApp() {
     // Базовый маршрут
     app.get('/', (req, res) => {
       res.send(`Сервер карточной игры "Разгильдяй" запущен!
-      <br>Статус MySQL: ${(sequelize && sequelize.authenticate) ? 'Подключена' : 'Отключена'}
+      <br>Статус хранилища: Локальное JSON
       <br>Статус бота: ${config.testMode ? 'Тестовый режим' : (bot ? 'Запущен' : 'Отключен')}`);
     });
 
@@ -189,16 +179,10 @@ async function startApp() {
     // Graceful shutdown
     process.once('SIGINT', () => {
       if (bot) bot.stop('SIGINT');
-      if (sequelize && sequelize.close) {
-        sequelize.close();
-      }
     });
     
     process.once('SIGTERM', () => {
       if (bot) bot.stop('SIGTERM');
-      if (sequelize && sequelize.close) {
-        sequelize.close();
-      }
     });
   } catch (error) {
     console.error('Ошибка запуска приложения:', error);

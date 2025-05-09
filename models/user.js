@@ -1,50 +1,83 @@
-const mongoose = require('mongoose');
+const { USERS_FILE, readFromFile, writeToFile } = require('../config/database');
 
-const userSchema = new mongoose.Schema({
-  telegram: {
-    id: String,
-    username: String,
-    firstName: String,
-    lastName: String
-  },
-  google: {
-    id: String,
-    email: String,
-    name: String
-  },
-  yandex: {
-    id: String,
-    email: String,
-    name: String
-  },
-  rating: {
-    type: Number,
-    default: 0
-  },
-  gamesPlayed: {
-    type: Number,
-    default: 0
-  },
-  gamesWon: {
-    type: Number,
-    default: 0
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
+class User {
+  constructor(data = {}) {
+    this.id = data.id || Date.now().toString();
+    this.telegramId = data.telegramId || null;
+    this.username = data.username || null;
+    this.firstName = data.firstName || null;
+    this.lastName = data.lastName || null;
+    this.rating = data.rating || 1000;
+    this.gamesPlayed = data.gamesPlayed || 0;
+    this.gamesWon = data.gamesWon || 0;
+    this.lastActive = data.lastActive || new Date().toISOString();
+    this.createdAt = data.createdAt || new Date().toISOString();
   }
-});
 
-// Виртуальное свойство для имени пользователя
-userSchema.virtual('displayName').get(function() {
-  if (this.telegram && this.telegram.username) {
-    return this.telegram.username;
-  } else if (this.google && this.google.name) {
-    return this.google.name;
-  } else if (this.yandex && this.yandex.name) {
-    return this.yandex.name;
+  // Получить информацию для отображения
+  get displayName() {
+    return this.username || this.firstName || 'Игрок';
   }
-  return 'Игрок';
-});
 
-module.exports = mongoose.model('User', userSchema); 
+  // Статические методы для работы с коллекцией пользователей
+  
+  // Получить всех пользователей
+  static async findAll() {
+    return await readFromFile(USERS_FILE);
+  }
+
+  // Найти пользователя по ID
+  static async findById(id) {
+    const users = await readFromFile(USERS_FILE);
+    const user = users.find(u => u.id === id);
+    return user ? new User(user) : null;
+  }
+
+  // Найти пользователя по Telegram ID
+  static async findByTelegramId(telegramId) {
+    const users = await readFromFile(USERS_FILE);
+    const user = users.find(u => u.telegramId === telegramId);
+    return user ? new User(user) : null;
+  }
+
+  // Создать нового пользователя
+  static async create(userData) {
+    const users = await readFromFile(USERS_FILE);
+    const newUser = new User(userData);
+    users.push(newUser);
+    await writeToFile(USERS_FILE, users);
+    return newUser;
+  }
+
+  // Сохранить изменения пользователя
+  async save() {
+    const users = await readFromFile(USERS_FILE);
+    const index = users.findIndex(u => u.id === this.id);
+    
+    if (index !== -1) {
+      users[index] = this;
+    } else {
+      users.push(this);
+    }
+    
+    await writeToFile(USERS_FILE, users);
+    return this;
+  }
+
+  // Обновить данные пользователя
+  async update(userData) {
+    Object.assign(this, userData);
+    return await this.save();
+  }
+
+  // Найти топ игроков по рейтингу
+  static async findTopByRating(limit = 10) {
+    const users = await readFromFile(USERS_FILE);
+    return users
+      .sort((a, b) => b.rating - a.rating)
+      .slice(0, limit)
+      .map(user => new User(user));
+  }
+}
+
+module.exports = User; 

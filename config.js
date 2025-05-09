@@ -7,15 +7,7 @@ module.exports = {
   baseUrl: process.env.BASE_URL || 'http://localhost:3000',
   appUrl: process.env.APP_URL || process.env.BASE_URL || 'http://localhost:3000',
   
-  // MySQL конфигурация
-  mysqlHost: process.env.MYSQL_HOST || 'localhost',
-  mysqlPort: process.env.MYSQL_PORT || 3306,
-  mysqlUser: process.env.MYSQL_USER || 'root',
-  mysqlPassword: process.env.MYSQL_PASSWORD || '',
-  mysqlDatabase: process.env.MYSQL_DB || 'card76',
-  
   // Режимы работы
-  useMySQL: process.env.USE_MYSQL !== 'false',
   enableBot: process.env.ENABLE_BOT !== 'false',
   testMode: process.env.TEST_MODE === 'true' || !process.env.BOT_TOKEN,
   debug: process.env.DEBUG === 'true',

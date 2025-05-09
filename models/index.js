@@ -1,16 +1,21 @@
-const { sequelize } = require('../config/database');
+const { testConnection } = require('../config/database');
 const User = require('./user');
 const Game = require('./game');
 
-// Функция для синхронизации моделей с базой данных
+// Функция для инициализации моделей
 async function syncModels() {
   try {
-    // В режиме разработки можно использовать { force: true } для пересоздания таблиц
-    await sequelize.sync({ alter: true });
-    console.log('Таблицы MySQL успешно синхронизированы');
-    return true;
+    // Проверяем доступ к файлам хранилища
+    const connected = await testConnection();
+    if (connected) {
+      console.log('Локальное JSON хранилище готово к использованию');
+      return true;
+    } else {
+      console.error('Ошибка инициализации локального JSON хранилища');
+      return false;
+    }
   } catch (error) {
-    console.error('Ошибка синхронизации таблиц MySQL:', error);
+    console.error('Ошибка при инициализации моделей:', error);
     return false;
   }
 }
@@ -18,6 +23,5 @@ async function syncModels() {
 module.exports = {
   User,
   Game,
-  sequelize,
   syncModels
 }; 
