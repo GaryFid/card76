@@ -138,19 +138,19 @@ async function startApp() {
           // Добавляем обработчик webhook в Express
           app.use(bot.webhookCallback('/telegram-webhook'));
           
-          // Отмечаем, что бот запущен
-          bot.isRunning = true;
+          // В режиме webhook бот не нужно останавливать специально
+          bot.isPolling = false;
         } else {
           // В режиме разработки используем long polling
           await bot.launch();
           console.log('Бот запущен в режиме long polling');
           
-          // Отмечаем, что бот запущен
-          bot.isRunning = true;
+          // Отмечаем, что бот запущен в режиме polling
+          bot.isPolling = true;
         }
       } catch (error) {
         console.error('Ошибка запуска бота:', error);
-        bot.isRunning = false;
+        bot = null; // Полностью убираем ссылку на бота
         if (process.env.NODE_ENV === 'production') {
           console.error('Невозможно продолжить без работающего бота в production режиме');
           process.exit(1);
@@ -172,9 +172,16 @@ async function startApp() {
 
     // Базовый маршрут
     app.get('/', (req, res) => {
+      let botStatus = 'Отключен';
+      if (config.testMode) {
+        botStatus = 'Тестовый режим';
+      } else if (bot) {
+        botStatus = bot.isPolling ? 'Запущен (polling)' : 'Запущен (webhook)';
+      }
+      
       res.send(`Сервер карточной игры "Разгильдяй" запущен!
       <br>Статус хранилища: Локальное JSON
-      <br>Статус бота: ${config.testMode ? 'Тестовый режим' : (bot ? 'Запущен' : 'Отключен')}`);
+      <br>Статус бота: ${botStatus}`);
     });
 
     // Маршрут для мини-приложения
@@ -205,12 +212,16 @@ async function startApp() {
     // Метод остановки бота с проверками
     function safeStopBot(reason) {
       try {
-        if (bot && typeof bot.stop === 'function' && bot.isRunning) {
-          bot.stop(reason);
+        // Останавливаем бота только если он существует и работает в режиме polling
+        if (bot && bot.isPolling) {
+          console.log(`Останавливаем бота (${reason})...`);
+          bot.stop();
           console.log(`Бот успешно остановлен: ${reason}`);
+        } else {
+          console.log(`Бот не требует остановки (${reason})`);
         }
       } catch (error) {
-        console.error(`Ошибка при остановке бота (${reason}):`, error);
+        console.error(`Ошибка при остановке бота (${reason}):`, error.message);
       }
     }
 
