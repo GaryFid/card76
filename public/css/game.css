@@ -479,6 +479,31 @@ body {
     animation: dealCard 0.5s forwards ease-out;
 }
 
+/* Стили для сообщений игры */
+.game-message {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.8);
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 15px 25px;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: bold;
+    text-align: center;
+    max-width: 80%;
+    z-index: 1000;
+    opacity: 0;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.game-message.visible {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
 /* Стили для информации о стадии игры */
 .game-stage-info {
     position: fixed;
@@ -504,6 +529,19 @@ body {
 .stage-description {
     font-size: 12px;
     opacity: 0.8;
+}
+
+/* Подсветка карты, которую можно сыграть */
+.card.playable {
+    box-shadow: 0 0 10px 2px var(--tg-theme-button-color);
+}
+
+/* Подсветка возможных целей для игры */
+.table-card.highlighted {
+    box-shadow: 0 0 15px 3px gold;
+    transform: scale(1.1) !important;
+    z-index: 10;
+    border: 2px solid gold;
 }
 
 /* Адаптивность */
@@ -534,5 +572,10 @@ body {
     .table-card {
         width: 35px;
         height: 50px;
+    }
+    
+    .game-message {
+        font-size: 14px;
+        padding: 12px 20px;
     }
 } 
