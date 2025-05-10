@@ -137,13 +137,20 @@ async function startApp() {
           
           // Добавляем обработчик webhook в Express
           app.use(bot.webhookCallback('/telegram-webhook'));
+          
+          // Отмечаем, что бот запущен
+          bot.isRunning = true;
         } else {
           // В режиме разработки используем long polling
           await bot.launch();
           console.log('Бот запущен в режиме long polling');
+          
+          // Отмечаем, что бот запущен
+          bot.isRunning = true;
         }
       } catch (error) {
         console.error('Ошибка запуска бота:', error);
+        bot.isRunning = false;
         if (process.env.NODE_ENV === 'production') {
           console.error('Невозможно продолжить без работающего бота в production режиме');
           process.exit(1);
@@ -195,13 +202,25 @@ async function startApp() {
       console.log(`Сервер запущен на порту ${PORT}`);
     });
 
+    // Метод остановки бота с проверками
+    function safeStopBot(reason) {
+      try {
+        if (bot && typeof bot.stop === 'function' && bot.isRunning) {
+          bot.stop(reason);
+          console.log(`Бот успешно остановлен: ${reason}`);
+        }
+      } catch (error) {
+        console.error(`Ошибка при остановке бота (${reason}):`, error);
+      }
+    }
+
     // Graceful shutdown
     process.once('SIGINT', () => {
-      if (bot) bot.stop('SIGINT');
+      safeStopBot('SIGINT');
     });
     
     process.once('SIGTERM', () => {
-      if (bot) bot.stop('SIGTERM');
+      safeStopBot('SIGTERM');
     });
   } catch (error) {
     console.error('Ошибка запуска приложения:', error);
