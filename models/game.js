@@ -11,6 +11,8 @@ class Game {
     this.currentTurn = data.currentTurn || 0;
     this.winnerId = data.winnerId || null;
     this.withAI = data.withAI || false;
+    this.aiTestMode = data.aiTestMode || false;
+    this.gameStage = data.gameStage || 'init';
     this.startedAt = data.startedAt || null;
     this.finishedAt = data.finishedAt || null;
     this.createdAt = data.createdAt || new Date().toISOString();
@@ -80,10 +82,86 @@ class Game {
     return await this.save();
   }
 
+  // Инициализация колоды
+  initializeDeck() {
+    // Масти карт: черви, бубны, крести, пики
+    const suits = ['♥', '♦', '♣', '♠'];
+    // Значения карт
+    const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+    
+    // Создаем колоду
+    this.deck = [];
+    
+    // Заполняем колоду картами
+    for (const suit of suits) {
+      for (const value of values) {
+        this.deck.push({
+          id: `${value}-${suit}`,
+          value: value,
+          suit: suit,
+          isRed: suit === '♥' || suit === '♦',
+          faceUp: false
+        });
+      }
+    }
+    
+    // Перемешиваем колоду
+    this.shuffleDeck();
+  }
+  
+  // Перемешать колоду
+  shuffleDeck() {
+    for (let i = this.deck.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [this.deck[i], this.deck[j]] = [this.deck[j], this.deck[i]];
+    }
+  }
+  
+  // Раздать начальные карты игрокам
+  dealInitialCards() {
+    // Проверяем, что колода создана
+    if (this.deck.length === 0) {
+      this.initializeDeck();
+    }
+    
+    // Раздаем каждому игроку по 2 закрытые карты и 1 открытую
+    for (let player of this.players) {
+      // Если у игрока еще нет карт, создаем массив для них
+      if (!player.cards) {
+        player.cards = [];
+      }
+      
+      // Раздаем 2 закрытые карты
+      for (let i = 0; i < 2; i++) {
+        const card = this.deck.pop();
+        card.faceUp = false;
+        player.cards.push(card);
+      }
+      
+      // Раздаем 1 открытую карту
+      const openCard = this.deck.pop();
+      openCard.faceUp = true;
+      player.cards.push(openCard);
+    }
+    
+    // Кладем одну открытую карту в центр стола (сброс)
+    const tableCard = this.deck.pop();
+    tableCard.faceUp = true;
+    this.discardPile = [tableCard];
+    
+    // Устанавливаем стадию игры на первую
+    this.gameStage = 'stage1';
+  }
+
   // Начать игру
   async start() {
     this.status = 'active';
     this.startedAt = new Date().toISOString();
+    
+    // Инициализируем колоду и раздаем начальные карты
+    this.initializeDeck();
+    this.dealInitialCards();
+    
     return await this.save();
   }
 
