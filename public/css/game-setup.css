@@ -18,93 +18,129 @@
     font-size: 1.5rem;
 }
 
-/* Стили для селектора количества игроков */
-.player-count-selector {
+/* Стили для выбора стола */
+.table-selection {
     margin-bottom: 30px;
     padding: 15px;
     background-color: rgba(255, 255, 255, 0.05);
     border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 }
 
-.player-count-display {
+.table-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+}
+
+.oval-table {
+    position: relative;
+    width: 140px;
+    height: 90px;
+    cursor: pointer;
+    transition: all 0.3s ease;
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-bottom: 15px;
+    padding-top: 10px;
 }
 
-.player-count-value {
-    font-size: 3rem;
-    font-weight: bold;
-    margin-bottom: 10px;
-    color: var(--tg-theme-button-color);
-}
-
-.player-icons {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 15px;
-}
-
-.player-icon {
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
+.table-top {
+    width: 100px;
+    height: 60px;
     background-color: rgba(0, 0, 0, 0.1);
+    border-radius: 50px;
     display: flex;
     align-items: center;
     justify-content: center;
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: var(--tg-theme-text-color);
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.oval-table.selected .table-top {
+    background-color: var(--tg-theme-button-color);
+    color: var(--tg-theme-button-text-color);
+    transform: scale(1.05);
+}
+
+.table-seats {
+    position: absolute;
+    width: 120px;
+    height: 80px;
+    display: flex;
+    justify-content: center;
+    z-index: -1;
+}
+
+.seat {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 50%;
     transition: all 0.3s ease;
 }
 
-.player-icon.active {
+.oval-table.selected .seat {
     background-color: var(--tg-theme-button-color);
-}
-
-.player-count-slider {
-    width: 100%;
-}
-
-/* Стилизация range инпута */
-input[type="range"] {
-    width: 100%;
-    height: 10px;
-    -webkit-appearance: none;
-    background: rgba(0, 0, 0, 0.1);
-    border-radius: 5px;
-    outline: none;
-    margin-bottom: 10px;
-}
-
-input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background: var(--tg-theme-button-color);
-    cursor: pointer;
-    border: 2px solid white;
-}
-
-input[type="range"]::-moz-range-thumb {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background: var(--tg-theme-button-color);
-    cursor: pointer;
-    border: 2px solid white;
-}
-
-.slider-labels {
-    display: flex;
-    justify-content: space-between;
-}
-
-.slider-labels span {
-    font-size: 0.9rem;
     opacity: 0.7;
 }
+
+/* Расположение мест для 4 игроков */
+.oval-table[data-players="4"] .seat:nth-child(1) { top: -10px; left: 50px; }
+.oval-table[data-players="4"] .seat:nth-child(2) { top: 35px; left: 0px; }
+.oval-table[data-players="4"] .seat:nth-child(3) { top: 35px; right: 0px; }
+.oval-table[data-players="4"] .seat:nth-child(4) { bottom: -10px; left: 50px; }
+
+/* Расположение мест для 5 игроков */
+.oval-table[data-players="5"] .seat:nth-child(1) { top: -10px; left: 35px; }
+.oval-table[data-players="5"] .seat:nth-child(2) { top: -10px; right: 35px; }
+.oval-table[data-players="5"] .seat:nth-child(3) { top: 35px; left: 0px; }
+.oval-table[data-players="5"] .seat:nth-child(4) { top: 35px; right: 0px; }
+.oval-table[data-players="5"] .seat:nth-child(5) { bottom: -10px; left: 50px; }
+
+/* Расположение мест для 6 игроков */
+.oval-table[data-players="6"] .seat:nth-child(1) { top: -10px; left: 30px; }
+.oval-table[data-players="6"] .seat:nth-child(2) { top: -10px; right: 30px; }
+.oval-table[data-players="6"] .seat:nth-child(3) { top: 35px; left: 0px; }
+.oval-table[data-players="6"] .seat:nth-child(4) { top: 35px; right: 0px; }
+.oval-table[data-players="6"] .seat:nth-child(5) { bottom: -10px; left: 30px; }
+.oval-table[data-players="6"] .seat:nth-child(6) { bottom: -10px; right: 30px; }
+
+/* Расположение мест для 7 игроков */
+.oval-table[data-players="7"] .seat:nth-child(1) { top: -10px; left: 20px; }
+.oval-table[data-players="7"] .seat:nth-child(2) { top: -10px; left: 50px; }
+.oval-table[data-players="7"] .seat:nth-child(3) { top: -10px; right: 20px; }
+.oval-table[data-players="7"] .seat:nth-child(4) { top: 35px; left: 0px; }
+.oval-table[data-players="7"] .seat:nth-child(5) { top: 35px; right: 0px; }
+.oval-table[data-players="7"] .seat:nth-child(6) { bottom: -10px; left: 30px; }
+.oval-table[data-players="7"] .seat:nth-child(7) { bottom: -10px; right: 30px; }
+
+/* Расположение мест для 8 игроков */
+.oval-table[data-players="8"] .seat:nth-child(1) { top: -10px; left: 15px; }
+.oval-table[data-players="8"] .seat:nth-child(2) { top: -10px; left: 45px; }
+.oval-table[data-players="8"] .seat:nth-child(3) { top: -10px; right: 45px; }
+.oval-table[data-players="8"] .seat:nth-child(4) { top: -10px; right: 15px; }
+.oval-table[data-players="8"] .seat:nth-child(5) { top: 35px; left: 0px; }
+.oval-table[data-players="8"] .seat:nth-child(6) { top: 35px; right: 0px; }
+.oval-table[data-players="8"] .seat:nth-child(7) { bottom: -10px; left: 30px; }
+.oval-table[data-players="8"] .seat:nth-child(8) { bottom: -10px; right: 30px; }
+
+/* Расположение мест для 9 игроков */
+.oval-table[data-players="9"] .seat:nth-child(1) { top: -10px; left: 15px; }
+.oval-table[data-players="9"] .seat:nth-child(2) { top: -10px; left: 50px; }
+.oval-table[data-players="9"] .seat:nth-child(3) { top: -10px; right: 15px; }
+.oval-table[data-players="9"] .seat:nth-child(4) { top: 20px; left: 0px; }
+.oval-table[data-players="9"] .seat:nth-child(5) { top: 20px; right: 0px; }
+.oval-table[data-players="9"] .seat:nth-child(6) { top: 50px; left: 0px; }
+.oval-table[data-players="9"] .seat:nth-child(7) { top: 50px; right: 0px; }
+.oval-table[data-players="9"] .seat:nth-child(8) { bottom: -10px; left: 30px; }
+.oval-table[data-players="9"] .seat:nth-child(9) { bottom: -10px; right: 30px; }
 
 /* Стили для дополнительных настроек */
 .game-options {
@@ -210,12 +246,19 @@ input:checked + .toggle-slider:before {
         padding: 15px;
     }
     
-    .player-count-value {
-        font-size: 2.5rem;
+    .table-row {
+        flex-direction: column;
+        align-items: center;
+        gap: 30px;
     }
     
-    .player-icon {
-        width: 25px;
-        height: 25px;
+    .oval-table {
+        width: 180px;
+        height: 110px;
+    }
+    
+    .table-top {
+        width: 120px;
+        height: 70px;
     }
 } 

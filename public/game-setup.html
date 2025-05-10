@@ -18,34 +18,81 @@
         <main>
             <div class="setup-container">
                 <div class="setup-title">
-                    <h2>Выберите количество игроков</h2>
+                    <h2>Выберите стол для игры</h2>
                 </div>
                 
-                <div class="player-count-selector">
-                    <div class="player-count-display">
-                        <div class="player-count-value">4</div>
-                        <div class="player-icons">
-                            <div class="player-icon active"></div>
-                            <div class="player-icon active"></div>
-                            <div class="player-icon active"></div>
-                            <div class="player-icon active"></div>
-                            <div class="player-icon"></div>
-                            <div class="player-icon"></div>
-                            <div class="player-icon"></div>
-                            <div class="player-icon"></div>
-                            <div class="player-icon"></div>
+                <div class="table-selection">
+                    <div class="table-row">
+                        <div class="oval-table" data-players="4">
+                            <div class="table-top">4</div>
+                            <div class="table-seats">
+                                <div class="seat"></div>
+                                <div class="seat"></div>
+                                <div class="seat"></div>
+                                <div class="seat"></div>
+                            </div>
+                        </div>
+                        <div class="oval-table" data-players="5">
+                            <div class="table-top">5</div>
+                            <div class="table-seats">
+                                <div class="seat"></div>
+                                <div class="seat"></div>
+                                <div class="seat"></div>
+                                <div class="seat"></div>
+                                <div class="seat"></div>
+                            </div>
+                        </div>
+                        <div class="oval-table" data-players="6">
+                            <div class="table-top">6</div>
+                            <div class="table-seats">
+                                <div class="seat"></div>
+                                <div class="seat"></div>
+                                <div class="seat"></div>
+                                <div class="seat"></div>
+                                <div class="seat"></div>
+                                <div class="seat"></div>
+                            </div>
                         </div>
                     </div>
-                    
-                    <div class="player-count-slider">
-                        <input type="range" id="player-count" min="4" max="9" value="4" step="1">
-                        <div class="slider-labels">
-                            <span>4</span>
-                            <span>5</span>
-                            <span>6</span>
-                            <span>7</span>
-                            <span>8</span>
-                            <span>9</span>
+                    <div class="table-row">
+                        <div class="oval-table" data-players="7">
+                            <div class="table-top">7</div>
+                            <div class="table-seats">
+                                <div class="seat"></div>
+                                <div class="seat"></div>
+                                <div class="seat"></div>
+                                <div class="seat"></div>
+                                <div class="seat"></div>
+                                <div class="seat"></div>
+                                <div class="seat"></div>
+                            </div>
+                        </div>
+                        <div class="oval-table" data-players="8">
+                            <div class="table-top">8</div>
+                            <div class="table-seats">
+                                <div class="seat"></div>
+                                <div class="seat"></div>
+                                <div class="seat"></div>
+                                <div class="seat"></div>
+                                <div class="seat"></div>
+                                <div class="seat"></div>
+                                <div class="seat"></div>
+                                <div class="seat"></div>
+                            </div>
+                        </div>
+                        <div class="oval-table" data-players="9">
+                            <div class="table-top">9</div>
+                            <div class="table-seats">
+                                <div class="seat"></div>
+                                <div class="seat"></div>
+                                <div class="seat"></div>
+                                <div class="seat"></div>
+                                <div class="seat"></div>
+                                <div class="seat"></div>
+                                <div class="seat"></div>
+                                <div class="seat"></div>
+                                <div class="seat"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -59,6 +106,13 @@
                             <span class="toggle-slider"></span>
                         </div>
                     </div>
+                    <div class="option-item">
+                        <label for="ai-test-mode">Режим тестирования с ИИ</label>
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="ai-test-mode">
+                            <span class="toggle-slider"></span>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="action-buttons">
@@ -69,7 +123,7 @@
         </main>
         
         <footer>
-            <p>© 2023 Разгильдяй</p>
+            <p>© 2025 Разгильдяй</p>
         </footer>
     </div>
 

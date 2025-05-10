@@ -18,31 +18,48 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
     
-    // Получение элементов слайдера и отображения
-    const playerCountSlider = document.getElementById('player-count');
-    const playerCountValue = document.querySelector('.player-count-value');
-    const playerIcons = document.querySelectorAll('.player-icon');
+    // Получение элементов интерфейса
+    const ovalTables = document.querySelectorAll('.oval-table');
     const withAIToggle = document.getElementById('with-ai');
+    const aiTestModeToggle = document.getElementById('ai-test-mode');
     const startGameBtn = document.getElementById('start-game-btn');
     const backBtn = document.getElementById('back-btn');
     
-    // Обновление отображения количества игроков при изменении слайдера
-    function updatePlayerCount() {
-        const count = parseInt(playerCountSlider.value);
-        playerCountValue.textContent = count;
-        
-        // Обновление иконок игроков
-        playerIcons.forEach((icon, index) => {
-            if (index < count) {
-                icon.classList.add('active');
-            } else {
-                icon.classList.remove('active');
-            }
-        });
-    }
+    // Переменная для хранения выбранного количества игроков
+    let selectedPlayerCount = 4;
     
-    // Обработчик изменения слайдера
-    playerCountSlider.addEventListener('input', updatePlayerCount);
+    // Выбираем по умолчанию стол для 4 игроков
+    ovalTables[0].classList.add('selected');
+    
+    // Обработчик выбора стола
+    ovalTables.forEach(table => {
+        table.addEventListener('click', function() {
+            // Убираем класс selected у всех столов
+            ovalTables.forEach(t => t.classList.remove('selected'));
+            
+            // Добавляем класс selected к выбранному столу
+            this.classList.add('selected');
+            
+            // Обновляем выбранное количество игроков
+            selectedPlayerCount = parseInt(this.getAttribute('data-players'));
+        });
+    });
+    
+    // Обработчик переключения режима тестирования с ИИ
+    aiTestModeToggle.addEventListener('change', function() {
+        if (this.checked) {
+            // Если включен режим тестирования с ИИ, автоматически включаем и обычный режим с ботами
+            withAIToggle.checked = true;
+        }
+    });
+    
+    // Обработчик переключения режима с ботами
+    withAIToggle.addEventListener('change', function() {
+        if (!this.checked && aiTestModeToggle.checked) {
+            // Если отключаем ботов, то отключаем и режим тестирования с ИИ
+            aiTestModeToggle.checked = false;
+        }
+    });
     
     // Обработчик кнопки "Назад"
     backBtn.addEventListener('click', function() {
@@ -51,13 +68,14 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Обработчик кнопки "Начать игру"
     startGameBtn.addEventListener('click', function() {
-        const playerCount = parseInt(playerCountSlider.value);
         const withAI = withAIToggle.checked;
+        const aiTestMode = aiTestModeToggle.checked;
         
         // Сохраняем настройки игры
         const gameSettings = {
-            playerCount,
-            withAI
+            playerCount: selectedPlayerCount,
+            withAI,
+            aiTestMode
         };
         localStorage.setItem('gameSettings', JSON.stringify(gameSettings));
         
@@ -70,12 +88,10 @@ document.addEventListener('DOMContentLoaded', function() {
             tgApp.sendData(JSON.stringify({
                 action: 'start_game',
                 userId: userData.id,
-                playerCount,
-                withAI
+                playerCount: selectedPlayerCount,
+                withAI,
+                aiTestMode
             }));
         }
     });
-    
-    // Инициализация начального состояния
-    updatePlayerCount();
 }); 

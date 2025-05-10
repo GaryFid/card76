@@ -34,7 +34,9 @@
         <div class="game-controls">
             <div class="current-player-info">
                 <div class="avatar-container">
-                    <div class="player-avatar"></div>
+                    <div class="player-avatar">
+                        <img src="images/avatar-placeholder.png" alt="Аватар игрока">
+                    </div>
                     <div class="player-indicator">Ваш ход</div>
                 </div>
                 <div class="player-name">Игрок 1</div>
@@ -82,13 +84,19 @@
         <button class="settings-btn" id="open-settings">
             <span class="settings-icon">⚙️</span>
         </button>
+        
+        <!-- Информация о стадии игры -->
+        <div class="game-stage-info">
+            <span class="stage-number">Стадия 1</span>
+            <span class="stage-description">Начальная раздача</span>
+        </div>
     </div>
 
     <!-- Шаблоны для динамических элементов -->
     <template id="player-template">
         <div class="player">
             <div class="player-avatar">
-                <img src="" alt="Аватар игрока">
+                <img src="images/avatar-placeholder.png" alt="Аватар игрока">
             </div>
             <div class="player-cards">
                 <span class="card-count">0</span>

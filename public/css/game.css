@@ -171,6 +171,46 @@ body {
     100% { transform: scale(1); opacity: 0.8; }
 }
 
+/* Стили для карт на столе */
+.player-table-cards {
+    position: absolute;
+    top: 60px;
+    width: 120px;
+    height: 80px;
+    display: flex;
+    justify-content: center;
+    z-index: 4;
+}
+
+.table-card {
+    position: absolute;
+    width: 40px;
+    height: 60px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    transform-origin: center;
+}
+
+.table-card.card-back {
+    background-color: #b00;
+    background-image: linear-gradient(135deg, #b00 25%, #d00 25%, #d00 50%, #b00 50%, #b00 75%, #d00 75%, #d00);
+    background-size: 10px 10px;
+}
+
+.table-card.card-front {
+    background-color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.table-card.card-front.red {
+    color: red;
+}
+
 /* Стили для карт */
 .card {
     width: 70px;
@@ -214,6 +254,10 @@ body {
     flex-direction: column;
     justify-content: center;
     align-items: center;
+}
+
+.card-front.red {
+    color: red;
 }
 
 .card-back {
@@ -419,6 +463,49 @@ body {
     font-size: 20px;
 }
 
+/* Стили для анимации раздачи карт */
+@keyframes dealCard {
+    0% {
+        transform: translate(-50%, -50%) scale(0.5) rotate(0deg);
+        opacity: 0;
+    }
+    100% {
+        transform: translate(0, 0) scale(1) rotate(var(--rotate-angle));
+        opacity: 1;
+    }
+}
+
+.dealing {
+    animation: dealCard 0.5s forwards ease-out;
+}
+
+/* Стили для информации о стадии игры */
+.game-stage-info {
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    background-color: rgba(0, 0, 0, 0.6);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 5;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.stage-number {
+    font-weight: bold;
+    font-size: 14px;
+    margin-bottom: 2px;
+}
+
+.stage-description {
+    font-size: 12px;
+    opacity: 0.8;
+}
+
 /* Адаптивность */
 @media (max-width: 480px) {
     .card {
@@ -441,6 +528,11 @@ body {
     
     .player-active-indicator {
         width: 50px;
+        height: 50px;
+    }
+    
+    .table-card {
+        width: 35px;
         height: 50px;
     }
 } 
