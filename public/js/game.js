@@ -295,30 +295,67 @@ document.addEventListener('DOMContentLoaded', function() {
         const tableCardsContainer = document.createElement('div');
         tableCardsContainer.className = 'player-table-cards';
         
-        // Отображаем только открытые карты игрока на столе
-        const visibleCards = player.cards.filter(card => card.faceUp);
-        
-        visibleCards.forEach((card, idx) => {
-            const tableCard = document.createElement('div');
-            tableCard.className = 'table-card card-front';
-            if (card.isRed) {
-                tableCard.classList.add('red');
-            }
+        // В первой стадии показываем все карты игрока (2 закрытые и 1 открытую)
+        if (game.gameStage === 'stage1') {
+            // Отображаем закрытые и открытые карты в правильном порядке
+            player.cards.forEach((card, cardIndex) => {
+                const cardElement = document.createElement('div');
+                cardElement.className = 'table-card';
+                
+                // Устанавливаем позицию карты с небольшим отступом
+                const posX = cardIndex * 10;
+                const posY = cardIndex * 5;
+                let rotation = (cardIndex - 1) * 10;
+                
+                // Добавляем классы в зависимости от открытости карты
+                if (!card.faceUp) {
+                    cardElement.classList.add('card-back');
+                    cardElement.style.transform = `rotate(${rotation}deg) translate(${posX}px, ${posY}px)`;
+                } else {
+                    cardElement.classList.add('card-front');
+                    cardElement.dataset.cardId = card.id;
+                    
+                    if (card.isRed) {
+                        cardElement.classList.add('red');
+                    }
+                    
+                    cardElement.innerHTML = `
+                        <div class="card-value">${card.value}</div>
+                        <div class="card-suit">${card.suit}</div>
+                    `;
+                    
+                    // Открытую карту немного приподнимаем
+                    cardElement.style.transform = `rotate(${rotation}deg) translate(${posX}px, ${-10}px)`;
+                }
+                
+                tableCardsContainer.appendChild(cardElement);
+            });
+        } else {
+            // Для других стадий отображаем только открытые карты
+            const visibleCards = player.cards.filter(card => card.faceUp);
             
-            // Устанавливаем идентификатор карты
-            tableCard.dataset.cardId = card.id;
-            
-            // Добавляем значение и масть
-            tableCard.innerHTML = `
-                <div class="card-value">${card.value}</div>
-                <div class="card-suit">${card.suit}</div>
-            `;
-            
-            // Позиционируем карту (с небольшим смещением, чтобы видеть все карты)
-            tableCard.style.transform = `translateX(${idx * 10}px)`;
-            
-            tableCardsContainer.appendChild(tableCard);
-        });
+            visibleCards.forEach((card, idx) => {
+                const tableCard = document.createElement('div');
+                tableCard.className = 'table-card card-front';
+                if (card.isRed) {
+                    tableCard.classList.add('red');
+                }
+                
+                // Устанавливаем идентификатор карты
+                tableCard.dataset.cardId = card.id;
+                
+                // Добавляем значение и масть
+                tableCard.innerHTML = `
+                    <div class="card-value">${card.value}</div>
+                    <div class="card-suit">${card.suit}</div>
+                `;
+                
+                // Позиционируем карту (с небольшим смещением, чтобы видеть все карты)
+                tableCard.style.transform = `translateX(${idx * 10}px)`;
+                
+                tableCardsContainer.appendChild(tableCard);
+            });
+        }
         
         // Добавляем контейнер с картами к элементу игрока
         playerElement.appendChild(tableCardsContainer);
@@ -360,6 +397,11 @@ document.addEventListener('DOMContentLoaded', function() {
         // Добавляем id карты в атрибуты
         cardElement.dataset.cardId = card.id;
         
+        // Для отладки - добавляем видимое значение карты даже для закрытых карт
+        if (card.id) {
+            console.log(`Создана карта: ${card.id}, значение: ${card.value}${card.suit}, faceUp: ${card.faceUp}`);
+        }
+        
         return cardElement;
     }
     
@@ -391,19 +433,40 @@ document.addEventListener('DOMContentLoaded', function() {
             // Добавляем обработчик выбора карты
             cardElement.addEventListener('click', function() {
                 if (isMyTurn && card.faceUp) {
+                    const wasSelected = this.classList.contains('selected');
+                    
                     // Снимаем выделение со всех карт
                     document.querySelectorAll('.player-hand .card').forEach(c => {
                         c.classList.remove('selected');
                     });
                     
-                    // Выделяем текущую карту
-                    this.classList.add('selected');
-                    
-                    // Активируем кнопку "Сыграть" только если карту можно сыграть на какую-либо карту на столе
-                    playCardButton.disabled = !canPlayCardOnTable(card);
-                    
-                    // При выборе карты для игры, подсвечиваем возможные цели для этой карты
-                    highlightPossibleTargets(card);
+                    // Если карта не была выбрана ранее, выбираем её
+                    if (!wasSelected) {
+                        // Выделяем текущую карту
+                        this.classList.add('selected');
+                        
+                        // Проверяем, можно ли сыграть эту карту
+                        const canPlay = canPlayCardOnTable(card);
+                        
+                        // Активируем кнопку "Сыграть" только если карту можно сыграть
+                        playCardButton.disabled = !canPlay;
+                        
+                        // При выборе карты для игры, подсвечиваем возможные цели для этой карты
+                        highlightPossibleTargets(card);
+                        
+                        // Если карту нельзя сыграть, показываем сообщение
+                        if (!canPlay) {
+                            showGameMessage('Эту карту нельзя сыграть на карты других игроков', 2000);
+                        }
+                    } else {
+                        // Если нажали на уже выбранную карту, отменяем выбор
+                        playCardButton.disabled = true;
+                        
+                        // Снимаем подсветку со всех возможных целей
+                        document.querySelectorAll('.table-card.highlighted').forEach(card => {
+                            card.classList.remove('highlighted');
+                        });
+                    }
                 }
             });
             
@@ -543,21 +606,33 @@ document.addEventListener('DOMContentLoaded', function() {
         // Если не первая стадия или карта не выбрана - выходим
         if (game.gameStage !== 'stage1' || !selectedCard) return;
         
+        // Получаем ранг выбранной карты
         const cardRank = cardValues.indexOf(selectedCard.value);
+        console.log(`Выбрана карта с рангом: ${cardRank}, значение: ${selectedCard.value}`);
         
-        // Подсвечиваем все карты на 1 ранг ниже выбранной
+        // Перебираем всех игроков и их карты для поиска возможных целей
         document.querySelectorAll('.player').forEach((playerElem, playerIdx) => {
-            if (playerIdx === currentPlayerIndex) return; // Пропускаем текущего игрока
+            // Пропускаем текущего игрока
+            if (playerIdx === currentPlayerIndex) return;
             
-            // Ищем открытые карты у игрока
+            console.log(`Проверяем игрока ${playerIdx}`);
+            
+            // Ищем все открытые карты на столе у игрока
             playerElem.querySelectorAll('.table-card.card-front').forEach(cardElem => {
-                const value = cardElem.querySelector('.card-value')?.textContent;
-                if (value) {
+                const valueElem = cardElem.querySelector('.card-value');
+                if (valueElem) {
+                    const value = valueElem.textContent;
                     const targetRank = cardValues.indexOf(value);
+                    
+                    console.log(`- Карта с рангом: ${targetRank}, значение: ${value}`);
+                    
+                    // Если выбранная карта на 1 ранг выше целевой - подсвечиваем как возможную цель
                     if (cardRank === targetRank + 1) {
+                        console.log(`  Найдена подходящая цель!`);
                         cardElem.classList.add('highlighted');
+                        
                         // Устанавливаем атрибут, чтобы знать, на какую карту можно положить выбранную
-                        cardElem.dataset.targetFor = selectedCard.id;
+                        cardElem.dataset.targetFor = selectedCard.dataset.cardId;
                     }
                 }
             });
@@ -617,10 +692,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 if (targetCardElem) {
                     // Находим игрока и карту для игры
-                    const targetPlayerId = targetCardElem.closest('.player').dataset.playerId;
-                    const targetPlayer = game.players.find(p => p.userId === targetPlayerId);
+                    const targetPlayerElem = targetCardElem.closest('.player');
+                    // Получаем индекс игрока по расположению элемента в контейнере
+                    const playerElems = Array.from(document.querySelectorAll('.player'));
+                    const targetPlayerIndex = playerElems.indexOf(targetPlayerElem);
                     
-                    if (targetPlayer) {
+                    if (targetPlayerIndex !== -1 && targetPlayerIndex < game.players.length) {
+                        const targetPlayer = game.players[targetPlayerIndex];
+                        
                         // Находим карту в массиве карт игрока
                         const targetCardId = targetCardElem.dataset.cardId;
                         const targetCardIndex = targetPlayer.cards.findIndex(c => c.id === targetCardId);
@@ -636,6 +715,11 @@ document.addEventListener('DOMContentLoaded', function() {
                             renderPlayers();
                             renderPlayerHand();
                             
+                            // Снимаем подсветку со всех карт
+                            document.querySelectorAll('.table-card.highlighted').forEach(card => {
+                                card.classList.remove('highlighted');
+                            });
+                            
                             // Показываем сообщение
                             showGameMessage(`Вы сыграли карту ${playedCard.value}${playedCard.suit} на карту игрока ${targetPlayer.name}`);
                             
@@ -645,6 +729,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                 setCurrentPlayer(nextPlayerIndex);
                             }, 1500);
                         }
+                    } else {
+                        showGameMessage('Ошибка: не удалось найти целевого игрока');
                     }
                 } else {
                     // Если нет подсвеченной цели, просто кладем в сброс (для других стадий игры)
