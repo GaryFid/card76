@@ -189,6 +189,8 @@ body {
     border-radius: 5px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.3);
     transform-origin: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
 }
 
 .table-card.card-back {
@@ -374,6 +376,12 @@ body {
 .card.selected {
     transform: translateY(-20px);
     box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+    z-index: 10;
+}
+
+.card.playable:hover {
+    box-shadow: 0 0 15px 4px var(--tg-theme-button-color);
+    transform: translateY(-15px);
 }
 
 /* Стили для модального окна */
@@ -534,6 +542,7 @@ body {
 /* Подсветка карты, которую можно сыграть */
 .card.playable {
     box-shadow: 0 0 10px 2px var(--tg-theme-button-color);
+    transform: translateY(-10px);
 }
 
 /* Подсветка возможных целей для игры */
@@ -542,6 +551,13 @@ body {
     transform: scale(1.1) !important;
     z-index: 10;
     border: 2px solid gold;
+    animation: pulse-target 1.5s infinite;
+}
+
+@keyframes pulse-target {
+    0% { box-shadow: 0 0 15px 3px gold; }
+    50% { box-shadow: 0 0 20px 5px gold; }
+    100% { box-shadow: 0 0 15px 3px gold; }
 }
 
 /* Адаптивность */
@@ -578,4 +594,35 @@ body {
         font-size: 14px;
         padding: 12px 20px;
     }
+}
+
+/* Стили для индикатора хода */
+.turn-timer {
+    position: absolute;
+    bottom: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    height: 4px;
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.turn-timer-progress {
+    height: 100%;
+    width: 100%;
+    background-color: var(--tg-theme-button-color);
+    transform-origin: left;
+    transform: scaleX(0);
+    transition: transform 0.1s linear;
+}
+
+.turn-timer.active .turn-timer-progress {
+    animation: timer-countdown 15s linear forwards;
+}
+
+@keyframes timer-countdown {
+    0% { transform: scaleX(1); }
+    100% { transform: scaleX(0); }
 } 

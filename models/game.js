@@ -162,6 +162,9 @@ class Game {
     this.initializeDeck();
     this.dealInitialCards();
     
+    // Определяем первого игрока по старшей открытой карте
+    this.determineFirstPlayer();
+    
     return await this.save();
   }
 
@@ -193,6 +196,87 @@ class Game {
     }
     
     return await this.save();
+  }
+
+  // Определить первого игрока по старшей открытой карте
+  determineFirstPlayer() {
+    const cardValues = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+    let highestCardValue = -1;
+    let highestCardPlayer = 0;
+    
+    // Проходим по всем игрокам и ищем самую высокую открытую карту
+    this.players.forEach((player, playerIndex) => {
+      // Ищем открытую карту у игрока (должна быть последней в массиве)
+      const openCard = player.cards.find(card => card.faceUp);
+      
+      if (openCard) {
+        // Получаем ранг карты
+        const cardRank = cardValues.indexOf(openCard.value);
+        
+        // Если карта старше предыдущей найденной, обновляем данные
+        if (cardRank > highestCardValue) {
+          highestCardValue = cardRank;
+          highestCardPlayer = playerIndex;
+        }
+      }
+    });
+    
+    // Устанавливаем текущий ход на игрока с самой высокой картой
+    this.currentTurn = highestCardPlayer;
+    
+    return highestCardPlayer;
+  }
+
+  // Проверка возможности сыграть карту на другую карту
+  canPlayCard(card, targetCard) {
+    // В первой стадии игры карту можно сыграть, если она на 1 ранг выше целевой карты
+    if (this.gameStage === 'stage1') {
+      const cardValues = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+      const cardRank = cardValues.indexOf(card.value);
+      const targetRank = cardValues.indexOf(targetCard.value);
+      
+      return cardRank === targetRank + 1;
+    }
+    
+    // В других стадиях проверяем совпадение масти или значения
+    return (card.suit === targetCard.suit || card.value === targetCard.value);
+  }
+
+  // Получить все доступные для игры карты на столе
+  getAvailableTargets(card) {
+    const targets = [];
+    const cardValues = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+    const cardRank = cardValues.indexOf(card.value);
+    
+    // В первой стадии ищем карты на 1 ранг ниже
+    if (this.gameStage === 'stage1') {
+      // Проходим по всем игрокам
+      for (let i = 0; i < this.players.length; i++) {
+        if (i === this.currentTurn) continue; // Пропускаем текущего игрока
+        
+        const player = this.players[i];
+        
+        // Проверяем все открытые карты игрока
+        for (let j = 0; j < player.cards.length; j++) {
+          const targetCard = player.cards[j];
+          if (targetCard.faceUp) {
+            const targetRank = cardValues.indexOf(targetCard.value);
+            
+            // Если нашли карту на 1 ранг ниже
+            if (cardRank === targetRank + 1) {
+              targets.push({
+                playerId: player.userId,
+                playerIndex: i,
+                cardIndex: j,
+                card: targetCard
+              });
+            }
+          }
+        }
+      }
+    }
+    
+    return targets;
   }
 }
 

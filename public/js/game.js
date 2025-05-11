@@ -252,78 +252,76 @@ document.addEventListener('DOMContentLoaded', function() {
             ]
         };
         
-        // Получаем позиции для текущего количества игроков
+        // Определяем набор позиций в зависимости от количества игроков
         const playerPositions = positions[totalPlayers] || positions[4];
+        
+        // Очищаем контейнер игроков
+        playersContainer.innerHTML = '';
         
         // Создаем элементы игроков
         game.players.forEach((player, index) => {
             const playerElement = document.importNode(playerTemplate.content, true).querySelector('.player');
             
-            // Устанавливаем имя и аватар
+            // Устанавливаем id игрока
+            playerElement.dataset.playerId = player.userId;
+            
+            // Устанавливаем имя игрока
             playerElement.querySelector('.player-name').textContent = player.name;
-            const avatarImg = playerElement.querySelector('.player-avatar img');
-            if (player.avatar) {
-                avatarImg.src = player.avatar;
-            } else {
-                // Базовый аватар если нет своего
-                avatarImg.src = 'images/avatar-placeholder.png';
-            }
             
             // Устанавливаем количество карт
             playerElement.querySelector('.card-count').textContent = player.cards.length;
             
-            // Устанавливаем позицию
-            const pos = playerPositions[index];
-            playerElement.style.top = pos.top;
-            playerElement.style.left = pos.left;
-            playerElement.style.transform = 'translate(-50%, -50%)';
+            // Позиционируем игрока
+            const position = playerPositions[index];
+            playerElement.style.top = position.top;
+            playerElement.style.left = position.left;
             
-            // Добавляем класс для текущего игрока
+            // Если это текущий игрок, добавляем соответствующий класс
             if (index === currentPlayerIndex) {
                 playerElement.classList.add('active');
             }
             
-            // Добавляем атрибут с ID игрока
-            playerElement.setAttribute('data-player-id', player.userId);
+            // Добавляем картам игрока отображение на столе
+            renderTableCards(player, playerElement);
             
-            // Визуализация карт на столе
-            if (index !== 0) { // Не для текущего игрока
-                const cardsContainer = document.createElement('div');
-                cardsContainer.className = 'player-table-cards';
-                
-                // Создаем элементы карт
-                player.cards.forEach((card, cardIndex) => {
-                    const cardElement = document.createElement('div');
-                    cardElement.className = 'table-card';
-                    
-                    // Добавляем классы в зависимости от положения и открытости карты
-                    if (cardIndex < 2) { // Первые две карты закрыты
-                        cardElement.classList.add('card-back');
-                        cardElement.style.transform = `rotate(${(cardIndex - 1) * 20}deg) translateX(${cardIndex * 5}px)`;
-                    } else { // Третья карта открыта
-                        cardElement.classList.add('card-front');
-                        cardElement.dataset.cardId = card.id;
-                        
-                        if (card.isRed) {
-                            cardElement.classList.add('red');
-                        }
-                        
-                        cardElement.innerHTML = `
-                            <div class="card-value">${card.value}</div>
-                            <div class="card-suit">${card.suit}</div>
-                        `;
-                        cardElement.style.transform = `rotate(${10}deg) translateY(-10px)`;
-                    }
-                    
-                    cardsContainer.appendChild(cardElement);
-                });
-                
-                playerElement.appendChild(cardsContainer);
-            }
-            
-            // Добавляем игрока на стол
+            // Добавляем элемент в контейнер
             playersContainer.appendChild(playerElement);
         });
+    }
+    
+    // Функция для отображения карт игрока на столе
+    function renderTableCards(player, playerElement) {
+        // Создаем контейнер для карт на столе
+        const tableCardsContainer = document.createElement('div');
+        tableCardsContainer.className = 'player-table-cards';
+        
+        // Отображаем только открытые карты игрока на столе
+        const visibleCards = player.cards.filter(card => card.faceUp);
+        
+        visibleCards.forEach((card, idx) => {
+            const tableCard = document.createElement('div');
+            tableCard.className = 'table-card card-front';
+            if (card.isRed) {
+                tableCard.classList.add('red');
+            }
+            
+            // Устанавливаем идентификатор карты
+            tableCard.dataset.cardId = card.id;
+            
+            // Добавляем значение и масть
+            tableCard.innerHTML = `
+                <div class="card-value">${card.value}</div>
+                <div class="card-suit">${card.suit}</div>
+            `;
+            
+            // Позиционируем карту (с небольшим смещением, чтобы видеть все карты)
+            tableCard.style.transform = `translateX(${idx * 10}px)`;
+            
+            tableCardsContainer.appendChild(tableCard);
+        });
+        
+        // Добавляем контейнер с картами к элементу игрока
+        playerElement.appendChild(tableCardsContainer);
     }
     
     // Обновление отображения колоды и сброса
@@ -411,18 +409,40 @@ document.addEventListener('DOMContentLoaded', function() {
             
             playerHandElement.appendChild(cardElement);
         });
+        
+        // Если мой ход, проверяем и подсвечиваем все карты, которые можно сыграть
+        if (isMyTurn) {
+            // Подсчитываем количество карт, которые можно сыграть
+            const playableCards = currentPlayer.cards.filter(card => card.faceUp && canPlayCardOnTable(card));
+            
+            // Если есть карты для игры, подсвечиваем их и показываем подсказку
+            if (playableCards.length > 0) {
+                showGameMessage(`У вас есть ${playableCards.length} карт${playableCards.length > 1 ? 'ы' : 'а'}, которые можно сыграть!`, 2000);
+            }
+        }
     }
     
     // Установка текущего игрока
     function setCurrentPlayer(index) {
         currentPlayerIndex = index;
         
-        // Обновляем классы active у игроков
+        // Обновляем классы active у игроков и сбрасываем таймеры
         document.querySelectorAll('.player').forEach((playerElem, idx) => {
+            // Сначала убираем все активные классы
+            playerElem.classList.remove('active');
+            playerElem.querySelector('.turn-timer')?.classList.remove('active');
+            
+            // Затем активируем для текущего игрока
             if (idx === currentPlayerIndex) {
                 playerElem.classList.add('active');
-            } else {
-                playerElem.classList.remove('active');
+                const timer = playerElem.querySelector('.turn-timer');
+                if (timer) {
+                    // Сбрасываем анимацию и запускаем заново
+                    timer.classList.remove('active');
+                    setTimeout(() => {
+                        timer.classList.add('active');
+                    }, 50);
+                }
             }
         });
         
@@ -536,7 +556,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     const targetRank = cardValues.indexOf(value);
                     if (cardRank === targetRank + 1) {
                         cardElem.classList.add('highlighted');
-                        cardElem.dataset.targetFor = `${selectedCard.value}-${selectedCard.suit}`;
+                        // Устанавливаем атрибут, чтобы знать, на какую карту можно положить выбранную
+                        cardElem.dataset.targetFor = selectedCard.id;
                     }
                 }
             });
@@ -592,7 +613,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const cardToPlay = playerCards[cardIndex];
                 
                 // Ищем подсвеченную карту на столе как цель
-                const targetCardElem = document.querySelector(`.table-card.highlighted[data-target-for="${cardToPlay.value}-${cardToPlay.suit}"]`);
+                const targetCardElem = document.querySelector(`.table-card.highlighted[data-target-for="${cardId}"]`);
                 
                 if (targetCardElem) {
                     // Находим игрока и карту для игры
@@ -725,7 +746,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Обновляем отображение
                 renderPlayers();
-                updateDeckInfo();
                 
                 // Переход хода к следующему игроку
                 setTimeout(() => {
@@ -750,6 +770,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Проверяем, можно ли сыграть взятую карту
                 let canPlayDrawnCard = false;
+                let targetPlayerForDrawnCard = null;
+                let targetCardIndexForDrawn = -1;
                 const cardRank = cardValues.indexOf(drawnCard.value);
                 
                 // Ищем карту рангом ниже у других игроков
@@ -768,24 +790,28 @@ document.addEventListener('DOMContentLoaded', function() {
                         // Если нашли карту на 1 ранг ниже - можно сыграть
                         if (cardRank === targetRank + 1) {
                             canPlayDrawnCard = true;
-                            
-                            // Играем взятую карту
-                            aiPlayer.cards.pop(); // Убираем карту, которую только что взяли
-                            
-                            // Показываем сообщение
-                            showGameMessage(`${aiPlayer.name} играет взятую карту ${drawnCard.value}${drawnCard.suit} на карту игрока ${targetPlayer.name}`);
-                            
-                            // Кладем карту поверх карты соперника
-                            targetPlayer.cards[k] = drawnCard;
-                            
-                            // Обновляем отображение
-                            renderPlayers();
-                            
+                            targetPlayerForDrawnCard = targetPlayer;
+                            targetCardIndexForDrawn = k;
                             break;
                         }
                     }
                     
                     if (canPlayDrawnCard) break; // Если смогли сыграть карту, прекращаем поиск
+                }
+                
+                // Если можем сыграть взятую карту
+                if (canPlayDrawnCard && targetPlayerForDrawnCard && targetCardIndexForDrawn !== -1) {
+                    // Убираем карту, которую только что взяли
+                    const playedCard = aiPlayer.cards.pop();
+                    
+                    // Показываем сообщение
+                    showGameMessage(`${aiPlayer.name} играет взятую карту ${playedCard.value}${playedCard.suit} на карту игрока ${targetPlayerForDrawnCard.name}`);
+                    
+                    // Кладем карту поверх карты соперника
+                    targetPlayerForDrawnCard.cards[targetCardIndexForDrawn] = playedCard;
+                    
+                    // Обновляем отображение
+                    renderPlayers();
                 }
                 
                 // Переход хода к следующему игроку
