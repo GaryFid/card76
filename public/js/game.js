@@ -574,6 +574,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const cardRank = cardValues.indexOf(card.value);
             const targetRank = cardValues.indexOf(targetCard.value);
             
+            // Если целевая карта - туз, на неё можно положить любую карту
+            if (targetCard.value === 'A') {
+                return true;
+            }
+            
+            // В первой стадии важен только ранг карты, масть не имеет значения
             return cardRank === targetRank + 1;
         }
         
@@ -601,6 +607,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Ищем открытые карты соперника
                 for (const targetCard of targetPlayer.cards) {
                     if (targetCard.faceUp) {
+                        // Если это туз, на него можно положить любую карту
+                        if (targetCard.value === 'A') {
+                            return true;
+                        }
+                        
                         const targetRank = cardValues.indexOf(targetCard.value);
                         
                         // Если нашли карту на 1 ранг ниже - можно сыграть
@@ -658,6 +669,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     const valueElem = cardElem.querySelector('.card-value');
                     if (valueElem) {
                         const value = valueElem.textContent;
+                        
+                        // Если это туз - подсвечиваем как возможную цель
+                        if (value === 'A') {
+                            console.log(`  Найден туз - подходящая цель!`);
+                            cardElem.classList.add('highlighted');
+                            cardElem.dataset.targetFor = selectedCard.dataset.cardId;
+                            return;
+                        }
+                        
                         const targetRank = cardValues.indexOf(value);
                         
                         console.log(`- Карта с рангом: ${targetRank}, значение: ${value}`);
@@ -944,17 +964,24 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Реализация хода ИИ
     function playAITurn() {
+        console.log('Бот начинает свой ход...');
         const aiPlayer = game.players[currentPlayerIndex];
+        console.log(`Бот #${currentPlayerIndex} (${aiPlayer.name}) делает ход. Стадия игры: ${game.gameStage}`);
+        console.log(`У бота ${aiPlayer.cards.length} карт в руке.`);
         
         // Для первой стадии игры - логика набора и выкладывания карт
         if (game.gameStage === 'stage1') {
-            // Находим открытые карты бота
-            const openCards = aiPlayer.cards.filter(card => card.faceUp);
+            console.log('Стадия 1: Бот ищет карты для хода...');
             
-            // Находим все возможные ходы для каждой открытой карты
+            // Выбираем все карты (и открытые, и закрытые) - в первой стадии бот может играть любой картой
+            const allCards = aiPlayer.cards;
+            console.log(`Всего карт у бота: ${allCards.length}`);
+            
+            // Находим все возможные ходы
             let bestMove = null;
             
-            for (const card of openCards) {
+            for (const card of allCards) {
+                console.log(`Проверяем карту ${card.value}${card.suit} (faceUp: ${card.faceUp})`);
                 const cardRank = cardValues.indexOf(card.value);
                 
                 // Проверяем карты других игроков
@@ -962,13 +989,30 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (i === currentPlayerIndex) continue; // Пропускаем себя
                     
                     const targetPlayer = game.players[i];
+                    // Ищем только открытые карты соперников
                     const targetOpenCards = targetPlayer.cards.filter(c => c.faceUp);
+                    console.log(`Игрок ${i} имеет ${targetOpenCards.length} открытых карт`);
                     
                     for (const targetCard of targetOpenCards) {
+                        // Если целевая карта - туз, на неё можно положить любую карту
+                        if (targetCard.value === 'A') {
+                            console.log(`Найден туз ${targetCard.value}${targetCard.suit} - подходящая цель!`);
+                            bestMove = {
+                                card: card,
+                                cardIndex: aiPlayer.cards.findIndex(c => c.id === card.id),
+                                targetPlayer: targetPlayer,
+                                targetPlayerIndex: i,
+                                targetCard: targetCard,
+                                targetCardIndex: targetPlayer.cards.findIndex(c => c.id === targetCard.id)
+                            };
+                            break;
+                        }
+                        
                         const targetRank = cardValues.indexOf(targetCard.value);
                         
                         // Если наша карта на 1 ранг выше, чем карта противника
                         if (cardRank === targetRank + 1) {
+                            console.log(`Найдена подходящая цель: ${targetCard.value}${targetCard.suit}`);
                             // Нашли ход
                             bestMove = {
                                 card: card,
@@ -990,8 +1034,12 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Если нашли подходящий ход
             if (bestMove) {
+                console.log(`Бот нашел ход: ${bestMove.card.value}${bestMove.card.suit} -> ${bestMove.targetCard.value}${bestMove.targetCard.suit}`);
+                
                 // Удаляем карту из руки бота
                 const playedCard = aiPlayer.cards.splice(bestMove.cardIndex, 1)[0];
+                // Делаем карту открытой, когда кладем на стол
+                playedCard.faceUp = true;
                 
                 // Кладем карту поверх карты противника
                 game.players[bestMove.targetPlayerIndex].cards[bestMove.targetCardIndex] = playedCard;
@@ -1019,12 +1067,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Передаем ход следующему игроку
                 setTimeout(() => {
                     const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
+                    console.log(`Бот передает ход следующему игроку: ${nextPlayerIndex}`);
                     setCurrentPlayer(nextPlayerIndex);
                 }, 2000);
             } else {
+                console.log('Бот не нашел ход на карты противников. Проверяем, можно ли положить на свою карту...');
+                
                 // Если не можем сыграть ни на одну из карт противников
                 // Проверяем, можно ли положить карту на свою открытую карту
                 const aiOpenCards = aiPlayer.cards.filter(card => card.faceUp);
+                console.log(`У бота ${aiOpenCards.length} открытых карт для наложения`);
                 
                 if (aiOpenCards.length > 0) {
                     // Берем первую открытую карту для замены
@@ -1038,6 +1090,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         // Берем первую карту для хода
                         const cardToPlay = otherCards[0];
                         const cardIndex = aiPlayer.cards.findIndex(card => card.id === cardToPlay.id);
+                        
+                        console.log(`Бот кладет ${cardToPlay.value}${cardToPlay.suit} на свою карту ${targetCard.value}${targetCard.suit}`);
                         
                         // Удаляем карту
                         const playedCard = aiPlayer.cards.splice(cardIndex, 1)[0];
@@ -1055,6 +1109,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         // Передаем ход следующему игроку
                         setTimeout(() => {
                             const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
+                            console.log(`Бот передает ход следующему игроку: ${nextPlayerIndex}`);
                             setCurrentPlayer(nextPlayerIndex);
                         }, 2000);
                         
@@ -1062,24 +1117,29 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
                 
+                console.log('Бот не может сделать ход. Пропускает ход.');
+                
                 // Если и это невозможно, пропускаем ход
                 showGameMessage(`${aiPlayer.name} пропускает ход`);
                 
                 // Передаем ход следующему игроку
                 setTimeout(() => {
                     const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
+                    console.log(`Бот передает ход следующему игроку: ${nextPlayerIndex}`);
                     setCurrentPlayer(nextPlayerIndex);
                 }, 1500);
             }
         }
         // Для второй стадии используем другую логику
         else if (game.gameStage === 'stage2') {
+            console.log('Стадия 2: Бот ходит в сброс...');
             // Логика для второй стадии - игра в сброс картами одинаковой масти или значения
             let playableCardIndex = -1;
             
             // Если в сбросе есть карты
             if (game.discardPile.length > 0) {
                 const topCard = game.discardPile[game.discardPile.length - 1];
+                console.log(`Верхняя карта сброса: ${topCard.value}${topCard.suit}`);
                 
                 // Ищем подходящую карту для игры
                 for (let i = 0; i < aiPlayer.cards.length; i++) {
@@ -1088,6 +1148,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Проверяем, подходит ли карта по масти или значению
                     if (card.suit === topCard.suit || card.value === topCard.value) {
                         playableCardIndex = i;
+                        console.log(`Найдена подходящая карта для сброса: ${card.value}${card.suit}`);
                         break;
                     }
                 }
@@ -1124,19 +1185,23 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Переход хода к следующему игроку
                     setTimeout(() => {
                         const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
+                        console.log(`Бот передает ход следующему игроку: ${nextPlayerIndex}`);
                         setCurrentPlayer(nextPlayerIndex);
                     }, 2000);
                 } else {
+                    console.log('Бот не нашел подходящей карты для сброса');
                     // Если нет подходящей карты - пропускаем ход
                     showGameMessage(`${aiPlayer.name} не может сделать ход и пропускает`);
                     
                     // Переход хода к следующему игроку
                     setTimeout(() => {
                         const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
+                        console.log(`Бот передает ход следующему игроку: ${nextPlayerIndex}`);
                         setCurrentPlayer(nextPlayerIndex);
                     }, 1500);
                 }
             } else {
+                console.log('Сброс пуст, бот кладет любую карту');
                 // Если сброс пуст - кладем любую карту
                 if (aiPlayer.cards.length > 0) {
                     // Берем первую карту
@@ -1155,6 +1220,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Переход хода к следующему игроку
                     setTimeout(() => {
                         const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
+                        console.log(`Бот передает ход следующему игроку: ${nextPlayerIndex}`);
                         setCurrentPlayer(nextPlayerIndex);
                     }, 2000);
                 } else {
@@ -1164,6 +1230,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Переход хода к следующему игроку
                     setTimeout(() => {
                         const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
+                        console.log(`Бот передает ход следующему игроку: ${nextPlayerIndex}`);
                         setCurrentPlayer(nextPlayerIndex);
                     }, 1500);
                 }
