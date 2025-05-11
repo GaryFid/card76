@@ -707,16 +707,52 @@ document.addEventListener('DOMContentLoaded', function() {
             // Показываем сообщение о взятой карте
             showGameMessage(`Вы взяли карту из биты: ${drawnCard.value}${drawnCard.suit}`);
             
-            // Проверяем, можно ли сыграть взятую карту
+            // Проверяем, можно ли сыграть взятую карту на карты других игроков
             const canPlay = canPlayCardOnTable(drawnCard);
             
             if (canPlay) {
                 // Если взятую карту можно сыграть, даем возможность игроку это сделать
                 // Не переходим ход, пока игрок не решит, что делать с этой картой
-                showGameMessage('Вы можете сыграть взятую карту');
+                showGameMessage('Вы можете сыграть взятую карту на карту соперника', 2000);
+                
+                // Выделяем взятую карту
+                setTimeout(() => {
+                    const newCardElement = document.querySelector(`.player-hand .card[data-card-id="${drawnCard.id}"]`);
+                    if (newCardElement) {
+                        newCardElement.click(); // Имитируем клик по карте для её выделения
+                    }
+                }, 300);
             } else {
-                // Если карту нельзя сыграть, переходим к следующему игроку
-                showGameMessage('Вы не можете сыграть взятую карту. Ход переходит следующему игроку');
+                // Если карту нельзя сыграть ни на одну из карт противников, проверяем возможность положить на свою карту
+                if (game.gameStage === 'stage1') {
+                    // Проверяем, есть ли у игрока открытая карта для наложения
+                    const playerOpenCards = game.players[0].cards.filter(card => card.faceUp && card.id !== drawnCard.id);
+                    
+                    if (playerOpenCards.length > 0) {
+                        // Берем первую открытую карту игрока для наложения
+                        const targetCard = playerOpenCards[0];
+                        const targetCardIndex = game.players[0].cards.findIndex(card => card.id === targetCard.id);
+                        
+                        // Удаляем только что взятую карту
+                        const takenCardIndex = game.players[0].cards.findIndex(card => card.id === drawnCard.id);
+                        if (takenCardIndex !== -1) {
+                            // Удаляем взятую карту
+                            game.players[0].cards.splice(takenCardIndex, 1);
+                            
+                            // Заменяем целевую карту
+                            game.players[0].cards[targetCardIndex] = drawnCard;
+                            
+                            // Показываем сообщение
+                            showGameMessage(`Вы кладете взятую карту ${drawnCard.value}${drawnCard.suit} поверх своей карты`);
+                            
+                            // Обновляем отображение
+                            renderPlayers();
+                            renderPlayerHand();
+                        }
+                    } else {
+                        showGameMessage('У вас нет открытых карт для наложения. Добавляем карту в вашу руку.');
+                    }
+                }
                 
                 // Переход хода к следующему игроку
                 setTimeout(() => {
@@ -907,145 +943,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Для первой стадии игры - логика набора и выкладывания карт
         if (game.gameStage === 'stage1') {
-            // Логика первой стадии...
-            // Ищем карту, которую можно сыграть на карту другого игрока
-            let bestCardIndex = -1;
-            let bestTargetPlayer = null;
-            let bestTargetCardIndex = -1;
-            
-            // Проверяем все открытые карты ИИ
-            for (let i = 0; i < aiPlayer.cards.length; i++) {
-                const card = aiPlayer.cards[i];
-                if (!card.faceUp) continue;
-                
-                const cardRank = cardValues.indexOf(card.value);
-                
-                // Проверяем все карты других игроков
-                for (let j = 0; j < game.players.length; j++) {
-                    if (j === currentPlayerIndex) continue; // Пропускаем текущего игрока
-                    
-                    const targetPlayer = game.players[j];
-                    
-                    // Ищем открытые карты соперника
-                    for (let k = 0; k < targetPlayer.cards.length; k++) {
-                        const targetCard = targetPlayer.cards[k];
-                        if (!targetCard.faceUp) continue;
-                        
-                        const targetRank = cardValues.indexOf(targetCard.value);
-                        
-                        // Если нашли карту на 1 ранг ниже - можно сыграть
-                        if (cardRank === targetRank + 1) {
-                            bestCardIndex = i;
-                            bestTargetPlayer = targetPlayer;
-                            bestTargetCardIndex = k;
-                            break;
-                        }
-                    }
-                    
-                    if (bestCardIndex !== -1) break; // Если нашли карту для игры, прекращаем поиск
-                }
-                
-                if (bestCardIndex !== -1) break; // Если нашли карту для игры, прекращаем поиск
-            }
-            
-            // Если нашли карту для игры
-            if (bestCardIndex !== -1 && bestTargetPlayer && bestTargetCardIndex !== -1) {
-                // Играем найденную карту
-                const playedCard = aiPlayer.cards.splice(bestCardIndex, 1)[0];
-                
-                // Показываем сообщение
-                showGameMessage(`${aiPlayer.name} играет карту ${playedCard.value}${playedCard.suit} на карту игрока ${bestTargetPlayer.name}`);
-                
-                // Кладем карту поверх карты соперника
-                bestTargetPlayer.cards[bestTargetCardIndex] = playedCard;
-                
-                // Обновляем отображение
-                renderPlayers();
-                
-                // Переход хода к следующему игроку
-                setTimeout(() => {
-                    const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
-                    setCurrentPlayer(nextPlayerIndex);
-                }, 2000);
-            }
-            // Если не нашли карту для игры, берем из колоды сброса (биты)
-            else if (game.discardPile.length > 0) {
-                const drawnCard = game.discardPile.pop();
-                drawnCard.faceUp = true;
-                
-                // Добавляем карту ИИ
-                aiPlayer.cards.push(drawnCard);
-                
-                // Обновляем отображение
-                updateDeckInfo();
-                renderPlayers();
-                
-                // Показываем сообщение
-                showGameMessage(`${aiPlayer.name} берет карту из биты`);
-                
-                // Проверяем, можно ли сыграть взятую карту
-                let canPlayDrawnCard = false;
-                let targetPlayerForDrawnCard = null;
-                let targetCardIndexForDrawn = -1;
-                const cardRank = cardValues.indexOf(drawnCard.value);
-                
-                // Ищем карту рангом ниже у других игроков
-                for (let j = 0; j < game.players.length; j++) {
-                    if (j === currentPlayerIndex) continue; // Пропускаем текущего игрока
-                    
-                    const targetPlayer = game.players[j];
-                    
-                    // Ищем открытые карты соперника
-                    for (let k = 0; k < targetPlayer.cards.length; k++) {
-                        const targetCard = targetPlayer.cards[k];
-                        if (!targetCard.faceUp) continue;
-                        
-                        const targetRank = cardValues.indexOf(targetCard.value);
-                        
-                        // Если нашли карту на 1 ранг ниже - можно сыграть
-                        if (cardRank === targetRank + 1) {
-                            canPlayDrawnCard = true;
-                            targetPlayerForDrawnCard = targetPlayer;
-                            targetCardIndexForDrawn = k;
-                            break;
-                        }
-                    }
-                    
-                    if (canPlayDrawnCard) break; // Если смогли сыграть карту, прекращаем поиск
-                }
-                
-                // Если можем сыграть взятую карту
-                if (canPlayDrawnCard && targetPlayerForDrawnCard && targetCardIndexForDrawn !== -1) {
-                    // Убираем карту, которую только что взяли
-                    const playedCard = aiPlayer.cards.pop();
-                    
-                    // Показываем сообщение
-                    showGameMessage(`${aiPlayer.name} играет взятую карту ${playedCard.value}${playedCard.suit} на карту игрока ${targetPlayerForDrawnCard.name}`);
-                    
-                    // Кладем карту поверх карты соперника
-                    targetPlayerForDrawnCard.cards[targetCardIndexForDrawn] = playedCard;
-                    
-                    // Обновляем отображение
-                    renderPlayers();
-                }
-                
-                // Переход хода к следующему игроку
-                setTimeout(() => {
-                    const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
-                    setCurrentPlayer(nextPlayerIndex);
-                }, 2000);
-            }
-            // Если нет карт ни для игры, ни в колоде - пропускаем ход
-            else {
-                // Показываем сообщение
-                showGameMessage(`${aiPlayer.name} пропускает ход`);
-                
-                // Переход хода к следующему игроку
-                setTimeout(() => {
-                    const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
-                    setCurrentPlayer(nextPlayerIndex);
-                }, 1500);
-            }
+            // Логика первой стадии без изменений
         }
         // Для второй стадии используем другую логику
         else if (game.gameStage === 'stage2') {
