@@ -111,7 +111,7 @@ document.addEventListener('DOMContentLoaded', function() {
         setCurrentPlayer(firstPlayerIndex);
         
         // Показываем информационное сообщение о начале игры
-        showGameMessage(`Игрок ${game.players[firstPlayerIndex].name} начинает игру с самой высокой картой!`);
+        showGameMessage(`Игра начинается! Первым ходит игрок ${game.players[firstPlayerIndex].name}!`);
     }
     
     // Инициализация колоды
@@ -174,6 +174,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Определение игрока с самой высокой открытой картой
     function determineFirstPlayer() {
+        // Всегда начинаем с первого игрока (обычно это человек)
+        return 0;
+        
+        /* Старая логика определения первого хода по самой высокой карте
         let highestCardValue = -1;
         let highestCardPlayer = 0;
         
@@ -195,6 +199,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         return highestCardPlayer;
+        */
     }
     
     // Отрисовка игроков вокруг стола
