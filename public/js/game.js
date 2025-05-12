@@ -214,6 +214,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Отрисовка игроков вокруг стола
     function renderPlayers() {
+        // В этой функции отображаются игроки и их карты на столе
+        // Важный момент: в первой стадии игры происходит наложение карт друг на друга.
+        // Когда игрок или бот кладет карту поверх другой карты, в массиве game.players[i].cards
+        // одна карта просто заменяется другой (индекс остается тем же).
+        // Этот процесс виден на столе благодаря обновлению отображения после каждого такого хода.
+        
         const totalPlayers = game.players.length;
         
         // Позиции для 4-9 игроков
@@ -382,6 +388,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Обновление отображения колоды и сброса
     function updateDeckInfo() {
+        console.log('Обновление отображения колоды и сброса');
+        
         // Обновляем счетчик колоды
         const deckCount = document.querySelector('.card-pile.deck .card-count');
         if (deckCount) deckCount.textContent = game.deck.length;
@@ -417,6 +425,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (game.discardPile.length > 0) {
             const topCard = game.discardPile[game.discardPile.length - 1];
+            console.log(`Верхняя карта сброса: ${topCard.value}${topCard.suit}`);
             
             // Создаем элемент верхней карты сброса
             const cardElement = document.createElement('div');
@@ -833,6 +842,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log(`Количество карт в колоде до взятия: ${game.deck.length}`);
                 const drawnCard = game.deck.pop();
                 console.log(`Количество карт в колоде после взятия: ${game.deck.length}`);
+                console.log(`Взята карта: ${drawnCard.value}${drawnCard.suit}`);
                 drawnCard.faceUp = true; // Открываем карту
                 
                 // Добавляем карту текущему игроку
@@ -884,31 +894,43 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else {
                     // Если карту нельзя сыграть ни на одну из карт противников, проверяем возможность положить на свою карту
                     if (game.gameStage === 'stage1') {
+                        console.log('Проверяем возможность положить взятую карту на свою открытую карту');
                         // Проверяем, есть ли у игрока открытая карта для наложения
                         const playerOpenCards = game.players[0].cards.filter(card => card.faceUp && card.id !== drawnCard.id);
+                        console.log(`Открытых карт у игрока для наложения: ${playerOpenCards.length}`);
                         
                         if (playerOpenCards.length > 0) {
                             // Берем первую открытую карту игрока для наложения
                             const targetCard = playerOpenCards[0];
+                            console.log(`Выбрана карта для наложения: ${targetCard.value}${targetCard.suit}`);
                             const targetCardIndex = game.players[0].cards.findIndex(card => card.id === targetCard.id);
                             
                             // Удаляем только что взятую карту
                             const takenCardIndex = game.players[0].cards.findIndex(card => card.id === drawnCard.id);
                             if (takenCardIndex !== -1) {
-                                // Удаляем взятую карту
+                                // Удаляем взятую карту из руки
                                 game.players[0].cards.splice(takenCardIndex, 1);
+                                console.log(`Удалена карта из руки: ${drawnCard.value}${drawnCard.suit}`);
+                                
+                                // Запоминаем старую карту чтобы показать в сообщении
+                                const oldCard = game.players[0].cards[targetCardIndex];
                                 
                                 // Заменяем целевую карту
                                 game.players[0].cards[targetCardIndex] = drawnCard;
+                                console.log(`Заменена карта ${oldCard.value}${oldCard.suit} на ${drawnCard.value}${drawnCard.suit}`);
                                 
                                 // Показываем сообщение
-                                showGameMessage(`Вы кладете взятую карту ${drawnCard.value}${drawnCard.suit} поверх своей карты`);
+                                showGameMessage(`Вы кладете взятую карту ${drawnCard.value}${drawnCard.suit} поверх своей карты ${oldCard.value}${oldCard.suit}`);
                                 
                                 // Обновляем отображение
                                 renderPlayers();
                                 renderPlayerHand();
+                            } else {
+                                console.error(`Ошибка: не найдена взятая карта ${drawnCard.value}${drawnCard.suit} в руке игрока`);
+                                showGameMessage('Произошла ошибка при замене карты. Добавляем карту в вашу руку.');
                             }
                         } else {
+                            console.log('У игрока нет открытых карт для наложения взятой карты');
                             showGameMessage('У вас нет открытых карт для наложения. Добавляем карту в вашу руку.');
                         }
                     }
@@ -1153,7 +1175,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                         initGame();
                                     }, 3000);
                                     
-                                    return;
+                                    return; // Выходим, так как игра завершена
                                 }
                             } else if (playerCards.length === 0) {
                                 // Во второй стадии достаточно, чтобы не осталось карт вообще
@@ -1167,7 +1189,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     initGame();
                                 }, 3000);
                                 
-                                return;
+                                return; // Выходим, так как игра завершена
                             }
                             
                             // Переход хода к следующему игроку
@@ -1364,9 +1386,13 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         console.log(`Бот кладет ${cardToPlay.value}${cardToPlay.suit} на свою карту ${targetCard.value}${targetCard.suit}`);
                         
-                        // Удаляем карту
+                        // Удаляем карту из руки бота
                         const playedCard = aiPlayer.cards.splice(cardIndex, 1)[0];
                         playedCard.faceUp = true; // Делаем карту открытой
+                        
+                        // Запоминаем старую карту для информационного сообщения
+                        const oldCardValue = targetCard.value;
+                        const oldCardSuit = targetCard.suit;
                         
                         // Заменяем целевую карту
                         aiPlayer.cards[targetCardIndex] = playedCard;
@@ -1374,8 +1400,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         // Обновляем отображение
                         renderPlayers();
                         
-                        // Показываем сообщение
-                        showGameMessage(`${aiPlayer.name} кладет карту ${playedCard.value}${playedCard.suit} поверх своей карты`);
+                        // Показываем сообщение с указанием, какая карта была заменена
+                        showGameMessage(`${aiPlayer.name} кладет карту ${playedCard.value}${playedCard.suit} поверх своей карты ${oldCardValue}${oldCardSuit}`);
                         
                         // Передаем ход следующему игроку
                         setTimeout(() => {
