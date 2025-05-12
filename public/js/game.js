@@ -114,6 +114,9 @@ document.addEventListener('DOMContentLoaded', function() {
         renderPlayerHand();
         updateDeckInfo();
         
+        // Логируем состояние колоды после инициализации
+        logDeckState("Инициализация игры");
+        
         // Устанавливаем первого игрока
         setCurrentPlayer(firstPlayer);
         
@@ -576,6 +579,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // Обновляем индикатор хода на панели
         playerIndicatorElement.textContent = isMyTurn ? 'Ваш ход' : `Ход игрока ${currentPlayer.name}`;
         
+        // Логируем состояние колоды при смене игрока
+        logDeckState(`Смена хода к игроку ${currentPlayer.name}`);
+        
         // Проверяем, не закончилась ли первая стадия игры
         const stageChanged = checkGameStageProgress();
         
@@ -793,7 +799,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (isMyTurn) {
             // Берем карту из колоды, если есть
             if (game.deck.length > 0) {
+                console.log(`Количество карт в колоде до взятия: ${game.deck.length}`);
                 const drawnCard = game.deck.pop();
+                console.log(`Количество карт в колоде после взятия: ${game.deck.length}`);
                 drawnCard.faceUp = true; // Открываем карту
                 
                 // Добавляем карту текущему игроку
@@ -803,6 +811,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 renderPlayerHand();
                 updateDeckInfo();
                 
+                // Логируем состояние колоды после взятия карты
+                logDeckState("После взятия карты игроком");
+                
                 // Проверяем, не закончилась ли колода после взятия карты
                 if (game.deck.length === 0 && game.gameStage === 'stage1') {
                     // Если колода закончилась, сразу проверяем переход на вторую стадию
@@ -810,6 +821,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     const stageChanged = checkGameStageProgress();
                     if (stageChanged) {
                         console.log('Переход ко второй стадии игры выполнен после взятия последней карты');
+                        
+                        // Отображаем сообщение о переходе ко второй стадии
+                        showGameMessage('Колода закончилась! Начинается вторая стадия игры: игра открытыми картами.', 5000);
+                        
+                        // Обновляем отображение для новой стадии
+                        renderPlayers();
+                        renderPlayerHand();
                     }
                 }
                 
@@ -1281,17 +1299,54 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
                 
-                console.log('Бот не может сделать ход. Пропускает ход.');
-                
-                // Если и это невозможно, пропускаем ход
-                showGameMessage(`${aiPlayer.name} пропускает ход`);
-                
-                // Передаем ход следующему игроку
-                setTimeout(() => {
-                    const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
-                    console.log(`Бот передает ход следующему игроку: ${nextPlayerIndex}`);
-                    setCurrentPlayer(nextPlayerIndex);
-                }, 1500);
+                // Если не удалось сыграть ни на чужие, ни на свои карты - берем карту из колоды
+                if (game.deck.length > 0) {
+                    console.log(`Бот берет карту из колоды. До взятия: ${game.deck.length} карт`);
+                    // Берем карту из колоды
+                    const drawnCard = game.deck.pop();
+                    console.log(`После взятия: ${game.deck.length} карт`);
+                    drawnCard.faceUp = true; // Открываем карту
+                    
+                    // Добавляем карту в руку бота
+                    aiPlayer.cards.push(drawnCard);
+                    
+                    // Обновляем отображение
+                    updateDeckInfo();
+                    
+                    // Логируем состояние колоды после взятия карты ботом
+                    logDeckState(`После взятия карты ботом ${aiPlayer.name}`);
+                    
+                    // Показываем сообщение
+                    showGameMessage(`${aiPlayer.name} берет карту из колоды: ${drawnCard.value}${drawnCard.suit}`);
+                    
+                    // Проверяем, не закончилась ли колода
+                    if (game.deck.length === 0 && game.gameStage === 'stage1') {
+                        console.log('Колода закончилась после хода бота, проверяем переход ко второй стадии');
+                        const stageChanged = checkGameStageProgress();
+                        if (stageChanged) {
+                            console.log('Переход ко второй стадии игры выполнен после хода бота');
+                        }
+                    }
+                    
+                    // Передаем ход следующему игроку
+                    setTimeout(() => {
+                        const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
+                        console.log(`Бот передает ход следующему игроку: ${nextPlayerIndex}`);
+                        setCurrentPlayer(nextPlayerIndex);
+                    }, 2000);
+                } else {
+                    console.log('Бот не может сделать ход. Колода пуста. Пропускает ход.');
+                    
+                    // Показываем сообщение
+                    showGameMessage(`${aiPlayer.name} пропускает ход (колода пуста)`);
+                    
+                    // Передаем ход следующему игроку
+                    setTimeout(() => {
+                        const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
+                        console.log(`Бот передает ход следующему игроку: ${nextPlayerIndex}`);
+                        setCurrentPlayer(nextPlayerIndex);
+                    }, 1500);
+                }
             }
         }
         // Для второй стадии используем другую логику
@@ -1423,6 +1478,12 @@ document.addEventListener('DOMContentLoaded', function() {
     function checkGameStageProgress() {
         console.log(`Проверка прогресса стадии игры. Текущая стадия: ${game.gameStage}, карт в колоде: ${game.deck.length}`);
         
+        // Проверка целостности состояния игры
+        if (!game.deck) {
+            console.error('Ошибка: объект колоды не найден!');
+            game.deck = []; // Восстанавливаем массив колоды, если он отсутствует
+        }
+        
         // Проверяем текущую стадию игры
         if (game.gameStage === 'stage1') {
             // Если колода пуста - завершаем первую стадию
@@ -1456,13 +1517,35 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Возвращаем true, т.к. произошло изменение стадии
                 return true;
             }
-            console.log('Колода не пуста, остаемся на первой стадии игры');
+            console.log(`Колода не пуста (${game.deck.length} карт), остаемся на первой стадии игры`);
         } else {
-            console.log(`Текущая стадия игры: ${game.gameStage}, проверка не требуется`);
+            console.log(`Текущая стадия игры: ${game.gameStage}, проверка перехода не требуется`);
         }
         
         // Если стадия не изменилась, возвращаем false
         return false;
+    }
+    
+    // Функция для отладки состояния колоды
+    function logDeckState(context = "") {
+        if (!game || !game.deck) {
+            console.error(`[${context}] Ошибка: объект игры или колоды не найден!`);
+            return;
+        }
+        
+        console.log(`[${context}] Состояние колоды:`);
+        console.log(`- Количество карт в колоде: ${game.deck.length}`);
+        console.log(`- Количество карт в сбросе: ${game.discardPile.length}`);
+        console.log(`- Текущая стадия игры: ${game.gameStage}`);
+        
+        // Проверим общее количество карт в игре
+        let totalCards = game.deck.length + game.discardPile.length;
+        game.players.forEach((player, idx) => {
+            totalCards += player.cards.length;
+            console.log(`- У игрока ${player.name} (${idx}): ${player.cards.length} карт`);
+        });
+        
+        console.log(`- Всего карт в игре: ${totalCards}`);
     }
 
     // Функция для проверки победителя
