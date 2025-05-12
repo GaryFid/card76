@@ -72,46 +72,53 @@ document.addEventListener('DOMContentLoaded', function() {
         const currentUser = JSON.parse(user);
         game.players.push({
             userId: currentUser.id,
-            name: currentUser.username,
-            avatar: currentUser.avatar || '',
+            name: currentUser.username || 'Игрок',
             cards: [],
-            isAI: false
+            isAI: false // Явно указываем, что это не бот
         });
         
-        // Добавляем других игроков/ботов
-        for (let i = 1; i < gameSettings.playerCount; i++) {
+        // Получаем количество игроков из настроек или используем значение по умолчанию
+        let playerCount = 4;
+        try {
+            const settings = localStorage.getItem('gameSettings');
+            if (settings) {
+                const parsedSettings = JSON.parse(settings);
+                playerCount = parsedSettings.playerCount || 4;
+                withAI = parsedSettings.withAI || false;
+            }
+        } catch (e) {
+            console.error('Ошибка при чтении настроек:', e);
+        }
+        
+        // Добавляем ботов
+        for (let i = 1; i < playerCount; i++) {
             game.players.push({
-                userId: `bot-${i}`,
-                name: gameSettings.withAI ? `Бот ${i}` : `Игрок ${i+1}`,
-                avatar: '',
+                userId: `bot_${i}`,
+                name: `Бот ${i}`,
                 cards: [],
-                isAI: gameSettings.withAI
+                isAI: true // Явно указываем, что это бот
             });
         }
         
         // Инициализируем колоду
         initializeDeck();
         
-        // Раздаем карты
+        // Раздаем начальные карты
         dealInitialCards();
         
-        // Определяем первого игрока по старшей открытой карте
-        const firstPlayerIndex = determineFirstPlayer();
+        // Определяем первого игрока
+        const firstPlayer = determineFirstPlayer();
         
-        // Отображаем игроков
+        // Отрисовываем игроков и колоду
         renderPlayers();
-        
-        // Обновляем информацию о колоде и сбросе
+        renderPlayerHand();
         updateDeckInfo();
         
-        // Отображаем карты текущего игрока
-        renderPlayerHand();
-        
         // Устанавливаем первого игрока
-        setCurrentPlayer(firstPlayerIndex);
+        setCurrentPlayer(firstPlayer);
         
         // Показываем информационное сообщение о начале игры
-        showGameMessage(`Игра начинается! Первым ходит игрок ${game.players[firstPlayerIndex].name}!`);
+        showGameMessage(`Игра начинается! Первым ходит игрок ${game.players[firstPlayer].name}!`);
     }
     
     // Инициализация колоды
@@ -494,18 +501,22 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Установка текущего игрока
+    // Функция установки текущего игрока
     function setCurrentPlayer(index) {
+        // Обновляем индекс текущего игрока
         currentPlayerIndex = index;
         
-        // Обновляем классы active у игроков и сбрасываем таймеры
-        document.querySelectorAll('.player').forEach((playerElem, idx) => {
+        // Устанавливаем флаг "мой ход" только если текущий игрок - пользователь
+        isMyTurn = (currentPlayerIndex === 0);
+        
+        // Обновляем отображение активного игрока
+        document.querySelectorAll('.player').forEach((playerElem, playerIdx) => {
             // Сначала убираем все активные классы
             playerElem.classList.remove('active');
             playerElem.querySelector('.turn-timer')?.classList.remove('active');
             
             // Затем активируем для текущего игрока
-            if (idx === currentPlayerIndex) {
+            if (playerIdx === currentPlayerIndex) {
                 playerElem.classList.add('active');
                 const timer = playerElem.querySelector('.turn-timer');
                 if (timer) {
@@ -518,16 +529,17 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        // Определяем, является ли текущий ход - ходом пользователя
-        isMyTurn = currentPlayerIndex === 0;
+        // Обновляем информацию о текущем игроке
+        const currentPlayer = game.players[currentPlayerIndex];
+        playerNameElement.textContent = currentPlayer.name;
         
-        // Обновляем текст индикатора хода
-        playerIndicatorElement.textContent = isMyTurn ? 'Ваш ход' : 'Ждите хода';
-        
-        // Включаем/выключаем кнопки действий
+        // Включаем или отключаем кнопки действий в зависимости от того, чей ход
         drawCardButton.disabled = !isMyTurn;
+        playCardButton.disabled = true; // Сначала нужно выбрать карту
         passTurnButton.disabled = !isMyTurn;
-        playCardButton.disabled = true; // Всегда выключена, пока не выбрана карта
+        
+        // Обновляем индикатор хода на панели
+        playerIndicatorElement.textContent = isMyTurn ? 'Ваш ход' : `Ход игрока ${currentPlayer.name}`;
         
         // Проверяем, не закончилась ли первая стадия игры
         checkGameStageProgress();
@@ -537,9 +549,21 @@ document.addEventListener('DOMContentLoaded', function() {
             return; // Если есть победитель, выходим
         }
         
-        // Если ход не игрока, и бот должен ходить - делаем автоматический ход ИИ
-        if (!isMyTurn && game.players[currentPlayerIndex].isAI) {
-            setTimeout(playAITurn, 1500);
+        console.log(`Переход хода к игроку ${currentPlayerIndex} (${currentPlayer.name}), isAI: ${currentPlayer.isAI}`);
+        
+        // Если это компьютерный игрок, запускаем ИИ
+        if (currentPlayer.isAI) {
+            console.log('Инициируем ход ИИ...');
+            // Делаем небольшую задержку перед ходом ИИ для естественности
+            setTimeout(() => {
+                // Проверяем, все еще ли ход этого бота
+                if (currentPlayerIndex === index && game.players[currentPlayerIndex].isAI) {
+                    console.log('Выполняем ход ИИ...');
+                    playAITurn();
+                } else {
+                    console.log('Ход ИИ отменен, т.к. текущий игрок изменился');
+                }
+            }, 1500);
         }
     }
     
@@ -973,18 +997,20 @@ document.addEventListener('DOMContentLoaded', function() {
         if (game.gameStage === 'stage1') {
             console.log('Стадия 1: Бот ищет карты для хода...');
             
-            // Выбираем все карты (и открытые, и закрытые) - в первой стадии бот может играть любой картой
+            // Выбираем все карты бота
             const allCards = aiPlayer.cards;
             console.log(`Всего карт у бота: ${allCards.length}`);
             
             // Находим все возможные ходы
             let bestMove = null;
             
+            // Для каждой карты в руке бота
             for (const card of allCards) {
                 console.log(`Проверяем карту ${card.value}${card.suit} (faceUp: ${card.faceUp})`);
                 const cardRank = cardValues.indexOf(card.value);
                 
                 // Проверяем карты других игроков
+                let foundMove = false;
                 for (let i = 0; i < game.players.length; i++) {
                     if (i === currentPlayerIndex) continue; // Пропускаем себя
                     
@@ -1005,6 +1031,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 targetCard: targetCard,
                                 targetCardIndex: targetPlayer.cards.findIndex(c => c.id === targetCard.id)
                             };
+                            foundMove = true;
                             break;
                         }
                         
@@ -1022,17 +1049,18 @@ document.addEventListener('DOMContentLoaded', function() {
                                 targetCard: targetCard,
                                 targetCardIndex: targetPlayer.cards.findIndex(c => c.id === targetCard.id)
                             };
+                            foundMove = true;
                             break;
                         }
                     }
                     
-                    if (bestMove) break;
+                    if (foundMove) break;
                 }
                 
-                if (bestMove) break;
+                if (foundMove) break;
             }
             
-            // Если нашли подходящий ход
+            // Если нашли подходящий ход на карты противника
             if (bestMove) {
                 console.log(`Бот нашел ход: ${bestMove.card.value}${bestMove.card.suit} -> ${bestMove.targetCard.value}${bestMove.targetCard.suit}`);
                 
