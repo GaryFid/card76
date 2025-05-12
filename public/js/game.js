@@ -577,7 +577,16 @@ document.addEventListener('DOMContentLoaded', function() {
         playerIndicatorElement.textContent = isMyTurn ? 'Ваш ход' : `Ход игрока ${currentPlayer.name}`;
         
         // Проверяем, не закончилась ли первая стадия игры
-        checkGameStageProgress();
+        const stageChanged = checkGameStageProgress();
+        
+        // Если стадия изменилась, логируем это событие
+        if (stageChanged) {
+            console.log(`Произошел переход к стадии: ${game.gameStage}`);
+            // Если ход был игрока, показываем сообщение про переход
+            if (isMyTurn) {
+                showGameMessage('Начинается вторая стадия игры: игра открытыми картами!', 3000);
+            }
+        }
         
         // Проверяем, есть ли победитель
         if (checkForWinner()) {
@@ -794,6 +803,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 renderPlayerHand();
                 updateDeckInfo();
                 
+                // Проверяем, не закончилась ли колода после взятия карты
+                if (game.deck.length === 0 && game.gameStage === 'stage1') {
+                    // Если колода закончилась, сразу проверяем переход на вторую стадию
+                    console.log('Колода закончилась после взятия карты, проверяем переход на вторую стадию');
+                    const stageChanged = checkGameStageProgress();
+                    if (stageChanged) {
+                        console.log('Переход ко второй стадии игры выполнен после взятия последней карты');
+                    }
+                }
+                
                 // Показываем сообщение о взятой карте
                 showGameMessage(`Вы взяли карту из колоды: ${drawnCard.value}${drawnCard.suit}`);
                 
@@ -883,18 +902,35 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     // Не передаем ход, так как игрок может сыграть карту
                 } else {
-                    // Если карту нельзя сыграть, передаем ход
-                    setTimeout(() => {
-                        const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
-                        setCurrentPlayer(nextPlayerIndex);
-                    }, 2000);
+                    // Если колода и сброс пусты, показываем сообщение
+                    showGameMessage('Колода пуста. Проверяем переход ко второй стадии игры.');
+                    
+                    // Явно проверяем переход ко второй стадии
+                    if (game.gameStage === 'stage1') {
+                        console.log('Колода пуста при попытке взять карту, выполняем переход ко второй стадии');
+                        const stageChanged = checkGameStageProgress();
+                        
+                        if (stageChanged) {
+                            console.log('Переход ко второй стадии успешно выполнен');
+                            // Обновляем отображение игры с учетом новой стадии
+                            renderPlayers();
+                            renderPlayerHand();
+                            
+                            // Показываем дополнительное сообщение
+                            showGameMessage('Колода закончилась! Начинается вторая стадия игры!', 3000);
+                        } else {
+                            console.log('Ошибка: не удалось перейти на вторую стадию игры');
+                        }
+                    } else {
+                        console.log('Игра уже находится в стадии ' + game.gameStage);
+                        // Если мы уже на второй стадии, но нет карт для взятия,
+                        // передаем ход следующему игроку
+                        setTimeout(() => {
+                            const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
+                            setCurrentPlayer(nextPlayerIndex);
+                        }, 1000);
+                    }
                 }
-            } else {
-                // Если колода и сброс пусты, показываем сообщение
-                showGameMessage('Колода и сброс пусты. Переходим ко второй стадии игры.');
-                
-                // Проверяем и переходим ко второй стадии
-                checkGameStageProgress();
             }
         }
     });
@@ -1079,6 +1115,15 @@ document.addEventListener('DOMContentLoaded', function() {
         const aiPlayer = game.players[currentPlayerIndex];
         console.log(`Бот #${currentPlayerIndex} (${aiPlayer.name}) делает ход. Стадия игры: ${game.gameStage}`);
         console.log(`У бота ${aiPlayer.cards.length} карт в руке.`);
+        
+        // Проверяем, нужно ли перейти ко второй стадии игры
+        if (game.deck.length === 0 && game.gameStage === 'stage1') {
+            console.log('Колода пуста, переходим ко второй стадии игры...');
+            if (checkGameStageProgress()) {
+                console.log('Переход ко второй стадии игры выполнен');
+                // Теперь игра в стадии stage2, продолжаем ход бота по правилам второй стадии
+            }
+        }
         
         // Для первой стадии игры - логика набора и выкладывания карт
         if (game.gameStage === 'stage1') {
@@ -1376,10 +1421,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Функция для проверки условий окончания стадии и перехода к следующей
     function checkGameStageProgress() {
+        console.log(`Проверка прогресса стадии игры. Текущая стадия: ${game.gameStage}, карт в колоде: ${game.deck.length}`);
+        
         // Проверяем текущую стадию игры
         if (game.gameStage === 'stage1') {
             // Если колода пуста - завершаем первую стадию
             if (game.deck.length === 0) {
+                console.log('Колода пуста, выполняем переход ко второй стадии игры');
+                
                 // Переходим ко второй стадии
                 game.gameStage = 'stage2';
                 
@@ -1388,7 +1437,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 stageDescriptionElement.textContent = 'Игра открытыми картами';
                 
                 // Открываем все закрытые карты у игроков
-                game.players.forEach(player => {
+                game.players.forEach((player, idx) => {
+                    console.log(`Открываем все карты игрока ${idx} (${player.name})`);
                     player.cards.forEach(card => {
                         card.faceUp = true;
                     });
@@ -1401,9 +1451,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Показываем сообщение о начале новой стадии
                 showGameMessage('Колода закончилась! Начинается вторая стадия игры: игра открытыми картами.', 5000);
                 
+                console.log('Переход ко второй стадии успешно выполнен');
+                
                 // Возвращаем true, т.к. произошло изменение стадии
                 return true;
             }
+            console.log('Колода не пуста, остаемся на первой стадии игры');
+        } else {
+            console.log(`Текущая стадия игры: ${game.gameStage}, проверка не требуется`);
         }
         
         // Если стадия не изменилась, возвращаем false
