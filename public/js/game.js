@@ -384,7 +384,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateDeckInfo() {
         // Обновляем счетчик колоды
         const deckCount = document.querySelector('.card-pile.deck .card-count');
-        deckCount.textContent = game.deck.length;
+        if (deckCount) deckCount.textContent = game.deck.length;
         
         // Обновляем визуальное отображение карт в колоде
         const deckElement = document.querySelector('.card-pile.deck');
@@ -417,7 +417,34 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (game.discardPile.length > 0) {
             const topCard = game.discardPile[game.discardPile.length - 1];
-            const cardElement = createCardElement(topCard);
+            
+            // Создаем элемент верхней карты сброса
+            const cardElement = document.createElement('div');
+            cardElement.className = 'card mini-card';
+            
+            // Показываем лицевую сторону карты в сбросе
+            const cardFront = document.createElement('div');
+            cardFront.className = 'card-front';
+            if (topCard.isRed) {
+                cardFront.classList.add('red');
+            }
+            
+            // Добавляем значение и масть
+            const valueElem = document.createElement('div');
+            valueElem.className = 'card-value';
+            valueElem.textContent = topCard.value;
+            
+            const suitElem = document.createElement('div');
+            suitElem.className = 'card-suit';
+            suitElem.textContent = topCard.suit;
+            
+            cardFront.appendChild(valueElem);
+            cardFront.appendChild(suitElem);
+            cardElement.appendChild(cardFront);
+            
+            // Добавляем id карты
+            cardElement.dataset.cardId = topCard.id;
+            
             discardElement.appendChild(cardElement);
             
             // Добавляем счетчик карт в сбросе, если их больше одной
@@ -654,6 +681,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             // В первой стадии важен только ранг карты, масть не имеет значения
+            // Проверяем, что наша карта на 1 ранг выше целевой
+            console.log(`Проверяем карту ${card.value}${card.suit} (ранг ${cardRank}) на ${targetCard.value}${targetCard.suit} (ранг ${targetRank})`);
             return cardRank === targetRank + 1;
         }
         
@@ -688,8 +717,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         const targetRank = cardValues.indexOf(targetCard.value);
                         
-                        // Если нашли карту на 1 ранг ниже - можно сыграть
+                        // Если нашли карту на 1 ранг ниже - можно сыграть (масть не важна в первой стадии)
                         if (cardRank === targetRank + 1) {
+                            console.log(`Можно положить ${card.value}${card.suit} на ${targetCard.value}${targetCard.suit}`);
                             return true;
                         }
                     }
@@ -760,8 +790,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         console.log(`- Карта с рангом: ${targetRank}, значение: ${value}`);
                         
                         // Если выбранная карта на 1 ранг выше целевой - подсвечиваем как возможную цель
+                        // В первой стадии масть не имеет значения
                         if (cardRank === targetRank + 1) {
-                            console.log(`  Найдена подходящая цель!`);
+                            console.log(`  Найдена подходящая цель! ${value}`);
                             cardElem.classList.add('highlighted');
                             
                             // Устанавливаем атрибут, чтобы знать, на какую карту можно положить выбранную
@@ -1041,11 +1072,31 @@ document.addEventListener('DOMContentLoaded', function() {
                                 // Показываем сообщение
                                 showGameMessage(`Вы сыграли карту ${playedCard.value}${playedCard.suit} на карту игрока ${targetPlayer.name}`);
                                 
-                                // Проверяем наличие победителя
-                                if (playerCards.length === 0) {
+                                // Проверяем наличие победителя в зависимости от стадии игры
+                                if (game.gameStage === 'stage1') {
+                                    // В первой стадии проверяем, что у игрока не осталось открытых карт
+                                    // и при этом нет закрытых карт
+                                    const hasFaceDownCards = playerCards.some(card => !card.faceUp);
+                                    
+                                    if (playerCards.length === 0 && !hasFaceDownCards) {
+                                        // Игрок выиграл
+                                        showGameMessage('Поздравляем! Вы выиграли игру!', 5000);
+                                        
+                                        // Показываем сообщение о победе
+                                        setTimeout(() => {
+                                            alert('Игра окончена! Вы победили!');
+                                            // Перезапуск игры
+                                            initGame();
+                                        }, 3000);
+                                        
+                                        return;
+                                    }
+                                } else if (playerCards.length === 0) {
+                                    // Во второй стадии достаточно, чтобы не осталось карт вообще
                                     // Игрок выиграл
                                     showGameMessage('Поздравляем! Вы выиграли игру!', 5000);
                                     
+                                    // Показываем сообщение о победе
                                     setTimeout(() => {
                                         alert('Игра окончена! Вы победили!');
                                         // Перезапуск игры
@@ -1086,10 +1137,30 @@ document.addEventListener('DOMContentLoaded', function() {
                             showGameMessage(`Вы сыграли карту ${playedCard.value}${playedCard.suit} в сброс`);
                             
                             // Проверяем наличие победителя
-                            if (playerCards.length === 0) {
+                            if (game.gameStage === 'stage1') {
+                                // В первой стадии проверяем, что у игрока не осталось открытых карт 
+                                // при этом нет закрытых карт
+                                const hasFaceDownCards = playerCards.some(card => !card.faceUp);
+                                
+                                if (playerCards.length === 0 && !hasFaceDownCards) {
+                                    // Игрок выиграл
+                                    showGameMessage('Поздравляем! Вы выиграли игру!', 5000);
+                                    
+                                    // Показываем сообщение о победе
+                                    setTimeout(() => {
+                                        alert('Игра окончена! Вы победили!');
+                                        // Перезапуск игры
+                                        initGame();
+                                    }, 3000);
+                                    
+                                    return;
+                                }
+                            } else if (playerCards.length === 0) {
+                                // Во второй стадии достаточно, чтобы не осталось карт вообще
                                 // Игрок выиграл
                                 showGameMessage('Поздравляем! Вы выиграли игру!', 5000);
                                 
+                                // Показываем сообщение о победе
                                 setTimeout(() => {
                                     alert('Игра окончена! Вы победили!');
                                     // Перезапуск игры
@@ -1233,7 +1304,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 showGameMessage(`${aiPlayer.name} кладет карту ${playedCard.value}${playedCard.suit} на карту игрока ${bestMove.targetPlayer.name}`);
                 
                 // Проверяем, закончились ли карты у бота
-                if (aiPlayer.cards.length === 0) {
+                if (game.gameStage === 'stage1') {
+                    // В первой стадии проверяем, что у бота не осталось закрытых карт
+                    const hasFaceDownCards = aiPlayer.cards.some(card => !card.faceUp);
+                    
+                    if (aiPlayer.cards.length === 0 && !hasFaceDownCards) {
+                        // Бот выиграл в первой стадии
+                        showGameMessage(`${aiPlayer.name} выиграл игру!`, 5000);
+                        
+                        // Можно добавить логику завершения игры
+                        setTimeout(() => {
+                            alert(`Игра окончена! ${aiPlayer.name} победил!`);
+                            // Перезапуск игры
+                            initGame();
+                        }, 3000);
+                        
+                        return; // Выходим, так как игра завершена
+                    }
+                } else if (aiPlayer.cards.length === 0) {
+                    // Во второй стадии достаточно отсутствия карт
                     // Бот выиграл
                     showGameMessage(`${aiPlayer.name} выиграл игру!`, 5000);
                     
@@ -1387,7 +1476,25 @@ document.addEventListener('DOMContentLoaded', function() {
                     showGameMessage(`${aiPlayer.name} играет карту ${playedCard.value}${playedCard.suit} в сброс`);
                     
                     // Проверяем, не закончились ли карты у бота
-                    if (aiPlayer.cards.length === 0) {
+                    if (game.gameStage === 'stage1') {
+                        // В первой стадии проверяем, что у бота не осталось закрытых карт
+                        const hasFaceDownCards = aiPlayer.cards.some(card => !card.faceUp);
+                        
+                        if (aiPlayer.cards.length === 0 && !hasFaceDownCards) {
+                            // Бот выиграл в первой стадии
+                            showGameMessage(`${aiPlayer.name} выиграл игру!`, 5000);
+                            
+                            // Можно добавить логику завершения игры
+                            setTimeout(() => {
+                                alert(`Игра окончена! ${aiPlayer.name} победил!`);
+                                // Перезапуск игры
+                                initGame();
+                            }, 3000);
+                            
+                            return; // Выходим, так как игра завершена
+                        }
+                    } else if (aiPlayer.cards.length === 0) {
+                        // Во второй стадии достаточно, чтобы не осталось карт вообще
                         // Игра завершается, бот победил
                         showGameMessage(`${aiPlayer.name} выиграл игру!`, 5000);
                         
@@ -1552,9 +1659,23 @@ document.addEventListener('DOMContentLoaded', function() {
     function checkForWinner() {
         // Ищем игрока без карт
         for (let i = 0; i < game.players.length; i++) {
-            if (game.players[i].cards.length === 0) {
+            const player = game.players[i];
+            
+            // В первой стадии игрок не может выиграть, если остаются закрытые карты
+            if (game.gameStage === 'stage1') {
+                // Считаем только случай, когда закрытых карт нет, а открытых тоже нет
+                const hasFaceDownCards = player.cards.some(card => !card.faceUp);
+                
+                // Если есть закрытые карты, значит игрок еще не выиграл
+                if (hasFaceDownCards) {
+                    continue;
+                }
+            }
+            
+            // Проверяем, что у игрока нет карт
+            if (player.cards.length === 0) {
                 // Нашли победителя
-                const winner = game.players[i];
+                const winner = player;
                 
                 // Показываем сообщение о победе
                 showGameMessage(`${winner.name} выиграл игру!`, 5000);
