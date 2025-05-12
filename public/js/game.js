@@ -379,16 +379,51 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Обновление отображения колоды и сброса
     function updateDeckInfo() {
-        // Обновляем колоду
+        // Обновляем счетчик колоды
         const deckCount = document.querySelector('.card-pile.deck .card-count');
         deckCount.textContent = game.deck.length;
         
+        // Обновляем визуальное отображение карт в колоде
+        const deckElement = document.querySelector('.card-pile.deck');
+        deckElement.innerHTML = ''; // Очищаем содержимое
+        
+        // Определяем сколько карт показывать в стопке (максимум 5)
+        const numCardsToShow = Math.min(5, game.deck.length);
+        
+        // Создаем карты для стопки
+        for (let i = 0; i < numCardsToShow; i++) {
+            const cardElem = document.createElement('div');
+            cardElem.className = 'card mini-card card-back';
+            // Располагаем карты со смещением для эффекта стопки
+            cardElem.style.position = 'absolute';
+            cardElem.style.top = `${i * 2}px`;
+            cardElem.style.left = `${i * 2}px`;
+            cardElem.style.zIndex = i;
+            deckElement.appendChild(cardElem);
+        }
+        
+        // Добавляем счетчик карт
+        const countElem = document.createElement('div');
+        countElem.className = 'card-count';
+        countElem.textContent = game.deck.length;
+        deckElement.appendChild(countElem);
+        
         // Обновляем сброс
+        const discardElement = document.querySelector('.card-pile.discard');
         discardElement.innerHTML = '';
+        
         if (game.discardPile.length > 0) {
             const topCard = game.discardPile[game.discardPile.length - 1];
             const cardElement = createCardElement(topCard);
             discardElement.appendChild(cardElement);
+            
+            // Добавляем счетчик карт в сбросе, если их больше одной
+            if (game.discardPile.length > 1) {
+                const discardCount = document.createElement('div');
+                discardCount.className = 'card-count';
+                discardCount.textContent = game.discardPile.length;
+                discardElement.appendChild(discardCount);
+            }
         }
     }
     
@@ -598,9 +633,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const cardRank = cardValues.indexOf(card.value);
             const targetRank = cardValues.indexOf(targetCard.value);
             
-            // Если целевая карта - туз, на неё можно положить любую карту
+            // Если целевая карта - туз, на неё можно положить только 2
             if (targetCard.value === 'A') {
-                return true;
+                return card.value === '2';
             }
             
             // В первой стадии важен только ранг карты, масть не имеет значения
@@ -631,9 +666,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Ищем открытые карты соперника
                 for (const targetCard of targetPlayer.cards) {
                     if (targetCard.faceUp) {
-                        // Если это туз, на него можно положить любую карту
+                        // Если это туз, проверяем можно ли на него положить карту (только 2)
                         if (targetCard.value === 'A') {
-                            return true;
+                            return card.value === '2';
                         }
                         
                         const targetRank = cardValues.indexOf(targetCard.value);
@@ -677,9 +712,10 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // В зависимости от стадии игры используем разную логику
         if (game.gameStage === 'stage1') {
-            // Получаем ранг выбранной карты
-            const cardRank = cardValues.indexOf(selectedCard.value);
-            console.log(`Выбрана карта с рангом: ${cardRank}, значение: ${selectedCard.value}`);
+            // Получаем значение выбранной карты
+            const cardValue = selectedCard.getAttribute('data-card-value');
+            const cardRank = cardValues.indexOf(cardValue);
+            console.log(`Выбрана карта с рангом: ${cardRank}, значение: ${cardValue}`);
             
             // Перебираем всех игроков и их карты для поиска возможных целей
             document.querySelectorAll('.player').forEach((playerElem, playerIdx) => {
@@ -694,11 +730,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (valueElem) {
                         const value = valueElem.textContent;
                         
-                        // Если это туз - подсвечиваем как возможную цель
+                        // Если это туз - проверяем, подходит ли наша карта (только 2)
                         if (value === 'A') {
-                            console.log(`  Найден туз - подходящая цель!`);
-                            cardElem.classList.add('highlighted');
-                            cardElem.dataset.targetFor = selectedCard.dataset.cardId;
+                            if (cardValue === '2') {
+                                console.log(`  Найден туз - подходящая цель для карты ${cardValue}!`);
+                                cardElem.classList.add('highlighted');
+                                cardElem.dataset.targetFor = selectedCard.dataset.cardId;
+                            }
                             return;
                         }
                         
@@ -721,9 +759,11 @@ document.addEventListener('DOMContentLoaded', function() {
             // Во второй стадии подсвечиваем верхнюю карту сброса, если на неё можно сыграть
             if (game.discardPile.length > 0) {
                 const topCard = game.discardPile[game.discardPile.length - 1];
+                const cardValue = selectedCard.getAttribute('data-card-value');
+                const cardSuit = selectedCard.getAttribute('data-card-suit');
                 
                 // Проверяем, можно ли сыграть карту на верхнюю карту сброса
-                if (selectedCard.suit === topCard.suit || selectedCard.value === topCard.value) {
+                if (cardSuit === topCard.suit || cardValue === topCard.value) {
                     // Находим элемент верхней карты сброса
                     const discardTopCardElem = document.querySelector('.card-pile.discard .card');
                     if (discardTopCardElem) {
@@ -741,73 +781,120 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Обработчики событий для кнопок
     drawCardButton.addEventListener('click', function() {
-        if (isMyTurn && game.discardPile.length > 0) {
-            // В первой стадии игрок берет карту из колоды сброса (биты)
-            const drawnCard = game.discardPile.pop();
-            drawnCard.faceUp = true; // Открываем карту
-            
-            // Добавляем карту текущему игроку
-            game.players[0].cards.push(drawnCard);
-            
-            // Обновляем отображение
-            renderPlayerHand();
-            updateDeckInfo();
-            
-            // Показываем сообщение о взятой карте
-            showGameMessage(`Вы взяли карту из биты: ${drawnCard.value}${drawnCard.suit}`);
-            
-            // Проверяем, можно ли сыграть взятую карту на карты других игроков
-            const canPlay = canPlayCardOnTable(drawnCard);
-            
-            if (canPlay) {
-                // Если взятую карту можно сыграть, даем возможность игроку это сделать
-                // Не переходим ход, пока игрок не решит, что делать с этой картой
-                showGameMessage('Вы можете сыграть взятую карту на карту соперника', 2000);
+        if (isMyTurn) {
+            // Берем карту из колоды, если есть
+            if (game.deck.length > 0) {
+                const drawnCard = game.deck.pop();
+                drawnCard.faceUp = true; // Открываем карту
                 
-                // Выделяем взятую карту
-                setTimeout(() => {
-                    const newCardElement = document.querySelector(`.player-hand .card[data-card-id="${drawnCard.id}"]`);
-                    if (newCardElement) {
-                        newCardElement.click(); // Имитируем клик по карте для её выделения
-                    }
-                }, 300);
-            } else {
-                // Если карту нельзя сыграть ни на одну из карт противников, проверяем возможность положить на свою карту
-                if (game.gameStage === 'stage1') {
-                    // Проверяем, есть ли у игрока открытая карта для наложения
-                    const playerOpenCards = game.players[0].cards.filter(card => card.faceUp && card.id !== drawnCard.id);
+                // Добавляем карту текущему игроку
+                game.players[0].cards.push(drawnCard);
+                
+                // Обновляем отображение
+                renderPlayerHand();
+                updateDeckInfo();
+                
+                // Показываем сообщение о взятой карте
+                showGameMessage(`Вы взяли карту из колоды: ${drawnCard.value}${drawnCard.suit}`);
+                
+                // Проверяем, можно ли сыграть взятую карту на карты других игроков
+                const canPlay = canPlayCardOnTable(drawnCard);
+                
+                if (canPlay) {
+                    // Если взятую карту можно сыграть, даем возможность игроку это сделать
+                    showGameMessage('Вы можете сыграть взятую карту на карту соперника', 2000);
                     
-                    if (playerOpenCards.length > 0) {
-                        // Берем первую открытую карту игрока для наложения
-                        const targetCard = playerOpenCards[0];
-                        const targetCardIndex = game.players[0].cards.findIndex(card => card.id === targetCard.id);
-                        
-                        // Удаляем только что взятую карту
-                        const takenCardIndex = game.players[0].cards.findIndex(card => card.id === drawnCard.id);
-                        if (takenCardIndex !== -1) {
-                            // Удаляем взятую карту
-                            game.players[0].cards.splice(takenCardIndex, 1);
-                            
-                            // Заменяем целевую карту
-                            game.players[0].cards[targetCardIndex] = drawnCard;
-                            
-                            // Показываем сообщение
-                            showGameMessage(`Вы кладете взятую карту ${drawnCard.value}${drawnCard.suit} поверх своей карты`);
-                            
-                            // Обновляем отображение
-                            renderPlayers();
-                            renderPlayerHand();
+                    // Выделяем взятую карту
+                    setTimeout(() => {
+                        const newCardElement = document.querySelector(`.player-hand .card[data-card-id="${drawnCard.id}"]`);
+                        if (newCardElement) {
+                            newCardElement.click(); // Имитируем клик по карте для её выделения
                         }
-                    } else {
-                        showGameMessage('У вас нет открытых карт для наложения. Добавляем карту в вашу руку.');
+                    }, 300);
+                    
+                    // Не передаем ход, так как игрок может сыграть карту
+                } else {
+                    // Если карту нельзя сыграть ни на одну из карт противников, проверяем возможность положить на свою карту
+                    if (game.gameStage === 'stage1') {
+                        // Проверяем, есть ли у игрока открытая карта для наложения
+                        const playerOpenCards = game.players[0].cards.filter(card => card.faceUp && card.id !== drawnCard.id);
+                        
+                        if (playerOpenCards.length > 0) {
+                            // Берем первую открытую карту игрока для наложения
+                            const targetCard = playerOpenCards[0];
+                            const targetCardIndex = game.players[0].cards.findIndex(card => card.id === targetCard.id);
+                            
+                            // Удаляем только что взятую карту
+                            const takenCardIndex = game.players[0].cards.findIndex(card => card.id === drawnCard.id);
+                            if (takenCardIndex !== -1) {
+                                // Удаляем взятую карту
+                                game.players[0].cards.splice(takenCardIndex, 1);
+                                
+                                // Заменяем целевую карту
+                                game.players[0].cards[targetCardIndex] = drawnCard;
+                                
+                                // Показываем сообщение
+                                showGameMessage(`Вы кладете взятую карту ${drawnCard.value}${drawnCard.suit} поверх своей карты`);
+                                
+                                // Обновляем отображение
+                                renderPlayers();
+                                renderPlayerHand();
+                            }
+                        } else {
+                            showGameMessage('У вас нет открытых карт для наложения. Добавляем карту в вашу руку.');
+                        }
                     }
+                    
+                    // Переход хода к следующему игроку
+                    setTimeout(() => {
+                        const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
+                        setCurrentPlayer(nextPlayerIndex);
+                    }, 2000);
                 }
+            } else if (game.discardPile.length > 0) {
+                // Если колода пуста, но есть сброс - берем карту из сброса
+                const drawnCard = game.discardPile.pop();
+                drawnCard.faceUp = true; // Открываем карту
                 
-                // Переход хода к следующему игроку
-                setTimeout(() => {
-                    const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
-                    setCurrentPlayer(nextPlayerIndex);
-                }, 2000);
+                // Добавляем карту текущему игроку
+                game.players[0].cards.push(drawnCard);
+                
+                // Обновляем отображение
+                renderPlayerHand();
+                updateDeckInfo();
+                
+                // Показываем сообщение о взятой карте
+                showGameMessage(`Вы взяли карту из сброса: ${drawnCard.value}${drawnCard.suit}`);
+                
+                // Проверяем, можно ли сыграть взятую карту на карты других игроков
+                const canPlay = canPlayCardOnTable(drawnCard);
+                
+                if (canPlay) {
+                    // Если взятую карту можно сыграть, даем возможность игроку это сделать
+                    showGameMessage('Вы можете сыграть взятую карту на карту соперника', 2000);
+                    
+                    // Выделяем взятую карту
+                    setTimeout(() => {
+                        const newCardElement = document.querySelector(`.player-hand .card[data-card-id="${drawnCard.id}"]`);
+                        if (newCardElement) {
+                            newCardElement.click(); // Имитируем клик по карте для её выделения
+                        }
+                    }, 300);
+                    
+                    // Не передаем ход, так как игрок может сыграть карту
+                } else {
+                    // Если карту нельзя сыграть, передаем ход
+                    setTimeout(() => {
+                        const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
+                        setCurrentPlayer(nextPlayerIndex);
+                    }, 2000);
+                }
+            } else {
+                // Если колода и сброс пусты, показываем сообщение
+                showGameMessage('Колода и сброс пусты. Переходим ко второй стадии игры.');
+                
+                // Проверяем и переходим ко второй стадии
+                checkGameStageProgress();
             }
         }
     });
@@ -1009,7 +1096,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log(`Проверяем карту ${card.value}${card.suit} (faceUp: ${card.faceUp})`);
                 const cardRank = cardValues.indexOf(card.value);
                 
-                // Проверяем карты других игроков
+                // Ищем карты других игроков
                 let foundMove = false;
                 for (let i = 0; i < game.players.length; i++) {
                     if (i === currentPlayerIndex) continue; // Пропускаем себя
@@ -1020,19 +1107,23 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.log(`Игрок ${i} имеет ${targetOpenCards.length} открытых карт`);
                     
                     for (const targetCard of targetOpenCards) {
-                        // Если целевая карта - туз, на неё можно положить любую карту
+                        // Если целевая карта - туз, проверяем может ли бот положить только 2
                         if (targetCard.value === 'A') {
-                            console.log(`Найден туз ${targetCard.value}${targetCard.suit} - подходящая цель!`);
-                            bestMove = {
-                                card: card,
-                                cardIndex: aiPlayer.cards.findIndex(c => c.id === card.id),
-                                targetPlayer: targetPlayer,
-                                targetPlayerIndex: i,
-                                targetCard: targetCard,
-                                targetCardIndex: targetPlayer.cards.findIndex(c => c.id === targetCard.id)
-                            };
-                            foundMove = true;
-                            break;
+                            // Если у бота есть 2, то он может положить эту карту на туза
+                            if (card.value === '2') {
+                                console.log(`Найден туз ${targetCard.value}${targetCard.suit} - подходящая цель для ${card.value}${card.suit}!`);
+                                bestMove = {
+                                    card: card,
+                                    cardIndex: aiPlayer.cards.findIndex(c => c.id === card.id),
+                                    targetPlayer: targetPlayer,
+                                    targetPlayerIndex: i,
+                                    targetCard: targetCard,
+                                    targetCardIndex: targetPlayer.cards.findIndex(c => c.id === targetCard.id)
+                                };
+                                foundMove = true;
+                                break;
+                            }
+                            continue; // Пропускаем туз, если у бота нет 2
                         }
                         
                         const targetRank = cardValues.indexOf(targetCard.value);

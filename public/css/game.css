@@ -625,4 +625,19 @@ body {
 @keyframes timer-countdown {
     0% { transform: scaleX(1); }
     100% { transform: scaleX(0); }
+}
+
+/* Стили для карт в колоде */
+.mini-card {
+    width: 50px;
+    height: 70px;
+    border-radius: 5px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    transition: transform 0.2s;
+}
+
+.mini-card.card-back {
+    background-color: #b00;
+    background-image: linear-gradient(135deg, #b00 25%, #d00 25%, #d00 50%, #b00 50%, #b00 75%, #d00 75%, #d00);
+    background-size: 10px 10px;
 } 
