@@ -37,7 +37,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const drawCardButton = document.getElementById('draw-card');
     const playCardButton = document.getElementById('play-card');
     const selfCardButton = document.getElementById('self-card');
-    const passTurnButton = document.getElementById('pass-turn');
     const settingsButton = document.getElementById('open-settings');
     const settingsModal = document.getElementById('settings-modal');
     const closeSettingsButton = document.querySelector('.close-btn');
@@ -506,7 +505,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (game.players[currentPlayerIndex].isAI) {
                 showGameMessage(`Ход игрока ${game.players[currentPlayerIndex].name}`);
                 
-                setTimeout(playAITurn, 1500);
+                setTimeout(playAITurn, 5000); // Увеличиваем время на ход бота до 5 секунд
             }
         }
     }
@@ -552,7 +551,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (game.players[playerIndex].isAI) {
                 showGameMessage(`Ход игрока ${game.players[playerIndex].name}`);
                 
-                setTimeout(playAITurn, 1500);
+                setTimeout(playAITurn, 5000); // Увеличиваем время на ход бота до 5 секунд
             }
         }
         
@@ -1065,7 +1064,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     for (let i = 0; i < openCards.length; i++) {
                         if (openCards[i].id === cardToPlay.id) continue; // Пропускаем саму карту
                         
-                        if (canPlayCard(cardToPlay, openCards[i])) {
+                        // Проверяем, что карта на 1 ранг выше цели (как и при обычном ходе)
+                        const cardRank = cardValues.indexOf(cardToPlay.value);
+                        const targetRank = cardValues.indexOf(openCards[i].value);
+                        
+                        // Проверка для туза (можно положить только 2 на туз)
+                        if (openCards[i].value === 'A' && cardToPlay.value === '2') {
+                            canSelfPlay = true;
+                            targetCardIndex = playerCards.findIndex(card => card.id === openCards[i].id);
+                            break;
+                        }
+                        // Проверка стандартного правила "на 1 ранг выше"
+                        else if (cardRank === targetRank + 1) {
                             canSelfPlay = true;
                             targetCardIndex = playerCards.findIndex(card => card.id === openCards[i].id);
                             break;
@@ -1179,14 +1189,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Проверяем, может ли бот сделать еще ход (рекурсивно)
                 setTimeout(() => {
                     playAITurn();
-                }, 1500);
+                }, 5000); // Увеличиваем время хода бота до 5 секунд
             } else {
                 // Если бот не смог сделать ход, передаем ход следующему игроку
                 setTimeout(() => {
                     const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
                     console.log(`Бот передает ход следующему игроку: ${nextPlayerIndex}`);
                     setCurrentPlayer(nextPlayerIndex);
-                }, 1500);
+                }, 5000); // Увеличиваем время хода бота до 5 секунд
             }
         }
         // Для второй стадии используем другую логику (оставим на потом)
@@ -1404,8 +1414,22 @@ document.addEventListener('DOMContentLoaded', function() {
             const selfTargetCards = aiPlayer.cards.filter(c => c.faceUp && c.id !== card.id);
             
             for (const targetCard of selfTargetCards) {
-                // Проверяем, можно ли положить карту
-                if (canPlayCard(card, targetCard)) {
+                // Проверка правила "на 1 ранг выше"
+                const cardRank = cardValues.indexOf(card.value);
+                const targetRank = cardValues.indexOf(targetCard.value);
+                
+                // Проверка для туза (можно положить только 2 на туз)
+                if (targetCard.value === 'A' && card.value === '2') {
+                    console.log(`Найдена подходящая своя карта: ${targetCard.value}${targetCard.suit}`);
+                    return {
+                        card: card,
+                        cardIndex: aiPlayer.cards.findIndex(c => c.id === card.id),
+                        targetCard: targetCard,
+                        targetCardIndex: aiPlayer.cards.findIndex(c => c.id === targetCard.id)
+                    };
+                }
+                // Проверка стандартного правила "на 1 ранг выше"
+                else if (cardRank === targetRank + 1) {
                     console.log(`Найдена подходящая своя карта: ${targetCard.value}${targetCard.suit}`);
                     return {
                         card: card,
@@ -1428,8 +1452,16 @@ document.addEventListener('DOMContentLoaded', function() {
         const selfTargetCards = aiPlayer.cards.filter(c => c.faceUp && c.id !== card.id);
         
         for (const targetCard of selfTargetCards) {
-            // Проверяем, можно ли положить карту
-            if (canPlayCard(card, targetCard)) {
+            // Проверка правила "на 1 ранг выше"
+            const cardRank = cardValues.indexOf(card.value);
+            const targetRank = cardValues.indexOf(targetCard.value);
+            
+            // Проверка для туза (можно положить только 2 на туз)
+            if (targetCard.value === 'A' && card.value === '2') {
+                return true;
+            }
+            // Проверка стандартного правила "на 1 ранг выше"
+            else if (cardRank === targetRank + 1) {
                 return true;
             }
         }
@@ -1573,7 +1605,15 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Проверяем, можно ли положить карту хотя бы на одну из своих открытых карт
         for (const targetCard of playerCards) {
-            if (canPlayCard(card, targetCard)) {
+            const cardRank = cardValues.indexOf(card.value);
+            const targetRank = cardValues.indexOf(targetCard.value);
+            
+            // Проверка для туза (можно положить только 2 на туз)
+            if (targetCard.value === 'A' && card.value === '2') {
+                return true;
+            }
+            // Проверка стандартного правила "на 1 ранг выше"
+            else if (cardRank === targetRank + 1) {
                 return true;
             }
         }

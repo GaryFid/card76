@@ -24,6 +24,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const aiTestModeToggle = document.getElementById('ai-test-mode');
     const startGameBtn = document.getElementById('start-game-btn');
     const backBtn = document.getElementById('back-btn');
+    const rulesBtn = document.getElementById('rules-btn');
+    const rulesModal = document.getElementById('rules-modal');
+    const closeModal = document.querySelector('.close-modal');
     
     // Переменная для хранения выбранного количества игроков
     let selectedPlayerCount = 4;
@@ -59,6 +62,23 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!this.checked && aiTestModeToggle.checked) {
             // Если отключаем ботов, то отключаем и режим тестирования с ИИ
             aiTestModeToggle.checked = false;
+        }
+    });
+    
+    // Обработчик открытия модального окна с правилами
+    rulesBtn.addEventListener('click', function() {
+        rulesModal.style.display = 'block';
+    });
+    
+    // Обработчик закрытия модального окна с правилами
+    closeModal.addEventListener('click', function() {
+        rulesModal.style.display = 'none';
+    });
+    
+    // Закрытие модального окна при клике за его пределами
+    window.addEventListener('click', function(event) {
+        if (event.target === rulesModal) {
+            rulesModal.style.display = 'none';
         }
     });
     

@@ -72,12 +72,35 @@ function dealCards(deck, playerCount) {
  * Определяет, может ли игрок сделать ход
  * @param {Object} card - Карта, которую игрок хочет сыграть
  * @param {Object} topCard - Верхняя карта на столе
+ * @param {String} stage - Текущая стадия игры ('stage1', 'stage2', и т.д.)
+ * @param {Boolean} isSelfCard - Флаг, указывающий, кладёт ли игрок карту на свою карту
  * @returns {Boolean} - Можно ли сделать ход
  */
-function canPlayCard(card, topCard) {
+function canPlayCard(card, topCard, stage = 'stage1', isSelfCard = false) {
   if (!topCard) return true; // Если первый ход, можно ходить любой картой
   
-  // Правила игры "Разгильдяй": можно ходить картой того же номинала или той же масти
+  // Определяем ранг карт для сравнения
+  const VALUES_RANK = ['6', '7', '8', '9', '10', 'В', 'Д', 'К', 'Т', '2', '3', '4', '5'];
+  
+  // Правила игры "Разгильдяй" для стадии 1:
+  if (stage === 'stage1') {
+    const cardIndex = VALUES_RANK.indexOf(card.value);
+    const topCardIndex = VALUES_RANK.indexOf(topCard.value);
+    
+    // Для карты "Туз" можно положить только "2"
+    if (topCard.value === 'Т' && card.value === '2') {
+      return true;
+    }
+    
+    // Для остальных карт - только на 1 ранг выше
+    if (cardIndex === (topCardIndex + 1) % VALUES_RANK.length) {
+      return true;
+    }
+    
+    return false;
+  }
+  
+  // Для других стадий (или если стадия не указана) - стандартное правило
   return card.suit === topCard.suit || card.value === topCard.value;
 }
 
@@ -85,21 +108,36 @@ function canPlayCard(card, topCard) {
  * Ход AI (для игры с ботами)
  * @param {Array} hand - Карты в руке бота
  * @param {Object} topCard - Верхняя карта на столе
+ * @param {String} stage - Текущая стадия игры
  * @returns {Object|null} - Карта для хода или null, если нет подходящих карт
  */
-function aiMove(hand, topCard) {
+function aiMove(hand, topCard, stage = 'stage1') {
   if (!topCard) {
     // Если первый ход, бот ходит случайной картой
     return hand[Math.floor(Math.random() * hand.length)];
   }
   
-  // Ищем карты, которыми можно походить
-  const playableCards = hand.filter(card => canPlayCard(card, topCard));
+  // Ищем карты, которыми можно походить с учетом правил текущей стадии
+  const playableCards = hand.filter(card => canPlayCard(card, topCard, stage));
   
   if (playableCards.length === 0) return null; // Нет подходящих карт
   
-  // Простая стратегия: выбираем случайную карту из доступных
-  return playableCards[Math.floor(Math.random() * playableCards.length)];
+  // Стратегия для ИИ в зависимости от стадии игры
+  if (stage === 'stage1') {
+    // В стадии 1 предпочитаем класть более высокие карты
+    const VALUES_RANK = ['6', '7', '8', '9', '10', 'В', 'Д', 'К', 'Т', '2', '3', '4', '5'];
+    
+    // Сортируем карты по рангу (от высшего к низшему)
+    playableCards.sort((a, b) => {
+      return VALUES_RANK.indexOf(b.value) - VALUES_RANK.indexOf(a.value);
+    });
+    
+    // Выбираем карту с наивысшим рангом
+    return playableCards[0];
+  } else {
+    // В других стадиях используем случайный выбор
+    return playableCards[Math.floor(Math.random() * playableCards.length)];
+  }
 }
 
 /**

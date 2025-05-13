@@ -117,8 +117,12 @@ async function renderGameState(ctx) {
         buttonRows.push(cardButtons.slice(i, i + 3));
       }
       
-      // Добавляем кнопку "Взять карту"
-      buttonRows.push([Markup.button.callback('Взять карту', 'draw_card')]);
+      // Добавляем новые кнопки действий
+      buttonRows.push([
+        Markup.button.callback('Взять из колоды', 'draw_card'),
+        Markup.button.callback('Сыграть', 'play_selected'),
+        Markup.button.callback('Положить себе', 'put_self')
+      ]);
       
       replyMarkup = Markup.inlineKeyboard(buttonRows);
     } else {
@@ -151,49 +155,99 @@ async function makeBotMove(ctx, game, botIndex) {
   try {
     const bot = game.players[botIndex];
     const topCard = game.discardPile.length > 0 ? game.discardPile[game.discardPile.length - 1] : null;
+    let madeTurn = false;
     
-    // Ищем карту для хода
-    const botCard = aiMove(bot.cards, topCard);
-    
-    if (botCard) {
-      // Бот может сделать ход
-      const cardIndex = bot.cards.findIndex(card => card.suit === botCard.suit && card.value === botCard.value);
+    // Бот делает ходы, пока у него есть подходящая карта
+    do {
+      // Ищем карту для хода с учетом текущей стадии игры
+      const botCard = aiMove(bot.cards, topCard, game.gameStage || 'stage1');
       
-      // Удаляем карту из руки бота
-      const playedCard = bot.cards.splice(cardIndex, 1)[0];
-      
-      // Добавляем карту в сброс
-      game.discardPile.push(playedCard);
-      
-      // Проверяем, закончились ли карты
-      if (bot.cards.length === 0) {
-        // Бот выиграл
-        game.status = 'finished';
-        game.winner = null; // У бота нет userId
+      if (botCard) {
+        // Бот может сделать ход
+        const cardIndex = bot.cards.findIndex(card => 
+          card.suit === botCard.suit && card.value === botCard.value
+        );
         
-        await game.save();
+        // Удаляем карту из руки бота
+        const playedCard = bot.cards.splice(cardIndex, 1)[0];
         
-        await ctx.reply(`Бот ${botIndex + 1} выиграл игру!`);
-        setTimeout(() => ctx.scene.enter('menu'), 3000);
-        return;
-      }
-    } else {
-      // Бот не может сделать ход, берет карту
-      if (game.deck.length === 0) {
-        // Перемешиваем сброс, если колода закончилась
-        if (game.discardPile.length > 1) {
-          const topCard = game.discardPile.pop();
-          game.deck = shuffleDeck(game.discardPile);
-          game.discardPile = [topCard];
+        // Добавляем карту в сброс
+        game.discardPile.push(playedCard);
+        
+        // Обновляем верхнюю карту для следующей проверки
+        const newTopCard = playedCard;
+        
+        // Добавляем небольшую паузу между ходами бота для более реалистичного поведения
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Уведомляем о ходе бота
+        await ctx.reply(`Бот ${botIndex + 1} сыграл карту ${playedCard.name}`);
+        
+        // Проверяем, закончились ли карты
+        if (bot.cards.length === 0) {
+          // Бот выиграл
+          game.status = 'finished';
+          game.winner = null; // У бота нет userId
+          
+          await game.save();
+          
+          await ctx.reply(`Бот ${botIndex + 1} выиграл игру!`);
+          setTimeout(() => ctx.scene.enter('menu'), 3000);
+          return;
         }
+        
+        // Бот берет новую карту из колоды после хода
+        if (game.deck.length === 0) {
+          // Перемешиваем сброс, если колода закончилась
+          if (game.discardPile.length > 1) {
+            const topCard = game.discardPile.pop();
+            game.deck = shuffleDeck(game.discardPile);
+            game.discardPile = [topCard];
+          }
+        }
+        
+        if (game.deck.length > 0) {
+          // Берем карту из колоды
+          const newCard = game.deck.pop();
+          bot.cards.push(newCard);
+          
+          await ctx.reply(`Бот ${botIndex + 1} берет карту из колоды`);
+        }
+        
+        // Отмечаем, что ход был сделан
+        madeTurn = true;
+        
+        // Обновляем состояние игры для отображения промежуточных ходов
+        await ctx.reply(`Бот ${botIndex + 1} продолжает свой ход...`);
+      } else {
+        // Бот не может сделать ход, берет карту
+        if (game.deck.length === 0) {
+          // Перемешиваем сброс, если колода закончилась
+          if (game.discardPile.length > 1) {
+            const topCard = game.discardPile.pop();
+            game.deck = shuffleDeck(game.discardPile);
+            game.discardPile = [topCard];
+          }
+        }
+        
+        if (game.deck.length > 0) {
+          // Берем карту из колоды
+          const newCard = game.deck.pop();
+          bot.cards.push(newCard);
+          
+          await ctx.reply(`Бот ${botIndex + 1} не может сделать ход и берет карту из колоды`);
+        } else {
+          await ctx.reply(`Бот ${botIndex + 1} не может сделать ход, а колода пуста`);
+        }
+        
+        // Если бот не смог сделать ход, заканчиваем его ходы
+        madeTurn = false;
       }
       
-      if (game.deck.length > 0) {
-        // Берем карту из колоды
-        const newCard = game.deck.pop();
-        bot.cards.push(newCard);
-      }
-    }
+      // Делаем паузу для более медленного темпа игры
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      
+    } while (madeTurn && bot.cards.length > 0);
     
     // Переход хода к следующему игроку
     game.currentPlayer = (game.currentPlayer + 1) % game.players.length;
@@ -363,6 +417,73 @@ gameScene.command('exit', async (ctx) => {
     console.error('Ошибка при выходе из игры:', error);
     await ctx.reply('Произошла ошибка при выходе из игры. Возвращаем вас в главное меню.');
     return ctx.scene.enter('menu');
+  }
+});
+
+// Обработчик кнопки "Сыграть"
+gameScene.action('play_selected', async (ctx) => {
+  try {
+    await ctx.answerCbQuery('Выберите карту для игры...');
+    
+    const game = await Game.findById(ctx.session.gameId);
+    
+    if (!game) {
+      await ctx.reply('Игра не найдена. Возвращаем вас в главное меню.');
+      return ctx.scene.enter('menu');
+    }
+    
+    // Проверяем, что сейчас ход пользователя
+    const userIndex = game.players.findIndex(player => 
+      player.userId && player.userId.equals(ctx.session.user._id)
+    );
+    
+    if (userIndex === -1 || game.currentPlayer !== userIndex) {
+      return ctx.answerCbQuery('Сейчас не ваш ход!');
+    }
+    
+    // Здесь мы просто показываем сообщение, что нужно выбрать карту
+    // Само действие будет выполнено при нажатии на конкретную карту
+    await ctx.reply('Выберите карту, которую хотите сыграть.');
+    
+    // Обновляем игровое состояние
+    await renderGameState(ctx);
+  } catch (error) {
+    console.error('Ошибка при выборе карты для игры:', error);
+    await ctx.reply('Произошла ошибка при выборе карты. Попробуйте еще раз.');
+  }
+});
+
+// Обработчик кнопки "Положить себе"
+gameScene.action('put_self', async (ctx) => {
+  try {
+    await ctx.answerCbQuery('Выберите карту, чтобы положить себе...');
+    
+    const game = await Game.findById(ctx.session.gameId);
+    
+    if (!game) {
+      await ctx.reply('Игра не найдена. Возвращаем вас в главное меню.');
+      return ctx.scene.enter('menu');
+    }
+    
+    // Проверяем, что сейчас ход пользователя
+    const userIndex = game.players.findIndex(player => 
+      player.userId && player.userId.equals(ctx.session.user._id)
+    );
+    
+    if (userIndex === -1 || game.currentPlayer !== userIndex) {
+      return ctx.answerCbQuery('Сейчас не ваш ход!');
+    }
+    
+    // Помечаем в сессии, что следующий выбор карты - для положения себе
+    ctx.session.putSelf = true;
+    
+    await ctx.reply('Выберите карту, которую хотите положить себе.');
+    
+    // Обновляем игровое состояние
+    await renderGameState(ctx);
+  } catch (error) {
+    console.error('Ошибка при выборе карты для себя:', error);
+    await ctx.reply('Произошла ошибка при выборе карты. Попробуйте еще раз.');
   }
 });
 
