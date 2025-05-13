@@ -3,23 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Игра - Разгильдяй</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/game.css">
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <title>Игра "Разгильдяй"</title>
+    <link rel="stylesheet" href="/css/game.css">
 </head>
 <body>
     <div class="game-container">
-        <!-- Игровой стол -->
+        <!-- Игровой стол с картами -->
         <div class="table-container">
-            <div class="table-overlay"></div>
             <div class="table oval-table">
-                <!-- Колода карт по центру -->
+                <!-- Колода карт в центре стола -->
                 <div class="card-deck">
-                    <div class="card-pile deck">
-                        <div class="card card-back"></div>
-                        <div class="card-count">52</div>
-                    </div>
+                    <div class="card-pile deck"></div>
                     <div class="card-pile discard"></div>
                 </div>
                 
@@ -28,84 +22,117 @@
                     <!-- Игроки будут добавлены динамически через JavaScript -->
                 </div>
             </div>
+            <div class="table-overlay"></div>
         </div>
-        
-        <!-- Панель управления игрой -->
-        <div class="game-controls">
-            <div class="current-player-info">
-                <div class="avatar-container">
-                    <div class="player-avatar">
-                        <img src="images/avatar-placeholder.png" alt="Аватар игрока">
-                    </div>
-                    <div class="player-indicator">Ваш ход</div>
-                </div>
-                <div class="player-name">Игрок 1</div>
-            </div>
-            
-            <div class="action-buttons">
-                <button id="draw-card" class="game-btn">Взять карту</button>
-                <button id="play-card" class="game-btn" disabled>Сыграть</button>
-                <button id="pass-turn" class="game-btn">Пропустить</button>
-            </div>
-            
-            <div class="player-hand">
-                <!-- Карты на руке будут добавлены динамически -->
-            </div>
-        </div>
-        
-        <!-- Модальное окно с настройками -->
-        <div class="game-modal" id="settings-modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3>Настройки игры</h3>
-                    <button class="close-btn">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <div class="setting-item">
-                        <label for="sound-toggle">Звук</label>
-                        <div class="toggle-switch">
-                            <input type="checkbox" id="sound-toggle" checked>
-                            <span class="toggle-slider"></span>
-                        </div>
-                    </div>
-                    <div class="setting-item">
-                        <label for="animation-toggle">Анимации</label>
-                        <div class="toggle-switch">
-                            <input type="checkbox" id="animation-toggle" checked>
-                            <span class="toggle-slider"></span>
-                        </div>
-                    </div>
-                    <button id="leave-game" class="game-btn warning">Покинуть игру</button>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Плавающая кнопка настроек -->
-        <button class="settings-btn" id="open-settings">
-            <span class="settings-icon">⚙️</span>
-        </button>
         
         <!-- Информация о стадии игры -->
         <div class="game-stage-info">
-            <span class="stage-number">Стадия 1</span>
-            <span class="stage-description">Начальная раздача</span>
+            <div class="stage-number">Стадия 1</div>
+            <div class="stage-description">Выкладка карт на 1 ранг выше</div>
+        </div>
+        
+        <!-- Кнопка настроек -->
+        <div id="open-settings" class="settings-btn">
+            <span class="settings-icon">⚙️</span>
+        </div>
+        
+        <!-- Панель управления внизу экрана -->
+        <div class="game-controls">
+            <div class="current-player-info">
+                <div class="avatar-container">
+                    <img src="/img/player-avatar.svg" width="40" height="40" alt="Аватар">
+                    <div class="player-indicator">Ваш ход</div>
+                </div>
+                <div class="player-name">Вы</div>
+            </div>
+            
+            <!-- Кнопки действий -->
+            <div class="action-buttons">
+                <button id="draw-card" class="game-btn">Взять из колоды</button>
+                <button id="play-card" class="game-btn">Сыграть</button>
+                <button id="self-card" class="game-btn">Положить себе</button>
+                <button id="pass-turn" class="game-btn">Пас</button>
+            </div>
+            
+            <!-- Карты в руке игрока -->
+            <div class="player-hand">
+                <!-- Карты будут добавлены динамически через JavaScript -->
+            </div>
         </div>
     </div>
-
-    <!-- Шаблоны для динамических элементов -->
+    
+    <!-- Модальное окно настроек -->
+    <div id="settings-modal" class="game-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Настройки</h3>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="setting-item">
+                    <div>Звуки</div>
+                    <input type="checkbox" id="sound-toggle">
+                </div>
+                <div class="setting-item">
+                    <div>Вибрация</div>
+                    <input type="checkbox" id="vibration-toggle">
+                </div>
+                <button id="show-rules" class="game-btn">Правила игры</button>
+                <button id="leave-game" class="game-btn warning">Покинуть игру</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Модальное окно правил игры -->
+    <div id="rules-modal" class="game-modal">
+        <div class="modal-content rules-content">
+            <div class="modal-header">
+                <h3>Правила игры "Разгильдяй"</h3>
+                <button class="close-rules-btn close-btn">&times;</button>
+            </div>
+            <div class="modal-body rules-body">
+                <h4>Цель игры</h4>
+                <p>Избавиться от всех карт на руке раньше других игроков.</p>
+                
+                <h4>Колода и подготовка</h4>
+                <p>Игра ведется стандартной колодой из 52 карт (от 2 до туза).</p>
+                <p>Каждому игроку раздаются 3 карты: 2 закрытые и 1 открытая.</p>
+                
+                <h4>Ход игры</h4>
+                <p><strong>Стадия 1:</strong> Выкладка карт</p>
+                <ul>
+                    <li>Игроки ходят по очереди. Начинает игрок с самой старшей открытой картой.</li>
+                    <li>В свой ход игрок может положить свою карту на открытую карту любого оппонента, если она на 1 ранг выше (например, 7 на 6).</li>
+                    <li>Туз считается самым старшим, можно положить только 2 на туза.</li>
+                    <li>После каждого хода игрок берёт новую карту из колоды и может продолжать ходить, пока у него есть возможность сделать ход.</li>
+                    <li>Если игрок не может сделать ход картами из руки (положить на карты других игроков), он может положить карту на свою открытую карту по тем же правилам.</li>
+                    <li>Если и это невозможно, игрок берёт карту из колоды и его ход завершается.</li>
+                    <li>Стадия заканчивается, когда колода заканчивается.</li>
+                </ul>
+                
+                <p><strong>Стадия 2:</strong> Сброс карт</p>
+                <ul>
+                    <li>Все закрытые карты открываются.</li>
+                    <li>Игроки по очереди скидывают карты в центр по правилу: одинаковый ранг или одинаковая масть.</li>
+                    <li>Если игрок не может сходить, он берёт карту из колоды.</li>
+                    <li>Если колода закончилась, сброс перемешивается и становится новой колодой.</li>
+                </ul>
+                
+                <h4>Победа</h4>
+                <p>Побеждает игрок, который первым избавится от всех своих карт.</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Шаблоны для JavaScript -->
     <template id="player-template">
         <div class="player">
             <div class="player-avatar">
-                <img src="images/avatar-placeholder.png" alt="Аватар игрока">
+                <img src="/img/bot-avatar.svg" alt="Аватар">
             </div>
-            <div class="player-cards">
-                <span class="card-count">0</span>
-            </div>
-            <div class="player-name"></div>
             <div class="player-active-indicator"></div>
-            <div class="turn-timer">
-                <div class="turn-timer-progress"></div>
-            </div>
+            <div class="player-cards">Карт: 0</div>
+            <div class="player-name">Игрок</div>
         </div>
     </template>
     
@@ -113,14 +140,16 @@
         <div class="card">
             <div class="card-inner">
                 <div class="card-front">
-                    <div class="card-value"></div>
-                    <div class="card-suit"></div>
+                    <div class="card-value">A</div>
+                    <div class="card-suit">♠</div>
                 </div>
                 <div class="card-back"></div>
             </div>
         </div>
     </template>
-
-    <script src="js/game.js"></script>
+    
+    <!-- Подключение скриптов -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="/js/game.js"></script>
 </body>
 </html> 

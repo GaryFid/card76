@@ -42,6 +42,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Обновляем выбранное количество игроков
             selectedPlayerCount = parseInt(this.getAttribute('data-players'));
+            console.log(`Выбрано игроков: ${selectedPlayerCount}`);
         });
     });
     
@@ -68,18 +69,17 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Обработчик кнопки "Начать игру"
     startGameBtn.addEventListener('click', function() {
-        const withAI = withAIToggle.checked;
-        const aiTestMode = aiTestModeToggle.checked;
-        
         // Сохраняем настройки игры
         const gameSettings = {
             playerCount: selectedPlayerCount,
-            withAI,
-            aiTestMode
+            withAI: withAIToggle.checked,
+            aiTestMode: aiTestModeToggle.checked
         };
-        localStorage.setItem('gameSettings', JSON.stringify(gameSettings));
         
-        // Перенаправляем на страницу игры
+        localStorage.setItem('gameSettings', JSON.stringify(gameSettings));
+        console.log(`Сохранены настройки игры: ${JSON.stringify(gameSettings)}`);
+        
+        // Переходим на страницу игры
         window.location.href = '/game';
         
         // Если используем Telegram WebApp, отправляем данные в бота
@@ -89,8 +89,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 action: 'start_game',
                 userId: userData.id,
                 playerCount: selectedPlayerCount,
-                withAI,
-                aiTestMode
+                withAI: withAIToggle.checked,
+                aiTestMode: aiTestModeToggle.checked
             }));
         }
     });

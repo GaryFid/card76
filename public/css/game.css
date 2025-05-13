@@ -649,4 +649,39 @@ body {
     background-color: #b00;
     background-image: linear-gradient(135deg, #b00 25%, #d00 25%, #d00 50%, #b00 50%, #b00 75%, #d00 75%, #d00);
     background-size: 10px 10px;
+}
+
+/* Стили для модального окна правил */
+.rules-content {
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.rules-body {
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.rules-body h4 {
+    margin-top: 20px;
+    margin-bottom: 10px;
+    color: var(--tg-theme-button-color);
+}
+
+.rules-body p, .rules-body ul {
+    margin-bottom: 10px;
+}
+
+.rules-body ul {
+    padding-left: 20px;
+}
+
+.rules-body li {
+    margin-bottom: 5px;
+}
+
+/* Дополнительный отступ для кнопки правил в настройках */
+#show-rules {
+    margin-top: 10px;
+    margin-bottom: 10px;
 } 
