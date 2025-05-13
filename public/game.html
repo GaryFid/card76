@@ -4,7 +4,31 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Игра "Разгильдяй"</title>
-    <link rel="stylesheet" href="/css/game.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/game.css">
+    <script>
+        // Скрипт диагностики для проверки загрузки ресурсов
+        window.addEventListener('load', function() {
+            console.log('Страница и все ресурсы загружены');
+            
+            // Проверка загрузки CSS
+            const styleSheets = document.styleSheets;
+            console.log('Количество загруженных стилей: ' + styleSheets.length);
+            for (let i = 0; i < styleSheets.length; i++) {
+                console.log('Загружен стиль: ' + styleSheets[i].href);
+            }
+            
+            // Проверка загрузки JavaScript
+            console.log('Игровой JavaScript загружен: ' + (typeof initGame === 'function'));
+        });
+        
+        // Отлавливаем ошибки загрузки ресурсов
+        window.addEventListener('error', function(e) {
+            if (e.target.tagName === 'LINK' || e.target.tagName === 'SCRIPT') {
+                console.error('Ошибка загрузки ресурса: ' + e.target.src || e.target.href);
+            }
+        }, true);
+    </script>
 </head>
 <body>
     <div class="game-container">
@@ -40,7 +64,7 @@
         <div class="game-controls">
             <div class="current-player-info">
                 <div class="avatar-container">
-                    <img src="/img/player-avatar.svg" width="40" height="40" alt="Аватар">
+                    <img src="img/player-avatar.svg" width="40" height="40" alt="Аватар">
                     <div class="player-indicator">Ваш ход</div>
                 </div>
                 <div class="player-name">Вы</div>
@@ -127,7 +151,7 @@
     <template id="player-template">
         <div class="player">
             <div class="player-avatar">
-                <img src="/img/bot-avatar.svg" alt="Аватар">
+                <img src="img/bot-avatar.svg" alt="Аватар">
             </div>
             <div class="player-active-indicator"></div>
             <div class="player-cards">Карт: 0</div>
@@ -149,6 +173,6 @@
     
     <!-- Подключение скриптов -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="/js/game.js"></script>
+    <script src="js/game.js"></script>
 </body>
 </html> 

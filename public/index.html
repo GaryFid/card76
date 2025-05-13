@@ -3,46 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Разгильдяй - Карточная игра</title>
-    <link rel="stylesheet" href="css/style.css">
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <title>Отладка "Разгильдяй"</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+        .debug-link {
+            display: inline-block;
+            margin: 10px;
+            padding: 10px 20px;
+            background-color: #3390ec;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Разгильдяй</h1>
-            <p>Карточная игра</p>
-        </header>
-        
-        <main>
-            <div class="card-menu">
-                <div class="menu-item" id="start-game">
-                    <div class="menu-icon">🎮</div>
-                    <div class="menu-text">Начать игру</div>
-                </div>
-                
-                <div class="menu-item" id="play-ai">
-                    <div class="menu-icon">🤖</div>
-                    <div class="menu-text">Играть с ИИ</div>
-                </div>
-                
-                <div class="menu-item" id="rating">
-                    <div class="menu-icon">🏆</div>
-                    <div class="menu-text">Рейтинг</div>
-                </div>
-                
-                <div class="menu-item" id="rules">
-                    <div class="menu-icon">📋</div>
-                    <div class="menu-text">Правила</div>
-                </div>
-            </div>
-        </main>
-        
-        <footer>
-            <p>© 2025 Разгильдяй</p>
-        </footer>
+    <h1>Отладка игры "Разгильдяй"</h1>
+    <p>Выберите страницу для перехода:</p>
+    
+    <div>
+        <a href="game.html" class="debug-link">Игровой экран</a>
+        <a href="game-setup.html" class="debug-link">Настройка игры</a>
     </div>
-
-    <script src="js/main.js"></script>
+    
+    <p>
+        Для отладки обязательно откройте консоль разработчика (F12), 
+        чтобы видеть ошибки загрузки ресурсов и логи.
+    </p>
 </body>
 </html> 

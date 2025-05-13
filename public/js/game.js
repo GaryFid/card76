@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.documentElement.style.setProperty('--tg-theme-text-color', tgApp.themeParams.text_color || '#000000');
     document.documentElement.style.setProperty('--tg-theme-button-color', tgApp.themeParams.button_color || '#3390ec');
     document.documentElement.style.setProperty('--tg-theme-button-text-color', tgApp.themeParams.button_text_color || '#ffffff');
-    
+
     // Проверка авторизации
     const user = localStorage.getItem('user');
     if (!user) {
@@ -213,7 +213,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Добавляем класс для отличия ИИ и реального игрока
             if (player.isAI) {
                 playerElement.classList.add('ai-player');
-            } else {
+                } else {
                 playerElement.classList.add('human-player');
             }
             
@@ -274,7 +274,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     cardElement.appendChild(valueElem);
                     cardElement.appendChild(suitElem);
-                } else {
+            } else {
                     cardElement.classList.add('card-back');
                 }
                 
@@ -330,7 +330,7 @@ document.addEventListener('DOMContentLoaded', function() {
             countElem.className = 'card-count';
             countElem.textContent = game.deck.length;
             deckElement.appendChild(countElem);
-        } else {
+                } else {
             // Если колода пуста, показываем пустое место
             const emptyDeck = document.createElement('div');
             emptyDeck.className = 'card mini-card';
@@ -491,11 +491,11 @@ document.addEventListener('DOMContentLoaded', function() {
             playCardButton.style.display = 'none';
             selfCardButton.style.display = 'none';
             
-            // Снимаем выделение со всех карт
+                // Снимаем выделение со всех карт
             document.querySelectorAll('.player-hand .card.selected').forEach(card => {
-                card.classList.remove('selected');
-            });
-            
+                    card.classList.remove('selected');
+                });
+                
             // Снимаем подсветку со всех карт на столе
             document.querySelectorAll('.table-card.highlighted').forEach(card => {
                 card.classList.remove('highlighted');
@@ -812,7 +812,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         showGameMessage('Вы можете сыграть взятую карту на карту соперника', 2000);
                         
                         // Выделяем взятую карту
-                        setTimeout(() => {
+        setTimeout(() => {
                             const newCardElement = document.querySelector(`.player-hand .card[data-card-id="${drawnCard.id}"]`);
                             if (newCardElement) {
                                 newCardElement.click(); // Имитируем клик по карте для её выделения
@@ -829,7 +829,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             showGameMessage('Вы можете положить взятую карту на свою карту', 2000);
                             
                             // Выделяем взятую карту
-                            setTimeout(() => {
+        setTimeout(() => {
                                 const newCardElement = document.querySelector(`.player-hand .card[data-card-id="${drawnCard.id}"]`);
                                 if (newCardElement) {
                                     newCardElement.click(); // Имитируем клик по карте для её выделения
@@ -1015,7 +1015,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                         const newCardElement = document.querySelector(`.player-hand .card[data-card-id="${drawnCard.id}"]`);
                                         if (newCardElement && canPlayCardOnTable(drawnCard)) {
                                             newCardElement.click(); // Имитируем клик по карте для её выделения
-                                        } else {
+            } else {
                                             // Если новой картой нельзя сходить, но можно сыграть другими картами
                                             showGameMessage('У вас есть возможность для хода', 2000);
                                         }
@@ -1027,7 +1027,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             }
                             
                             // Передаем ход следующему игроку
-                            setTimeout(() => {
+                setTimeout(() => {
                                 const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
                                 setCurrentPlayer(nextPlayerIndex);
                             }, 1500);
@@ -1125,7 +1125,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                             newCardElement.click(); // Имитируем клик по карте для её выделения
                                         }
                                         showGameMessage('Вы можете сыграть взятую карту', 2000);
-                                    } else {
+                    } else {
                                         // Если новой картой нельзя сходить, но можно сыграть другими картами
                                         showGameMessage('У вас есть возможность для хода', 2000);
                                     }
@@ -1148,17 +1148,6 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 showGameMessage('Сначала выберите карту для хода');
             }
-        }
-    });
-    
-    passTurnButton.addEventListener('click', function() {
-        if (isMyTurn) {
-            // Показываем сообщение
-            showGameMessage('Вы пропускаете ход');
-            
-            // Переход хода к следующему игроку
-            const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
-            setCurrentPlayer(nextPlayerIndex);
         }
     });
     
