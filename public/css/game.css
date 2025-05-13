@@ -59,6 +59,9 @@ body {
     z-index: 3;
     display: flex;
     gap: 20px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
 }
 
 .card-pile {
@@ -98,6 +101,7 @@ body {
     width: 100%;
     height: 100%;
     z-index: 2;
+    pointer-events: none; /* Чтобы игроки не блокировали взаимодействие со столом */
 }
 
 .player {
@@ -107,6 +111,8 @@ body {
     align-items: center;
     transition: all 0.3s ease;
     z-index: 3;
+    pointer-events: auto; /* Разрешаем взаимодействие с игроком */
+    transform: translate(-50%, -50%); /* Центрирование относительно позиции */
 }
 
 .player-avatar {
@@ -174,12 +180,15 @@ body {
 /* Стили для карт на столе */
 .player-table-cards {
     position: absolute;
-    top: 60px;
     width: 120px;
     height: 80px;
     display: flex;
     justify-content: center;
     z-index: 4;
+    transform: translate(-50%, 0);
+    left: 50%;
+    top: 60px; /* Расстояние от игрока до его карт */
+    pointer-events: auto;
 }
 
 .table-card {
