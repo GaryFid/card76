@@ -71,10 +71,10 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         
         // Создаем колоду
-        game.deck = createDeck();
+        initializeDeck();
         
         // Перемешиваем колоду
-        shuffleDeck(game.deck);
+        shuffleDeck();
         
         // Раздаем карты игрокам
         dealInitialCards();
