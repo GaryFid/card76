@@ -115,6 +115,20 @@ body {
     transform: translate(-50%, -50%); /* Центрирование относительно позиции */
 }
 
+.player-name {
+    margin-bottom: 5px;
+    font-size: 12px;
+    background-color: rgba(255,255,255,0.8);
+    color: #333;
+    padding: 2px 8px;
+    border-radius: 10px;
+    max-width: 100px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .player-avatar {
     width: 50px;
     height: 50px;
@@ -140,20 +154,6 @@ body {
     border-radius: 10px;
 }
 
-.player-name {
-    margin-top: 5px;
-    font-size: 12px;
-    background-color: rgba(255,255,255,0.8);
-    color: #333;
-    padding: 2px 8px;
-    border-radius: 10px;
-    max-width: 100px;
-    text-align: center;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
 .player-active-indicator {
     position: absolute;
     width: 60px;
@@ -177,49 +177,53 @@ body {
     100% { transform: scale(1); opacity: 0.8; }
 }
 
-/* Стили для карт на столе */
+/* Стили для карт в руках игроков */
 .player-table-cards {
-    position: absolute;
-    width: 120px;
-    height: 80px;
-    display: flex;
-    justify-content: center;
-    z-index: 4;
-    transform: translate(-50%, 0);
-    left: 50%;
-    top: 60px; /* Расстояние от игрока до его карт */
-    pointer-events: auto;
+    position: relative;
+    margin-top: 10px;
+    min-height: 60px;
+    min-width: 40px;
 }
 
 .table-card {
     position: absolute;
     width: 40px;
     height: 60px;
+    background-color: white;
     border-radius: 5px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-    transform-origin: center;
-    transition: transform 0.2s, box-shadow 0.2s;
-    cursor: pointer;
-}
-
-.table-card.card-back {
-    background-color: #b00;
-    background-image: linear-gradient(135deg, #b00 25%, #d00 25%, #d00 50%, #b00 50%, #b00 75%, #d00 75%, #d00);
-    background-size: 10px 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    border: 1px solid #ccc;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 3px;
+    top: 0;
+    left: 0;
+    transition: transform 0.3s ease;
+    transform-origin: center bottom;
 }
 
 .table-card.card-front {
     background-color: white;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    font-size: 12px;
+}
+
+.table-card.card-back {
+    background-color: #f8f8f8;
+    background-image: url('../img/card-back.svg');
+    background-size: 100% 100%;
+}
+
+.table-card .card-value {
+    font-size: 10px;
     font-weight: bold;
 }
 
-.table-card.card-front.red {
-    color: red;
+.table-card .card-suit {
+    font-size: 12px;
+}
+
+.table-card.red {
+    color: #e53935;
 }
 
 /* Стили для карт */
@@ -603,6 +607,12 @@ body {
         font-size: 14px;
         padding: 12px 20px;
     }
+    
+    .player-name {
+        font-size: 10px;
+        max-width: 70px;
+        margin-bottom: 3px;
+    }
 }
 
 /* Стили для индикатора хода */
@@ -684,4 +694,24 @@ body {
 #show-rules {
     margin-top: 10px;
     margin-bottom: 10px;
+}
+
+/* Анимации для карт */
+.card-flip {
+    animation: flip 0.5s ease forwards;
+}
+
+.card-slide {
+    animation: slide 0.5s ease forwards;
+}
+
+@keyframes flip {
+    0% { transform: rotateY(0deg); }
+    50% { transform: rotateY(90deg); }
+    100% { transform: rotateY(180deg); }
+}
+
+@keyframes slide {
+    0% { transform: translateX(0) translateY(0); }
+    100% { transform: translateX(var(--slide-x, 0)) translateY(var(--slide-y, 0)); }
 } 
