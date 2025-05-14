@@ -267,25 +267,65 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (card.faceUp) {
                     cardElement.classList.add('card-front');
                     
-                    // Для открытых карт добавляем информацию о ранге и масти
-                    if (card.isRed) {
-                        cardElement.classList.add('red');
+                    // Используем изображения карт если включены в настройках
+                    if (game.settings.useCardImages) {
+                        // Используем изображение карты
+                        const cardImg = document.createElement('img');
+                        cardImg.src = getCardImageUrl(card);
+                        cardImg.className = 'card-image';
+                        cardImg.alt = `${card.value}${card.suit}`;
+                        cardElement.appendChild(cardImg);
+                    } else {
+                        // Стандартное отображение
+                        // Для открытых карт добавляем информацию о ранге и масти
+                        if (card.isRed) {
+                            cardElement.classList.add('red');
+                        }
+                        
+                        // Добавляем значение и масть
+                        const valueElem = document.createElement('div');
+                        valueElem.className = 'card-value';
+                        valueElem.textContent = card.value;
+                        
+                        const suitElem = document.createElement('div');
+                        suitElem.className = 'card-suit';
+                        suitElem.textContent = card.suit;
+                        
+                        cardElement.appendChild(valueElem);
+                        cardElement.appendChild(suitElem);
                     }
-                    
-                    // Добавляем значение и масть
-                    const valueElem = document.createElement('div');
-                    valueElem.className = 'card-value';
-                    valueElem.textContent = card.value;
-                    
-                    const suitElem = document.createElement('div');
-                    suitElem.className = 'card-suit';
-                    suitElem.textContent = card.suit;
-                    
-                    cardElement.appendChild(valueElem);
-                    cardElement.appendChild(suitElem);
                 } else {
                     cardElement.classList.add('card-back');
+                    
+                    // Добавляем изображение рубашки карты
+                    if (game.settings.useCardImages) {
+                        const cardBackImg = document.createElement('img');
+                        cardBackImg.src = 'img/card-back.svg';
+                        cardBackImg.className = 'card-back-image';
+                        cardBackImg.alt = 'Рубашка карты';
+                        cardElement.appendChild(cardBackImg);
+                    }
                 }
+                
+                // Добавляем подсказку
+                cardElement.title = card.faceUp ? `${card.value}${card.suit}` : 'Закрытая карта';
+                
+                // Эффект при наведении
+                cardElement.addEventListener('mouseover', function() {
+                    if (!cardElement.classList.contains('highlighted')) {
+                        cardElement.style.transform = `translateX(${offset}px) translateY(-5px) rotate(${cardIndex * 5}deg)`;
+                        cardElement.style.boxShadow = '0 5px 10px rgba(0,0,0,0.2)';
+                        cardElement.style.zIndex = '10';
+                    }
+                });
+                
+                cardElement.addEventListener('mouseout', function() {
+                    if (!cardElement.classList.contains('highlighted')) {
+                        cardElement.style.transform = `translateX(${offset}px) rotate(${cardIndex * 5}deg)`;
+                        cardElement.style.boxShadow = '';
+                        cardElement.style.zIndex = '';
+                    }
+                });
                 
                 cardsContainer.appendChild(cardElement);
             });
@@ -337,6 +377,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     cardElem.title = 'Колода (нажмите "Взять карту")';
                 }
                 
+                // Добавляем анимацию при наведении
+                cardElem.addEventListener('mouseover', function() {
+                    cardElem.style.transform = 'translateY(-5px)';
+                    cardElem.style.boxShadow = '0 5px 15px rgba(0,0,0,0.3)';
+                    cardElem.style.transition = 'transform 0.2s ease, box-shadow 0.2s ease';
+                });
+                
+                cardElem.addEventListener('mouseout', function() {
+                    cardElem.style.transform = '';
+                    cardElem.style.boxShadow = '';
+                });
+                
                 deckElement.appendChild(cardElem);
             }
             
@@ -382,24 +434,34 @@ document.addEventListener('DOMContentLoaded', function() {
             cardElement.className = 'card mini-card';
             
             // Показываем лицевую сторону карты в сбросе
-            const cardFront = document.createElement('div');
-            cardFront.className = 'card-front';
-            if (topCard.isRed) {
-                cardFront.classList.add('red');
+            if (game.settings.useCardImages) {
+                // Используем изображение карты
+                const cardImg = document.createElement('img');
+                cardImg.src = getCardImageUrl(topCard);
+                cardImg.className = 'card-image';
+                cardImg.alt = `${topCard.value}${topCard.suit}`;
+                cardElement.appendChild(cardImg);
+            } else {
+                // Стандартное отображение
+                const cardFront = document.createElement('div');
+                cardFront.className = 'card-front';
+                if (topCard.isRed) {
+                    cardFront.classList.add('red');
+                }
+                
+                // Добавляем значение и масть
+                const valueElem = document.createElement('div');
+                valueElem.className = 'card-value';
+                valueElem.textContent = topCard.value;
+                
+                const suitElem = document.createElement('div');
+                suitElem.className = 'card-suit';
+                suitElem.textContent = topCard.suit;
+                
+                cardFront.appendChild(valueElem);
+                cardFront.appendChild(suitElem);
+                cardElement.appendChild(cardFront);
             }
-            
-            // Добавляем значение и масть
-            const valueElem = document.createElement('div');
-            valueElem.className = 'card-value';
-            valueElem.textContent = topCard.value;
-            
-            const suitElem = document.createElement('div');
-            suitElem.className = 'card-suit';
-            suitElem.textContent = topCard.suit;
-            
-            cardFront.appendChild(valueElem);
-            cardFront.appendChild(suitElem);
-            cardElement.appendChild(cardFront);
             
             // Добавляем id карты
             cardElement.dataset.cardId = topCard.id;
@@ -412,6 +474,18 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 cardElement.title = 'Сброс';
             }
+            
+            // Добавляем анимацию при наведении на сброс
+            cardElement.addEventListener('mouseover', function() {
+                cardElement.style.transform = 'translateY(-5px) rotate(5deg)';
+                cardElement.style.boxShadow = '0 5px 15px rgba(0,0,0,0.3)';
+                cardElement.style.transition = 'transform 0.2s ease, box-shadow 0.2s ease';
+            });
+            
+            cardElement.addEventListener('mouseout', function() {
+                cardElement.style.transform = '';
+                cardElement.style.boxShadow = '';
+            });
             
             discardElement.appendChild(cardElement);
             
@@ -506,11 +580,44 @@ document.addEventListener('DOMContentLoaded', function() {
         const playerCards = game.players[0].cards;
         
         // Отображаем каждую карту
-        playerCards.forEach(card => {
+        playerCards.forEach((card, index) => {
             const cardElement = createCardElement(card);
+            
+            // Позиционируем карты в руке веером для лучшего отображения
+            const handSize = playerCards.length;
+            const maxOffset = Math.min(40, 200 / handSize); // Ограничиваем смещение для большого количества карт
+            const offsetPercent = index / Math.max(1, handSize - 1); // От 0 до 1
+            const offset = (offsetPercent - 0.5) * maxOffset * 2; // От -maxOffset до +maxOffset
+            
+            cardElement.style.transform = `translateY(${offset}px) rotate(${offset / 2}deg)`;
+            cardElement.style.zIndex = index;
+            cardElement.style.marginLeft = `-${Math.min(40, 70 / handSize)}px`; // Накладываем карты друг на друга
+            
+            // Добавляем класс для отображения карт в руке
+            cardElement.classList.add('hand-card');
+            
+            // Добавляем порядковый номер карты для ясности
+            cardElement.dataset.cardIndex = index;
             
             // Добавляем обработчик события клика по карте
             cardElement.addEventListener('click', cardClickHandler);
+            
+            // Эффект при наведении на карту в руке
+            cardElement.addEventListener('mouseover', function() {
+                if (!cardElement.classList.contains('selected')) {
+                    cardElement.style.transform = `translateY(-20px) rotate(${offset / 2}deg)`;
+                    cardElement.style.boxShadow = '0 5px 15px rgba(0,0,0,0.3)';
+                    cardElement.style.zIndex = 100 + index;
+                }
+            });
+            
+            cardElement.addEventListener('mouseout', function() {
+                if (!cardElement.classList.contains('selected')) {
+                    cardElement.style.transform = `translateY(${offset}px) rotate(${offset / 2}deg)`;
+                    cardElement.style.boxShadow = '';
+                    cardElement.style.zIndex = index;
+                }
+            });
             
             // Добавляем карту в контейнер руки игрока
             playerHandContainer.appendChild(cardElement);
@@ -1307,6 +1414,30 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         return false; // Бот положил на свою карту, ход завершается
                     }
+                } else {
+                    // Шаг 4: Если не можем сыграть взятой картой ни на карты противников, ни на свои карты,
+                    // проверяем имеющиеся карты бота на возможность сыграть на свои карты
+                    const selfMoveWithExistingCard = findSelfMoveForAI(playableCards);
+                    
+                    if (selfMoveWithExistingCard) {
+                        console.log(`Бот нашел ход на свою карту с существующей картой ${selfMoveWithExistingCard.card.value}${selfMoveWithExistingCard.card.suit}`);
+                        
+                        // Удаляем карту из руки бота
+                        const playedCard = aiPlayer.cards.splice(selfMoveWithExistingCard.cardIndex, 1)[0];
+                        
+                        // Кладем карту поверх своей карты
+                        aiPlayer.cards[selfMoveWithExistingCard.targetCardIndex] = playedCard;
+                        
+                        // Обновляем отображение
+                        renderPlayers();
+                        
+                        // Показываем сообщение
+                        showGameMessage(`${aiPlayer.name} кладет карту ${playedCard.value}${playedCard.suit} на свою карту`);
+                        
+                        return false; // Ход завершен, бот положил карту себе
+                    }
+                    
+                    console.log('Бот не нашел возможности положить карту на свои карты. Ход переходит к следующему игроку');
                 }
                 
                 // Если не можем ни сыграть взятой картой на карты противников, ни положить на свои карты
