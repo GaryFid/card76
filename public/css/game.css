@@ -737,4 +737,111 @@ body {
 .game-btn.disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+/* Стили для drag-and-drop функциональности */
+.card.dragging {
+    opacity: 0.8;
+    transform: scale(1.05);
+    cursor: grabbing;
+}
+
+.player.drag-target {
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.7);
+    transform: scale(1.05);
+    z-index: 100;
+}
+
+.self-drop-target {
+    box-shadow: 0 0 15px rgba(51, 153, 255, 0.7);
+    border-radius: 10px;
+    transform: scale(1.05);
+    z-index: 100;
+}
+
+/* Специальные стили для колоды и сброса на разных стадиях игры */
+.stage1-discard {
+    border: 2px solid gold !important;
+    box-shadow: 0 0 10px gold !important;
+}
+
+.stage2-empty-discard {
+    border: 2px dashed rgba(255, 215, 0, 0.5) !important;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.3) !important;
+    animation: pulse-discard 2s infinite;
+}
+
+@keyframes pulse-discard {
+    0% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.3); }
+    50% { box-shadow: 0 0 15px rgba(255, 215, 0, 0.6); }
+    100% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.3); }
+}
+
+/* Улучшенные стили для колоды карт */
+.card-pile.deck .mini-card {
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+    transition: transform 0.2s ease;
+}
+
+.card-pile.deck:hover .mini-card {
+    transform: translateY(-2px);
+}
+
+.card-pile.discard .mini-card {
+    transition: all 0.3s ease;
+}
+
+.card-pile.discard .mini-card:hover {
+    transform: scale(1.1);
+    cursor: pointer;
+}
+
+/* Улучшения для мини-карт */
+.mini-card {
+    width: 50px;
+    height: 70px;
+    border-radius: 5px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    transition: transform 0.2s;
+}
+
+.mini-card.card-back {
+    background-color: #b00;
+    background-image: linear-gradient(135deg, #b00 25%, #d00 25%, #d00 50%, #b00 50%, #b00 75%, #d00 75%, #d00);
+    background-size: 10px 10px;
+}
+
+/* Стили для перетаскиваемых элементов */
+[draggable="true"] {
+    cursor: grab;
+}
+
+[draggable="true"]:active {
+    cursor: grabbing;
+}
+
+/* Стили для изображений карт */
+.card-image, .card-back-image {
+    width: 100%;
+    height: 100%;
+    border-radius: 8px;
+    object-fit: contain;
+}
+
+.mini-card .card-image, .mini-card .card-back-image {
+    width: 100%;
+    height: 100%;
+    border-radius: 5px;
+}
+
+.table-card .card-image, .table-card .card-back-image {
+    width: 100%;
+    height: 100%;
+    border-radius: 5px;
+}
+
+/* Анимация для карт с изображениями */
+.card.selected .card-image,
+.card.selected .card-back-image {
+    box-shadow: 0 5px 15px rgba(0,0,0,0.4);
 } 

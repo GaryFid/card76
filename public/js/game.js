@@ -58,6 +58,9 @@ document.addEventListener('DOMContentLoaded', function() {
     function initGame() {
         console.log('Инициализация новой игры...');
         
+        // Предзагрузка изображений карт
+        preloadCardImages();
+        
         // Очищаем предыдущую игру, если она была
         if (game) {
             console.log('Очистка предыдущей игры');
@@ -71,7 +74,10 @@ document.addEventListener('DOMContentLoaded', function() {
             ],
             deck: [],
             discardPile: [],
-            gameStage: 'stage1'
+            gameStage: 'stage1',
+            settings: {
+                useCardImages: true // Флаг для использования изображений карт
+            }
         };
         
         // Добавляем ботов в соответствии с выбранным количеством игроков
@@ -325,6 +331,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 cardElem.style.top = `${i * 2}px`;
                 cardElem.style.left = `${i * 2}px`;
                 cardElem.style.zIndex = i;
+                
+                // В первой стадии игры колода - это карты, которые можно взять
+                if (game.gameStage === 'stage1') {
+                    cardElem.title = 'Колода (нажмите "Взять карту")';
+                }
+                
                 deckElement.appendChild(cardElem);
             }
             
@@ -339,6 +351,14 @@ document.addEventListener('DOMContentLoaded', function() {
             emptyDeck.className = 'card mini-card';
             emptyDeck.style.border = '2px dashed rgba(255,255,255,0.3)';
             emptyDeck.style.backgroundColor = 'transparent';
+            
+            // Подсказка для пустой колоды
+            if (game.gameStage === 'stage1') {
+                emptyDeck.title = 'Колода пуста, начинается вторая стадия';
+            } else {
+                emptyDeck.title = 'Колода пуста';
+            }
+            
             deckElement.appendChild(emptyDeck);
             
             // Сообщение о пустой колоде
@@ -384,6 +404,15 @@ document.addEventListener('DOMContentLoaded', function() {
             // Добавляем id карты
             cardElement.dataset.cardId = topCard.id;
             
+            // Специальное оформление для первой стадии - это показывается карта на которую можно класть
+            if (game.gameStage === 'stage1') {
+                cardElement.title = 'На первой стадии игроки могут класть карты рангом выше на карты других игроков';
+                // Добавляем стилизацию для карты сброса на первой стадии
+                cardElement.classList.add('stage1-discard');
+            } else {
+                cardElement.title = 'Сброс';
+            }
+            
             discardElement.appendChild(cardElement);
             
             // Добавляем счетчик карт в сбросе, если их больше одной
@@ -394,63 +423,50 @@ document.addEventListener('DOMContentLoaded', function() {
                 discardElement.appendChild(discardCount);
             }
         } else {
-            // Если сброс пуст, показываем пустое место
+            // Если сброс пуст, показываем пустое место с соответствующим дизайном для 2-й стадии
             const emptyPile = document.createElement('div');
             emptyPile.className = 'card mini-card';
             emptyPile.style.border = '2px dashed rgba(255,255,255,0.3)';
             emptyPile.style.backgroundColor = 'transparent';
+            
+            // Разные стили и подсказки для разных стадий
+            if (game.gameStage === 'stage2') {
+                emptyPile.title = 'Сбросьте карту сюда';
+                emptyPile.classList.add('stage2-empty-discard');
+            } else {
+                emptyPile.title = 'Сброс пуст';
+            }
+            
             discardElement.appendChild(emptyPile);
         }
     }
     
     // Создание элемента карты
     function createCardElement(card) {
-        const cardElement = document.importNode(cardTemplate.content, true).querySelector('.card');
+        const cardElement = document.createElement('div');
+        cardElement.className = 'card';
+        cardElement.dataset.cardId = card.id;
+        cardElement.dataset.cardValue = card.value;
+        cardElement.dataset.cardSuit = card.suit;
         
-        // Если карта лицом вверх, отображаем её значение и масть
-        if (card.faceUp) {
-            const cardFront = cardElement.querySelector('.card-front');
-            cardFront.querySelector('.card-value').textContent = card.value;
-            cardFront.querySelector('.card-suit').textContent = card.suit;
-            
-            if (card.isRed) {
-                cardFront.classList.add('red');
+        // Используем изображения карт, если они доступны и включены в настройках
+        if (game.settings.useCardImages) {
+            // Карта лицом вверх или вниз
+            if (card.faceUp) {
+                const cardImg = document.createElement('img');
+                cardImg.src = getCardImageUrl(card);
+                cardImg.className = 'card-image';
+                cardImg.alt = `${card.value}${card.suit}`;
+                cardElement.appendChild(cardImg);
+            } else {
+                const cardBackImg = document.createElement('img');
+                cardBackImg.src = 'img/card-back.svg';
+                cardBackImg.className = 'card-back-image';
+                cardBackImg.alt = 'Рубашка карты';
+                cardElement.appendChild(cardBackImg);
             }
         } else {
-            // Если карта закрыта, добавляем соответствующий класс
-            cardElement.classList.add('flipped');
-        }
-        
-        // Добавляем id карты в атрибуты
-        cardElement.dataset.cardId = card.id;
-        
-        // Для отладки - добавляем видимое значение карты даже для закрытых карт
-        if (card.id) {
-            console.log(`Создана карта: ${card.id}, значение: ${card.value}${card.suit}, faceUp: ${card.faceUp}`);
-        }
-        
-        return cardElement;
-    }
-    
-    // Отрисовка руки игрока
-    function renderPlayerHand() {
-        const playerHandContainer = document.querySelector('.player-hand');
-        playerHandContainer.innerHTML = '';
-        
-        // Получаем карты текущего игрока
-        const playerCards = game.players[0].cards;
-        
-        // Отображаем каждую карту
-        playerCards.forEach(card => {
-            const cardElement = document.createElement('div');
-            cardElement.className = 'card';
-            
-            // Добавляем id карты для идентификации
-            cardElement.dataset.cardId = card.id;
-            cardElement.dataset.cardValue = card.value;
-            cardElement.dataset.cardSuit = card.suit;
-            
-            // Показываем лицевую или оборотную сторону карты в зависимости от ее состояния
+            // Стандартное отображение с HTML/CSS
             if (card.faceUp) {
                 const cardFront = document.createElement('div');
                 cardFront.className = 'card-front';
@@ -476,6 +492,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 cardBack.className = 'card-back';
                 cardElement.appendChild(cardBack);
             }
+        }
+        
+        return cardElement;
+    }
+    
+    // Отрисовка руки игрока с использованием новой функции создания элемента карты
+    function renderPlayerHand() {
+        const playerHandContainer = document.querySelector('.player-hand');
+        playerHandContainer.innerHTML = '';
+        
+        // Получаем карты текущего игрока
+        const playerCards = game.players[0].cards;
+        
+        // Отображаем каждую карту
+        playerCards.forEach(card => {
+            const cardElement = createCardElement(card);
             
             // Добавляем обработчик события клика по карте
             cardElement.addEventListener('click', cardClickHandler);
@@ -484,15 +516,21 @@ document.addEventListener('DOMContentLoaded', function() {
             playerHandContainer.appendChild(cardElement);
         });
         
-        // Показываем или скрываем кнопки в зависимости от состояния игры
-        if (isMyTurn) {
-            drawCardButton.style.display = 'block';
-            playCardButton.style.display = document.querySelector('.player-hand .card.selected') ? 'block' : 'none';
-            selfCardButton.style.display = 'block';
-        } else {
-            drawCardButton.style.display = 'none';
-            playCardButton.style.display = 'none';
-            selfCardButton.style.display = 'none';
+        // Показываем все кнопки, но управляем их доступностью
+        drawCardButton.style.display = 'block';
+        playCardButton.style.display = 'block';
+        selfCardButton.style.display = 'block';
+        
+        // Если не ход игрока - делаем кнопки недоступными
+        if (!isMyTurn) {
+            drawCardButton.disabled = true;
+            playCardButton.disabled = true;
+            selfCardButton.disabled = true;
+            
+            // Добавляем класс для визуального отображения недоступности
+            drawCardButton.classList.add('disabled');
+            playCardButton.classList.add('disabled');
+            selfCardButton.classList.add('disabled');
             
             // Снимаем выделение со всех карт
             document.querySelectorAll('.player-hand .card.selected').forEach(card => {
@@ -508,9 +546,22 @@ document.addEventListener('DOMContentLoaded', function() {
             if (game.players[currentPlayerIndex].isAI) {
                 showGameMessage(`Ход игрока ${game.players[currentPlayerIndex].name}`);
                 
-                setTimeout(playAITurn, 5000); // Увеличиваем время на ход бота до 5 секунд
+                setTimeout(playAITurn, 15000); // Увеличиваем время на ход бота до 15 секунд
             }
+        } else {
+            // Если ход игрока - делаем кнопки доступными
+            drawCardButton.disabled = false;
+            playCardButton.disabled = false;
+            selfCardButton.disabled = false;
+            
+            // Убираем класс недоступности
+            drawCardButton.classList.remove('disabled');
+            playCardButton.classList.remove('disabled');
+            selfCardButton.classList.remove('disabled');
         }
+        
+        // Активируем drag-and-drop для карт
+        enableDragAndDrop();
     }
 
     // Функция установки текущего игрока
@@ -1553,5 +1604,167 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         return false;
+    }
+
+    // Добавляем поддержку перетаскивания карт (drag and drop)
+    function enableDragAndDrop() {
+        // Находим все карты в руке игрока
+        const playerCards = document.querySelectorAll('.player-hand .card');
+        
+        // Для каждой карты добавляем обработчики перетаскивания
+        playerCards.forEach(card => {
+            card.setAttribute('draggable', 'true');
+            
+            // Начало перетаскивания
+            card.addEventListener('dragstart', function(e) {
+                // Проверяем, что сейчас ход игрока и кнопки активны
+                if (!isMyTurn || drawCardButton.disabled) {
+                    e.preventDefault();
+                    return;
+                }
+                
+                // Сохраняем ID карты в данных перетаскивания
+                e.dataTransfer.setData('text/plain', card.dataset.cardId);
+                
+                // Добавляем класс перетаскивания
+                card.classList.add('dragging');
+                
+                // Если ранее карта была выбрана, имитируем клик для выделения
+                if (!card.classList.contains('selected')) {
+                    card.click();
+                }
+                
+                // Устанавливаем изображение при перетаскивании
+                if (e.dataTransfer.setDragImage) {
+                    e.dataTransfer.setDragImage(card, 35, 50);
+                }
+            });
+            
+            // Окончание перетаскивания
+            card.addEventListener('dragend', function() {
+                card.classList.remove('dragging');
+            });
+        });
+        
+        // Находим все возможные цели для перетаскивания
+        const tablePlayers = document.querySelectorAll('.player');
+        
+        // Добавляем обработчики для зон перетаскивания
+        tablePlayers.forEach(player => {
+            // Когда карта перетаскивается над игроком
+            player.addEventListener('dragover', function(e) {
+                // Отменяем стандартное поведение (запрет перетаскивания)
+                e.preventDefault();
+                
+                // Находим подсвеченные карты этого игрока
+                const highlightedCards = player.querySelectorAll('.table-card.highlighted');
+                if (highlightedCards.length > 0) {
+                    player.classList.add('drag-target');
+                }
+            });
+            
+            // Когда карта уходит из зоны игрока
+            player.addEventListener('dragleave', function() {
+                player.classList.remove('drag-target');
+            });
+            
+            // Когда карта брошена на игрока
+            player.addEventListener('drop', function(e) {
+                e.preventDefault();
+                player.classList.remove('drag-target');
+                
+                // Получаем ID перетаскиваемой карты
+                const cardId = e.dataTransfer.getData('text/plain');
+                if (!cardId) return;
+                
+                // Находим первую подсвеченную карту этого игрока
+                const targetCard = player.querySelector(`.table-card.highlighted[data-target-for="${cardId}"]`);
+                if (targetCard) {
+                    // Если нашли подходящую цель, симулируем нажатие на кнопку "Сыграть"
+                    playCardButton.click();
+                }
+            });
+        });
+        
+        // Добавляем обработчик для возможности положить карту себе
+        const selfCardArea = document.querySelector('.current-player-info');
+        if (selfCardArea) {
+            selfCardArea.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                
+                // Проверяем, может ли игрок положить выбранную карту на свою
+                const selectedCard = document.querySelector('.player-hand .card.selected');
+                if (selectedCard && checkCanPlayOnSelf(game.players[0].cards.find(c => c.id === selectedCard.dataset.cardId))) {
+                    selfCardArea.classList.add('self-drop-target');
+                }
+            });
+            
+            selfCardArea.addEventListener('dragleave', function() {
+                selfCardArea.classList.remove('self-drop-target');
+            });
+            
+            selfCardArea.addEventListener('drop', function(e) {
+                e.preventDefault();
+                selfCardArea.classList.remove('self-drop-target');
+                
+                // Получаем ID перетаскиваемой карты
+                const cardId = e.dataTransfer.getData('text/plain');
+                if (!cardId) return;
+                
+                // Проверяем, что выбрана эта карта
+                const selectedCard = document.querySelector(`.player-hand .card.selected[data-card-id="${cardId}"]`);
+                if (selectedCard) {
+                    // Симулируем нажатие на кнопку "Положить себе"
+                    selfCardButton.click();
+                }
+            });
+        }
+    }
+
+    // Предзагрузка изображений карт
+    function preloadCardImages() {
+        // Путь к изображениям карт
+        const cardBackImage = new Image();
+        cardBackImage.src = 'img/card-back.svg';
+        
+        // Проверка наличия пользовательских изображений карт, если их нет - используем стандартное отображение
+        const testImage = new Image();
+        testImage.src = 'img/cards/ace_of_spades.png'; // Проверяем наличие туза пик как пример
+        
+        testImage.onload = function() {
+            console.log('Пользовательские изображения карт успешно загружены');
+            game.settings.useCardImages = true;
+        };
+        
+        testImage.onerror = function() {
+            console.log('Пользовательские изображения карт не найдены, используем стандартное отображение');
+            game.settings.useCardImages = false;
+        };
+    }
+    
+    // Функция для получения URL изображения карты
+    function getCardImageUrl(card) {
+        if (!card) return 'img/card-back.svg';
+        
+        // Преобразование значения карты для формирования пути к изображению
+        let value = '';
+        switch(card.value) {
+            case 'В': value = 'jack'; break; // Валет
+            case 'Д': value = 'queen'; break; // Дама
+            case 'К': value = 'king'; break; // Король
+            case 'Т': value = 'ace'; break; // Туз
+            default: value = card.value; // Остальные значения остаются без изменений
+        }
+        
+        // Преобразование масти
+        let suit = '';
+        switch(card.suit) {
+            case '♠': suit = 'spades'; break; // Пики
+            case '♥': suit = 'hearts'; break; // Черви
+            case '♦': suit = 'diamonds'; break; // Бубны
+            case '♣': suit = 'clubs'; break; // Трефы
+        }
+        
+        return `img/cards/${value}_of_${suit}.png`;
     }
 }); 
