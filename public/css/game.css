@@ -714,4 +714,27 @@ body {
 @keyframes slide {
     0% { transform: translateX(0) translateY(0); }
     100% { transform: translateX(var(--slide-x, 0)) translateY(var(--slide-y, 0)); }
+}
+
+/* Добавляем стили для таймера хода */
+.timer-bar {
+    width: 100%;
+    height: 4px;
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+    margin: 5px 0;
+    overflow: hidden;
+}
+
+.timer-progress {
+    height: 100%;
+    background-color: #3390ec;
+    width: 100%;
+    transition: width 15s linear;
+}
+
+/* Стили для кнопок в отключенном состоянии */
+.game-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 } 

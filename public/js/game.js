@@ -277,7 +277,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     cardElement.appendChild(valueElem);
                     cardElement.appendChild(suitElem);
-            } else {
+                } else {
                     cardElement.classList.add('card-back');
                 }
                 
@@ -333,7 +333,7 @@ document.addEventListener('DOMContentLoaded', function() {
             countElem.className = 'card-count';
             countElem.textContent = game.deck.length;
             deckElement.appendChild(countElem);
-                } else {
+        } else {
             // Если колода пуста, показываем пустое место
             const emptyDeck = document.createElement('div');
             emptyDeck.className = 'card mini-card';
@@ -494,11 +494,11 @@ document.addEventListener('DOMContentLoaded', function() {
             playCardButton.style.display = 'none';
             selfCardButton.style.display = 'none';
             
-                // Снимаем выделение со всех карт
+            // Снимаем выделение со всех карт
             document.querySelectorAll('.player-hand .card.selected').forEach(card => {
-                    card.classList.remove('selected');
-                });
-                
+                card.classList.remove('selected');
+            });
+            
             // Снимаем подсветку со всех карт на столе
             document.querySelectorAll('.table-card.highlighted').forEach(card => {
                 card.classList.remove('highlighted');
@@ -512,7 +512,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     }
-    
+
     // Функция установки текущего игрока
     function setCurrentPlayer(playerIndex) {
         // Устанавливаем текущего игрока
@@ -561,7 +561,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Обновляем отображение руки игрока
         renderPlayerHand();
     }
-    
+
     // Показать сообщение в игре
     function showGameMessage(message, duration = 3000) {
         // Создаем элемент сообщения
@@ -753,7 +753,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     }
-    
+
     // Обработчики событий для кнопок
     drawCardButton.addEventListener('click', function() {
         if (isMyTurn) {
@@ -796,7 +796,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         showGameMessage('Вы можете сыграть взятую карту на карту соперника', 2000);
                         
                         // Выделяем взятую карту
-        setTimeout(() => {
+                        setTimeout(() => {
                             const newCardElement = document.querySelector(`.player-hand .card[data-card-id="${drawnCard.id}"]`);
                             if (newCardElement) {
                                 newCardElement.click(); // Имитируем клик по карте для её выделения
@@ -840,7 +840,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
-    
+
     // Обработчик кнопки "Играть карту"
     playCardButton.addEventListener('click', function() {
         const selectedCard = document.querySelector('.player-hand .card.selected');
@@ -919,7 +919,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                         const newCardElement = document.querySelector(`.player-hand .card[data-card-id="${drawnCard.id}"]`);
                                         if (newCardElement && canPlayCardOnTable(drawnCard)) {
                                             newCardElement.click(); // Имитируем клик по карте для её выделения
-            } else {
+                                        } else {
                                             // Если новой картой нельзя сходить, но можно сыграть другими картами
                                             showGameMessage('У вас есть возможность для хода', 2000);
                                         }
@@ -931,7 +931,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             }
                             
                             // Передаем ход следующему игроку
-                setTimeout(() => {
+                            setTimeout(() => {
                                 const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
                                 setCurrentPlayer(nextPlayerIndex);
                             }, 1500);
@@ -1048,7 +1048,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
-    
+
     // Реализация хода ИИ
     function playAITurn() {
         console.log('Бот начинает свой ход...');
@@ -1076,19 +1076,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Проверяем, может ли бот сделать еще ход (рекурсивно)
                 setTimeout(() => {
                     playAITurn();
-                }, 5000); // Увеличиваем время хода бота до 5 секунд
+                }, 15000); // Увеличиваем время хода бота до 15 секунд
             } else {
                 // Если бот не смог сделать ход, передаем ход следующему игроку
                 setTimeout(() => {
                     const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
                     console.log(`Бот передает ход следующему игроку: ${nextPlayerIndex}`);
                     setCurrentPlayer(nextPlayerIndex);
-                }, 5000); // Увеличиваем время хода бота до 5 секунд
+                }, 15000); // Увеличиваем время хода бота до 15 секунд
             }
         }
         // Для второй стадии используем другую логику (оставим на потом)
     }
-    
+
     // Функция для выполнения одного хода ботом
     function makeAIMove() {
         const aiPlayer = game.players[currentPlayerIndex];
