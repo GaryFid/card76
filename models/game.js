@@ -235,6 +235,11 @@ class Game {
       const cardRank = cardValues.indexOf(card.value);
       const targetRank = cardValues.indexOf(targetCard.value);
       
+      // Для Туза можно положить только 2
+      if (targetCard.value === 'A' && card.value === '2') {
+        return true;
+      }
+      
       return cardRank === targetRank + 1;
     }
     

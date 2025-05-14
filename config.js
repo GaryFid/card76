@@ -15,7 +15,7 @@ module.exports = {
   // Настройки игры
   minPlayers: 4,
   maxPlayers: 9,
-  initialCards: 4,
+  initialCards: 3,
   
   // Настройки рейтинга
   ratingWinPoints: 10,
