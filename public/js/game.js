@@ -116,7 +116,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function initializeDeck() {
         // Масти карт: черви, бубны, крести, пики
         const suits = ['♥', '♦', '♣', '♠'];
-        // Значения карт
+        // Значения карт: для корректной работы с изображениями используем английские обозначения
         const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
         
         // Создаем колоду
@@ -151,6 +151,11 @@ document.addEventListener('DOMContentLoaded', function() {
     function dealInitialCards() {
         // Раздаем каждому игроку по 2 закрытые карты и 1 открытую
         for (let player of game.players) {
+            // Если у игрока еще нет карт, создаем массив для них
+            if (!player.cards) {
+                player.cards = [];
+            }
+            
             // Раздаем 2 закрытые карты
             for (let i = 0; i < 2; i++) {
                 const card = game.deck.pop();
@@ -163,6 +168,13 @@ document.addEventListener('DOMContentLoaded', function() {
             openCard.faceUp = true;
             player.cards.push(openCard);
         }
+        
+        // Кладем одну открытую карту в сброс для начала игры
+        const tableCard = game.deck.pop();
+        tableCard.faceUp = true;
+        game.discardPile = [tableCard];
+        
+        console.log('Карты розданы, начальная карта в сбросе:', tableCard.value + tableCard.suit);
     }
     
     // Определение игрока с самой высокой открытой картой
@@ -371,6 +383,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 cardElem.style.top = `${i * 2}px`;
                 cardElem.style.left = `${i * 2}px`;
                 cardElem.style.zIndex = i;
+                
+                // Добавляем изображение рубашки карты
+                if (game.settings.useCardImages) {
+                    const cardBackImg = document.createElement('img');
+                    cardBackImg.src = 'img/card-back.svg';
+                    cardBackImg.className = 'card-back-image';
+                    cardBackImg.alt = 'Рубашка карты';
+                    cardElem.appendChild(cardBackImg);
+                }
                 
                 // В первой стадии игры колода - это карты, которые можно взять
                 if (game.gameStage === 'stage1') {
@@ -1880,10 +1901,11 @@ document.addEventListener('DOMContentLoaded', function() {
         // Преобразование значения карты для формирования пути к изображению
         let value = '';
         switch(card.value) {
-            case 'В': value = 'jack'; break; // Валет
-            case 'Д': value = 'queen'; break; // Дама
-            case 'К': value = 'king'; break; // Король
-            case 'Т': value = 'ace'; break; // Туз
+            case 'J': value = 'J'; break; // Валет (Jack)
+            case 'Q': value = 'Q'; break; // Дама (Queen)
+            case 'K': value = 'K'; break; // Король (King)
+            case 'A': value = 'A'; break; // Туз (Ace)
+            // Для карт от 2 до 10, используем их значение напрямую
             default: value = card.value; // Остальные значения остаются без изменений
         }
         
