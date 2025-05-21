@@ -95,13 +95,10 @@ document.addEventListener('DOMContentLoaded', function() {
             withAI: withAIToggle.checked,
             aiTestMode: aiTestModeToggle.checked
         };
-        
         localStorage.setItem('gameSettings', JSON.stringify(gameSettings));
         console.log(`Сохранены настройки игры: ${JSON.stringify(gameSettings)}`);
-        
-        // Переходим на страницу игры
-        window.location.href = '/game';
-        
+        // Переходим на страницу ожидания игроков
+        window.location.href = '/wait-players';
         // Если используем Telegram WebApp, отправляем данные в бота
         if (tgApp && tgApp.isExpanded) {
             const userData = JSON.parse(user);

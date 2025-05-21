@@ -11,17 +11,17 @@
     "node": ">=16.0.0"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "telegraf": "^4.15.0",
     "dotenv": "^16.3.1",
-    "mysql2": "^3.6.0",
-    "sequelize": "^6.32.1",
-    "passport": "^0.4.1",
-    "passport-telegram-official": "^2.0.1",
-    "passport-google-oauth20": "^2.0.0",
-    "passport-yandex": "^0.0.5",
+    "express": "^4.18.2",
     "express-session": "^1.17.3",
-    "session-file-store": "^1.5.0"
+    "mysql2": "^3.6.0",
+    "passport": "^0.4.1",
+    "passport-google-oauth20": "^2.0.0",
+    "passport-telegram-official": "^2.0.1",
+    "passport-yandex": "^0.0.5",
+    "sequelize": "^6.32.1",
+    "session-file-store": "^1.5.0",
+    "telegraf": "^4.15.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
@@ -39,4 +39,4 @@
   ],
   "author": "",
   "license": "MIT"
-} 
+}

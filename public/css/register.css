@@ -1,66 +1,174 @@
 /* Стили для страницы регистрации */
 .register-container {
-    max-width: 450px;
-    margin: 0 auto;
-    padding: 20px;
-    background-color: rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 340px;
 }
 
 .register-form {
-    margin-bottom: 20px;
-}
-
-.form-group {
-    margin-bottom: 15px;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: 500;
-}
-
-.form-group input {
+    background: linear-gradient(135deg, #1b3c1b 80%, #2e7d32 100%);
+    border-radius: 18px;
+    box-shadow: 0 4px 32px rgba(30,80,40,0.18);
+    padding: 36px 32px 28px 32px;
+    margin-bottom: 24px;
     width: 100%;
-    padding: 12px;
-    border: 1px solid rgba(0, 0, 0, 0.1);
+    max-width: 370px;
+    border: 2.5px solid #43ea6d;
+    position: relative;
+}
+
+.register-form label {
+    color: #baffc9;
+    font-family: 'Montserrat', 'Segoe UI', Arial, sans-serif;
+    font-size: 1.18rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-shadow: 0 2px 8px #1b3c1b;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.register-form input[type="text"] {
+    width: 100%;
+    padding: 12px 16px;
     border-radius: 8px;
-    background-color: rgba(255, 255, 255, 0.1);
-    color: var(--tg-theme-text-color);
-    font-size: 16px;
+    border: 1.5px solid #43ea6d;
+    font-size: 1.15rem;
+    font-family: 'Montserrat', 'Segoe UI', Arial, sans-serif;
+    color: #fff;
+    background: #224d22;
+    margin-bottom: 18px;
+    outline: none;
+    transition: border 0.3s, box-shadow 0.3s;
+    box-shadow: 0 2px 8px rgba(67,234,109,0.08);
 }
 
-.auth-divider {
-    position: relative;
-    text-align: center;
-    margin: 25px 0;
+.register-form input[type="text"]:focus {
+    border: 2px solid #baffc9;
+    box-shadow: 0 0 12px #43ea6d99;
 }
 
-.auth-divider::before {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background-color: rgba(0, 0, 0, 0.1);
+.register-form input[type="email"],
+.register-form input[type="password"] {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: 1.5px solid #43ea6d;
+    font-size: 1.15rem;
+    font-family: 'Montserrat', 'Segoe UI', Arial, sans-serif;
+    color: #fff;
+    background: #224d22;
+    margin-bottom: 18px;
+    outline: none;
+    transition: border 0.3s, box-shadow 0.3s;
+    box-shadow: 0 2px 8px rgba(67,234,109,0.08);
 }
 
-.auth-divider span {
-    position: relative;
-    display: inline-block;
-    padding: 0 10px;
-    background-color: var(--tg-theme-bg-color);
-    font-size: 14px;
-    color: rgba(0, 0, 0, 0.5);
+.register-form input[type="email"]:focus,
+.register-form input[type="password"]:focus {
+    border: 2px solid #baffc9;
+    box-shadow: 0 0 12px #43ea6d99;
 }
 
-.social-auth {
+.register-form .btn-primary {
+    width: 100%;
+    padding: 13px 0;
+    border-radius: 8px;
+    border: none;
+    background: linear-gradient(90deg, #43ea6d 0%, #2ecc40 100%);
+    color: #fff;
+    font-size: 1.18rem;
+    font-family: 'Montserrat', 'Segoe UI', Arial, sans-serif;
+    font-weight: 800;
+    letter-spacing: 1px;
+    box-shadow: 0 2px 12px rgba(67,234,109,0.13);
+    cursor: pointer;
+    transition: background 0.3s, box-shadow 0.3s;
+    margin-top: 8px;
+}
+
+.register-form .btn-primary:hover, .register-form .btn-primary:focus {
+    background: linear-gradient(90deg, #2e3192 0%, #1bffff 100%);
+    color: #fff;
+    box-shadow: 0 4px 18px rgba(30,80,220,0.18);
+}
+
+.auth-divider, .auth-divider::before, .auth-divider span {
+    display: none !important;
+}
+
+.social-auth-icons {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 24px;
+    background: transparent;
+    border-radius: 16px;
+    box-shadow: none;
+    padding: 18px 0 10px 0;
+    margin: 18px 0 0 0;
+    min-width: 220px;
+}
+
+.social-btn {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    box-shadow: 0 2px 8px rgba(30,80,220,0.08);
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.25s, box-shadow 0.25s, transform 0.18s;
+    cursor: pointer;
+    outline: none;
+    position: relative;
+    gap: 2px;
+}
+
+.social-btn img {
+    width: 34px;
+    height: 34px;
+    pointer-events: none;
+    margin-bottom: 2px;
+}
+
+.social-btn span {
+    font-size: 0.92rem;
+    color: #2e7d32;
+    font-family: 'Montserrat', 'Segoe UI', Arial, sans-serif;
+    font-weight: 700;
+    margin-top: 2px;
+    letter-spacing: 0.2px;
+    text-shadow: 0 1px 4px #e0ffe0;
+}
+
+.social-btn.google:hover {
+    background: transparent;
+    box-shadow: 0 4px 18px #fbbc05cc;
+    transform: scale(1.08);
+}
+
+.social-btn.yandex:hover {
+    background: transparent;
+    box-shadow: 0 4px 18px #ffcc00cc;
+    transform: scale(1.08);
+}
+
+.social-btn.vk:hover {
+    background: transparent;
+    box-shadow: 0 4px 18px #2787f5cc;
+    transform: scale(1.08);
+}
+
+.social-btn.telegram:hover {
+    background: transparent;
+    box-shadow: 0 4px 18px #0088ccbb;
+    transform: scale(1.08);
 }
 
 .btn {
@@ -93,10 +201,39 @@
     border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
+.guest-auth {
+    display: flex;
+    justify-content: center;
+    margin-top: 10px;
+}
+
 .btn-guest {
-    background-color: transparent;
-    color: var(--tg-theme-text-color);
-    border: 1px solid rgba(0, 0, 0, 0.1);
+    background: linear-gradient(90deg, #2e3192 0%, #1bffff 100%);
+    color: #fff;
+    font-family: 'Montserrat', 'Segoe UI', Arial, sans-serif;
+    font-weight: 700;
+    border-radius: 8px;
+    border: none;
+    padding: 10px 0 10px 0;
+    width: 160px;
+    font-size: 1rem;
+    transition: background 0.3s, box-shadow 0.3s, color 0.2s;
+    box-shadow: 0 2px 12px rgba(30,80,220,0.13);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 0;
+}
+
+.btn-guest::before {
+    content: '';
+    display: inline-block;
+    width: 22px;
+    height: 22px;
+    margin-right: 7px;
+    background: url('data:image/svg+xml;utf8,<svg fill="%23fff" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="8" r="4"/><path d="M12 14c-4.418 0-8 1.79-8 4v2h16v-2c0-2.21-3.582-4-8-4z"/></svg>') no-repeat center/contain;
+    vertical-align: middle;
 }
 
 .btn:hover {

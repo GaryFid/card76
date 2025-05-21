@@ -1,0 +1,112 @@
+document.addEventListener('DOMContentLoaded', function() {
+    // Получаем настройки игры (количество игроков)
+    let settings = localStorage.getItem('gameSettings');
+    let playerCount = 6;
+    let withAI = false;
+    if (settings) {
+        try {
+            const parsed = JSON.parse(settings);
+            playerCount = parsed.playerCount || 6;
+            withAI = parsed.withAI || false;
+        } catch (e) {}
+    }
+    const table = document.getElementById('table-anim');
+    table.innerHTML = '';
+    // Список всех карт
+    const cardNames = [
+        '6_of_hearts','6_of_spades','6_of_diamonds','6_of_clubs',
+        '7_of_hearts','7_of_spades','7_of_diamonds','7_of_clubs',
+        '8_of_hearts','8_of_spades','8_of_diamonds','8_of_clubs',
+        '9_of_hearts','9_of_spades','9_of_diamonds','9_of_clubs',
+        '10_of_hearts','10_of_spades','10_of_diamonds','10_of_clubs',
+        'J_of_hearts','J_of_spades','J_of_diamonds','J_of_clubs',
+        'Q_of_hearts','Q_of_spades','Q_of_diamonds','Q_of_clubs',
+        'K_of_hearts','K_of_spades','K_of_diamonds','K_of_clubs',
+        'A_of_hearts','A_of_spades','A_of_diamonds','A_of_clubs',
+        '2_of_hearts','2_of_spades','2_of_diamonds','2_of_clubs',
+        '3_of_hearts','3_of_spades','3_of_diamonds','3_of_clubs',
+        '4_of_hearts','4_of_spades','4_of_diamonds','4_of_clubs',
+        '5_of_hearts','5_of_spades','5_of_diamonds','5_of_clubs'
+    ];
+    // Координаты мест за столом (по кругу)
+    const radiusX = 140;
+    const radiusY = 60;
+    const centerX = 160;
+    const centerY = 80;
+    for (let i = 0; i < playerCount; i++) {
+        const angle = (2 * Math.PI / playerCount) * i - Math.PI/2;
+        const x = centerX + radiusX * Math.cos(angle) - 24;
+        const y = centerY + radiusY * Math.sin(angle) - 24;
+        const seat = document.createElement('div');
+        seat.className = 'seat-anim';
+        seat.style.left = x + 'px';
+        seat.style.top = y + 'px';
+        // Рандомная карта
+        const card = document.createElement('img');
+        card.className = 'card-anim';
+        const cardName = cardNames[Math.floor(Math.random() * cardNames.length)];
+        card.src = `img/cards/${cardName}.png`;
+        card.alt = cardName;
+        seat.appendChild(card);
+        table.appendChild(seat);
+    }
+    // Добавляем полоску загрузки на стол
+    const loader = document.createElement('div');
+    loader.className = 'table-loader';
+    const loaderBar = document.createElement('div');
+    loaderBar.className = 'table-loader-bar';
+    loader.appendChild(loaderBar);
+    table.appendChild(loader);
+    // Кнопка "Добить комнату AI" (только для создателя)
+    let isCreator = true; // Здесь можно добавить свою логику проверки
+    if (isCreator) {
+        const btn = document.createElement('button');
+        btn.textContent = 'Добить комнату AI';
+        btn.className = 'btn-ai';
+        btn.style.marginTop = '20px';
+        btn.onclick = function() {
+            // Добавляем недостающих ботов
+            let settings = localStorage.getItem('gameSettings');
+            let playerCount = 6;
+            if (settings) {
+                try {
+                    const parsed = JSON.parse(settings);
+                    playerCount = parsed.playerCount || 6;
+                    parsed.withAI = true;
+                    localStorage.setItem('gameSettings', JSON.stringify(parsed));
+                } catch (e) {}
+            }
+            // Обновляем анимацию: все места с ботами (рандомные карты)
+            table.innerHTML = '';
+            for (let i = 0; i < playerCount; i++) {
+                const angle = (2 * Math.PI / playerCount) * i - Math.PI/2;
+                const x = centerX + radiusX * Math.cos(angle) - 24;
+                const y = centerY + radiusY * Math.sin(angle) - 24;
+                const seat = document.createElement('div');
+                seat.className = 'seat-anim';
+                seat.style.left = x + 'px';
+                seat.style.top = y + 'px';
+                const card = document.createElement('img');
+                card.className = 'card-anim';
+                const cardName = cardNames[Math.floor(Math.random() * cardNames.length)];
+                card.src = `img/cards/${cardName}.png`;
+                card.alt = cardName;
+                seat.appendChild(card);
+                table.appendChild(seat);
+            }
+            // Добавляем полоску загрузки на стол после обновления
+            const loader = document.createElement('div');
+            loader.className = 'table-loader';
+            const loaderBar = document.createElement('div');
+            loaderBar.className = 'table-loader-bar';
+            loader.appendChild(loaderBar);
+            table.appendChild(loader);
+            alert('Комната дополнена ботами!');
+        };
+        document.querySelector('.wait-table-animation').appendChild(btn);
+    }
+    // Имитация ожидания 2.5 сек, потом переход к игре
+    setTimeout(function() {
+        window.location.href = '/game';
+    }, 2500);
+}); 

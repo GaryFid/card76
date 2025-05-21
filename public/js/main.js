@@ -1,83 +1,81 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Инициализация Telegram WebApp
-    const tgApp = window.Telegram.WebApp;
-    tgApp.expand();
-    
-    // Настройка основного цвета из Telegram
-    document.documentElement.style.setProperty('--tg-theme-bg-color', tgApp.themeParams.bg_color || '#ffffff');
-    document.documentElement.style.setProperty('--tg-theme-text-color', tgApp.themeParams.text_color || '#000000');
-    document.documentElement.style.setProperty('--tg-theme-button-color', tgApp.themeParams.button_color || '#3390ec');
-    document.documentElement.style.setProperty('--tg-theme-button-text-color', tgApp.themeParams.button_text_color || '#ffffff');
-    
+    // --- Анимация карт в header ---
+    const cardNames = [
+        '6_of_hearts','6_of_spades','6_of_diamonds','6_of_clubs',
+        '7_of_hearts','7_of_spades','7_of_diamonds','7_of_clubs',
+        '8_of_hearts','8_of_spades','8_of_diamonds','8_of_clubs',
+        '9_of_hearts','9_of_spades','9_of_diamonds','9_of_clubs',
+        '10_of_hearts','10_of_spades','10_of_diamonds','10_of_clubs',
+        'J_of_hearts','J_of_spades','J_of_diamonds','J_of_clubs',
+        'Q_of_hearts','Q_of_spades','Q_of_diamonds','Q_of_clubs',
+        'K_of_hearts','K_of_spades','K_of_diamonds','K_of_clubs',
+        'A_of_hearts','A_of_spades','A_of_diamonds','A_of_clubs',
+        '2_of_hearts','2_of_spades','2_of_diamonds','2_of_clubs',
+        '3_of_hearts','3_of_spades','3_of_diamonds','3_of_clubs',
+        '4_of_hearts','4_of_spades','4_of_diamonds','4_of_clubs',
+        '5_of_hearts','5_of_spades','5_of_diamonds','5_of_clubs'
+    ];
+    const headerCards = document.getElementById('header-cards');
+    if (headerCards) {
+        headerCards.innerHTML = '';
+        let used = new Set();
+        for (let i = 0; i < 5; i++) {
+            let idx;
+            do { idx = Math.floor(Math.random() * cardNames.length); } while (used.has(idx));
+            used.add(idx);
+            const card = document.createElement('img');
+            card.className = 'header-card-img';
+            card.src = `img/cards/${cardNames[idx]}.png`;
+            card.alt = cardNames[idx];
+            headerCards.appendChild(card);
+        }
+    }
+    // --- Анимация полоски карт в main ---
+    const mainLoader = document.getElementById('main-card-loader');
+    if (mainLoader) {
+        mainLoader.innerHTML = '';
+        let used = new Set();
+        for (let i = 0; i < 5; i++) {
+            let idx;
+            do { idx = Math.floor(Math.random() * cardNames.length); } while (used.has(idx));
+            used.add(idx);
+            const card = document.createElement('img');
+            card.className = 'main-card-loader-img';
+            card.src = `img/cards/${cardNames[idx]}.png`;
+            card.alt = cardNames[idx];
+            mainLoader.appendChild(card);
+        }
+    }
+    // --- Переходы между страницами ---
     // Проверка авторизации
     const user = localStorage.getItem('user');
-    
-    // Если пользователь не авторизован, перенаправляем на страницу регистрации
     if (!user) {
-        console.log('Пользователь не авторизован. Перенаправление на страницу регистрации...');
         window.location.href = '/register';
         return;
     }
-    
     try {
-        // Получаем данные пользователя
         const userData = JSON.parse(user);
-        console.log('Пользователь авторизован:', userData.username);
-        
-        // Проверяем наличие обязательных полей
         if (!userData.id || !userData.username) {
-            console.log('Некорректные данные пользователя. Перенаправление на страницу регистрации...');
             localStorage.removeItem('user');
             window.location.href = '/register';
             return;
         }
-        
-        // Обработчики нажатий на кнопки
         document.getElementById('start-game').addEventListener('click', () => {
-            // Вместо отправки данных в Telegram, перенаправляем на страницу настройки игры
             window.location.href = '/game-setup';
-            
-            // Если мы в Telegram WebApp, то также отправляем данные
-            if (tgApp && tgApp.isExpanded) {
-                tgApp.sendData('start_game');
-            }
         });
-        
         document.getElementById('play-ai').addEventListener('click', () => {
-            // Сохраняем настройки игры с ботами и перенаправляем на страницу настройки
             localStorage.setItem('gameSettings', JSON.stringify({
                 playerCount: 4,
                 withAI: true
             }));
             window.location.href = '/game-setup';
-            
-            // Если мы в Telegram WebApp, то также отправляем данные
-            if (tgApp && tgApp.isExpanded) {
-                tgApp.sendData('play_ai');
-            }
         });
-        
         document.getElementById('rating').addEventListener('click', () => {
-            // Показываем сообщение о том, что рейтинг будет доступен позже
             alert('Рейтинг игроков будет доступен в ближайшее время!');
-            
-            // Если мы в Telegram WebApp, то также отправляем данные
-            if (tgApp && tgApp.isExpanded) {
-                tgApp.sendData('rating');
-            }
         });
-        
         document.getElementById('rules').addEventListener('click', () => {
-            // Создаем модальное окно с правилами
             showRules();
-            
-            // Если мы в Telegram WebApp, то также отправляем данные
-            if (tgApp && tgApp.isExpanded) {
-                tgApp.sendData('rules');
-            }
         });
-        
-        // Функция для отображения правил игры
         function showRules() {
             // Создаем элементы модального окна
             const modal = document.createElement('div');
@@ -180,7 +178,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     } catch (error) {
-        console.error('Ошибка при обработке данных пользователя:', error);
         localStorage.removeItem('user');
         window.location.href = '/register';
     }

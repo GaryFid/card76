@@ -204,6 +204,16 @@ async function startApp() {
       res.sendFile(path.join(__dirname, 'public', 'game.html'));
     });
 
+    // Маршрут для страницы проверки обновлений
+    app.get('/check-updates', (req, res) => {
+      res.sendFile(path.join(__dirname, 'public', 'check-updates.html'));
+    });
+
+    // Маршрут для страницы ожидания игроков
+    app.get('/wait-players', (req, res) => {
+      res.sendFile(path.join(__dirname, 'public', 'wait-players.html'));
+    });
+
     // Запуск веб-сервера
     app.listen(PORT, () => {
       console.log(`Сервер запущен на порту ${PORT}`);
