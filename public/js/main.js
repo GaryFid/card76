@@ -181,10 +181,20 @@ document.addEventListener('DOMContentLoaded', function() {
         localStorage.removeItem('user');
         window.location.href = '/register';
     }
-    const walletBtn = document.getElementById('crypto-wallet');
-    if (walletBtn) {
-        walletBtn.addEventListener('click', function() {
-            alert('В будущем здесь появится подключение к TON и Solana кошелькам!');
+    // --- Кошелек: бургер-меню ---
+    const walletBlock = document.getElementById('wallet-block');
+    const walletBtn = document.getElementById('wallet-btn');
+    const walletDropdown = document.getElementById('wallet-dropdown');
+    if (walletBtn && walletBlock && walletDropdown) {
+        walletBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            walletBlock.classList.toggle('open');
+        });
+        // Закрытие меню при клике вне
+        document.addEventListener('click', function(e) {
+            if (!walletBlock.contains(e.target)) {
+                walletBlock.classList.remove('open');
+            }
         });
     }
     const profileBlock = document.getElementById('profile-block');

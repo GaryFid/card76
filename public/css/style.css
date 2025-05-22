@@ -256,4 +256,111 @@ footer {
 }
 .menu-item#crypto-wallet:hover {
     box-shadow: 0 4px 16px rgba(25,251,155,0.16);
+}
+
+/* === Header actions (профиль + кошелек) === */
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+}
+
+/* === Овальная кнопка кошелька и бургер-меню === */
+.wallet-block {
+    position: relative;
+}
+.wallet-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(90deg, #3390ec 0%, #19fb9b 100%);
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    padding: 6px 18px 6px 10px;
+    font-weight: 600;
+    font-size: 1rem;
+    box-shadow: 0 2px 8px rgba(25,251,155,0.08);
+    cursor: pointer;
+    transition: box-shadow 0.2s, background 0.2s;
+    outline: none;
+}
+.wallet-btn:hover, .wallet-btn:focus {
+    box-shadow: 0 4px 16px rgba(25,251,155,0.16);
+    background: linear-gradient(90deg, #19fb9b 0%, #3390ec 100%);
+}
+.wallet-balance {
+    font-size: 1.05em;
+    font-weight: 500;
+    margin-left: 2px;
+}
+
+.wallet-dropdown {
+    display: none;
+    position: absolute;
+    top: 110%;
+    right: 0;
+    min-width: 210px;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(51,144,236,0.13);
+    padding: 12px 0;
+    z-index: 100;
+    border: 1.5px solid #3390ec22;
+    animation: menu-fade-in 0.4s;
+}
+.wallet-block.open .wallet-dropdown {
+    display: block;
+}
+.wallet-coin {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 22px 10px 16px;
+    font-size: 1.05em;
+    cursor: pointer;
+    transition: background 0.18s;
+}
+.wallet-coin:hover {
+    background: #f0f8ff;
+}
+.coin-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #f5f5f5;
+    box-shadow: 0 1px 4px rgba(51,144,236,0.07);
+}
+.coin-name {
+    flex: 1;
+    font-weight: 500;
+    color: #3390ec;
+}
+.coin-balance {
+    font-family: monospace;
+    color: #222;
+    font-size: 1em;
+}
+
+/* Для мобильных */
+@media (max-width: 480px) {
+    .header-actions {
+        gap: 8px;
+    }
+    .wallet-btn {
+        padding: 4px 10px 4px 6px;
+        font-size: 0.95rem;
+    }
+    .wallet-dropdown {
+        min-width: 160px;
+        right: -20px;
+    }
+    .wallet-coin {
+        padding: 8px 10px 8px 10px;
+        font-size: 0.97em;
+    }
+    .coin-icon {
+        width: 22px;
+        height: 22px;
+    }
 } 

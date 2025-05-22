@@ -12,9 +12,39 @@
         <header>
             <div class="header-top">
                 <div class="header-cards" id="header-cards"></div>
-                <div class="profile-block" id="profile-block">
-                    <img src="img/player-avatar.svg" alt="Профиль" class="profile-avatar">
-                    <span class="profile-name" id="profile-name">Гость</span>
+                <div class="header-actions">
+                    <div class="wallet-block" id="wallet-block">
+                        <button class="wallet-btn" id="wallet-btn">
+                            <img src="img/ton-icon.svg" alt="TON" class="crypto-icon">
+                            <span class="wallet-balance">0.00</span>
+                        </button>
+                        <div class="wallet-dropdown" id="wallet-dropdown">
+                            <div class="wallet-coin">
+                                <img src="img/ton-icon.svg" class="coin-icon" alt="Toncoin">
+                                <span class="coin-name">Toncoin</span>
+                                <span class="coin-balance">0.00</span>
+                            </div>
+                            <div class="wallet-coin">
+                                <img src="img/jetton-icon.svg" class="coin-icon" alt="JetTon">
+                                <span class="coin-name">JetTon</span>
+                                <span class="coin-balance">0.00</span>
+                            </div>
+                            <div class="wallet-coin">
+                                <img src="img/solana-icon.svg" class="coin-icon" alt="Solana">
+                                <span class="coin-name">Solana</span>
+                                <span class="coin-balance">0.00</span>
+                            </div>
+                            <div class="wallet-coin">
+                                <img src="img/trump-icon.svg" class="coin-icon" alt="TRUMP">
+                                <span class="coin-name">TRUMP</span>
+                                <span class="coin-balance">0.00</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="profile-block" id="profile-block">
+                        <img src="img/player-avatar.svg" alt="Профиль" class="profile-avatar">
+                        <span class="profile-name" id="profile-name">Гость</span>
+                    </div>
                 </div>
             </div>
             <h1>Разгильдяй</h1>
@@ -42,14 +72,6 @@
                 <div class="menu-item" id="rules">
                     <div class="menu-icon">📋</div>
                     <div class="menu-text">Правила</div>
-                </div>
-                
-                <div class="menu-item" id="crypto-wallet">
-                    <div class="menu-icon">
-                        <img src="img/ton-icon.svg" alt="TON" class="crypto-icon">
-                        <img src="img/solana-icon.svg" alt="Solana" class="crypto-icon">
-                    </div>
-                    <div class="menu-text">Кошелек</div>
                 </div>
             </div>
         </main>
