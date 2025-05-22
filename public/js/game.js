@@ -574,103 +574,96 @@ document.addEventListener('DOMContentLoaded', function() {
         return cardElement;
     }
     
-    // Отрисовка руки игрока с использованием новой функции создания элемента карты
+    // Обновлённая функция отрисовки руки игрока: открытые карты поверх закрытых, красивые изображения
     function renderPlayerHand() {
         const playerHandContainer = document.querySelector('.player-hand');
         playerHandContainer.innerHTML = '';
-        
         // Получаем карты текущего игрока
         const playerCards = game.players[0].cards;
-        
-        // Отображаем каждую карту
-        playerCards.forEach((card, index) => {
-            const cardElement = createCardElement(card);
-            
-            // Позиционируем карты в руке веером для лучшего отображения
-            const handSize = playerCards.length;
-            const maxOffset = Math.min(40, 200 / handSize); // Ограничиваем смещение для большого количества карт
-            const offsetPercent = index / Math.max(1, handSize - 1); // От 0 до 1
-            const offset = (offsetPercent - 0.5) * maxOffset * 2; // От -maxOffset до +maxOffset
-            
-            cardElement.style.transform = `translateY(${offset}px) rotate(${offset / 2}deg)`;
-            cardElement.style.zIndex = index;
-            cardElement.style.marginLeft = `-${Math.min(40, 70 / handSize)}px`; // Накладываем карты друг на друга
-            
-            // Добавляем класс для отображения карт в руке
-            cardElement.classList.add('hand-card');
-            
-            // Добавляем порядковый номер карты для ясности
+        // Сначала закрытые, потом открытые
+        const closedCards = playerCards.filter(card => !card.faceUp);
+        const openCards = playerCards.filter(card => card.faceUp);
+        const sortedCards = [...closedCards, ...openCards];
+        const handSize = sortedCards.length;
+        const maxOffset = Math.min(40, 200 / handSize);
+        sortedCards.forEach((card, index) => {
+            const cardElement = document.createElement('div');
+            cardElement.className = 'card hand-card';
+            cardElement.dataset.cardId = card.id;
+            cardElement.dataset.cardValue = card.value;
+            cardElement.dataset.cardSuit = card.suit;
             cardElement.dataset.cardIndex = index;
-            
-            // Добавляем обработчик события клика по карте
+            // Веерное расположение
+            const offsetPercent = index / Math.max(1, handSize - 1);
+            const offset = (offsetPercent - 0.5) * maxOffset * 2;
+            cardElement.style.transform = `translateY(${offset}px) rotate(${offset / 2}deg)`;
+            cardElement.style.marginLeft = `-${Math.min(40, 70 / handSize)}px`;
+            cardElement.style.zIndex = card.faceUp ? (100 + index) : index;
+            // Картинка карты
+            if (card.faceUp) {
+                // Открытая карта — используем img/cards
+                const cardImg = document.createElement('img');
+                cardImg.src = getCardImageUrl(card);
+                cardImg.className = 'card-image';
+                cardImg.alt = `${card.value}${card.suit}`;
+                cardElement.appendChild(cardImg);
+            } else {
+                // Закрытая карта — рубашка
+                const cardBackImg = document.createElement('img');
+                cardBackImg.src = 'img/card-back.svg';
+                cardBackImg.className = 'card-back-image';
+                cardBackImg.alt = 'Рубашка карты';
+                cardElement.appendChild(cardBackImg);
+            }
+            // Подсказка
+            cardElement.title = card.faceUp ? `${card.value}${card.suit}` : 'Закрытая карта';
+            // Выделение и обработчики
             cardElement.addEventListener('click', cardClickHandler);
-            
-            // Эффект при наведении на карту в руке
             cardElement.addEventListener('mouseover', function() {
                 if (!cardElement.classList.contains('selected')) {
                     cardElement.style.transform = `translateY(-20px) rotate(${offset / 2}deg)`;
                     cardElement.style.boxShadow = '0 5px 15px rgba(0,0,0,0.3)';
-                    cardElement.style.zIndex = 100 + index;
+                    cardElement.style.zIndex = 200 + index;
                 }
             });
-            
             cardElement.addEventListener('mouseout', function() {
                 if (!cardElement.classList.contains('selected')) {
                     cardElement.style.transform = `translateY(${offset}px) rotate(${offset / 2}deg)`;
                     cardElement.style.boxShadow = '';
-                    cardElement.style.zIndex = index;
+                    cardElement.style.zIndex = card.faceUp ? (100 + index) : index;
                 }
             });
-            
-            // Добавляем карту в контейнер руки игрока
             playerHandContainer.appendChild(cardElement);
         });
-        
-        // Показываем все кнопки, но управляем их доступностью
+        // Кнопки
         drawCardButton.style.display = 'block';
         playCardButton.style.display = 'block';
         selfCardButton.style.display = 'block';
-        
-        // Если не ход игрока - делаем кнопки недоступными
         if (!isMyTurn) {
             drawCardButton.disabled = true;
             playCardButton.disabled = true;
             selfCardButton.disabled = true;
-            
-            // Добавляем класс для визуального отображения недоступности
             drawCardButton.classList.add('disabled');
             playCardButton.classList.add('disabled');
             selfCardButton.classList.add('disabled');
-            
-            // Снимаем выделение со всех карт
             document.querySelectorAll('.player-hand .card.selected').forEach(card => {
                 card.classList.remove('selected');
             });
-            
-            // Снимаем подсветку со всех карт на столе
             document.querySelectorAll('.table-card.highlighted').forEach(card => {
                 card.classList.remove('highlighted');
             });
-            
-            // Если это ход бота, запускаем его логику с задержкой
             if (game.players[currentPlayerIndex].isAI) {
                 showGameMessage(`Ход игрока ${game.players[currentPlayerIndex].name}`);
-                
-                setTimeout(playAITurn, 15000); // Увеличиваем время на ход бота до 15 секунд
+                setTimeout(playAITurn, 15000);
             }
         } else {
-            // Если ход игрока - делаем кнопки доступными
             drawCardButton.disabled = false;
             playCardButton.disabled = false;
             selfCardButton.disabled = false;
-            
-            // Убираем класс недоступности
             drawCardButton.classList.remove('disabled');
             playCardButton.classList.remove('disabled');
             selfCardButton.classList.remove('disabled');
         }
-        
-        // Активируем drag-and-drop для карт
         enableDragAndDrop();
     }
 

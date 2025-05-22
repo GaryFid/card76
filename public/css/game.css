@@ -365,24 +365,61 @@ body {
 .player-hand {
     display: flex;
     flex-wrap: nowrap;
-    gap: 10px;
+    gap: 0;
     overflow-x: auto;
-    padding: 10px 0;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(0,0,0,0.2) transparent;
+    padding: 18px 0 8px 0;
+    min-height: 90px;
+    justify-content: center;
+    align-items: flex-end;
+    position: relative;
+    background: none;
 }
 
-.player-hand::-webkit-scrollbar {
-    height: 4px;
+.hand-card {
+    position: relative;
+    width: 70px;
+    height: 100px;
+    margin-right: -38px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.18);
+    background: #fff;
+    transition: box-shadow 0.2s, transform 0.2s, z-index 0.2s;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
 }
 
-.player-hand::-webkit-scrollbar-track {
-    background: transparent;
+.hand-card img.card-image, .hand-card img.card-back-image {
+    width: 100%;
+    height: 100%;
+    border-radius: 8px;
+    object-fit: contain;
+    box-shadow: none;
 }
 
-.player-hand::-webkit-scrollbar-thumb {
-    background-color: rgba(0,0,0,0.2);
-    border-radius: 10px;
+.hand-card.selected {
+    box-shadow: 0 8px 24px rgba(51,144,236,0.25), 0 2px 10px rgba(0,0,0,0.18);
+    transform: translateY(-24px) scale(1.08);
+    z-index: 300 !important;
+}
+
+.hand-card:hover:not(.selected) {
+    box-shadow: 0 4px 16px rgba(51,144,236,0.18), 0 2px 10px rgba(0,0,0,0.13);
+    transform: translateY(-12px) scale(1.04);
+    z-index: 200;
+}
+
+@media (max-width: 600px) {
+    .hand-card {
+        width: 48px;
+        height: 68px;
+        margin-right: -28px;
+    }
+    .player-hand {
+        min-height: 60px;
+    }
 }
 
 /* Стиль для выбранной карты */
