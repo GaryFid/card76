@@ -206,4 +206,54 @@ footer {
     .menu-icon {
         font-size: 1.5rem;
     }
+}
+
+/* === Профиль в правом верхнем углу === */
+.header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.profile-block {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    background: #fff;
+    border-radius: 20px;
+    padding: 4px 12px;
+    box-shadow: 0 2px 8px rgba(51,144,236,0.08);
+    transition: box-shadow 0.2s;
+}
+.profile-block:hover {
+    box-shadow: 0 4px 16px rgba(51,144,236,0.16);
+}
+.profile-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+}
+.profile-name {
+    font-weight: 500;
+    color: #3390ec;
+}
+
+/* === Кошелек TON и Solana === */
+.crypto-icon {
+    width: 24px;
+    height: 24px;
+    margin-right: 4px;
+}
+.menu-item#crypto-wallet {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(90deg, #3390ec 0%, #19fb9b 100%);
+    color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(25,251,155,0.08);
+    transition: box-shadow 0.2s;
+}
+.menu-item#crypto-wallet:hover {
+    box-shadow: 0 4px 16px rgba(25,251,155,0.16);
 } 

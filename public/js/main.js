@@ -181,4 +181,16 @@ document.addEventListener('DOMContentLoaded', function() {
         localStorage.removeItem('user');
         window.location.href = '/register';
     }
+    const walletBtn = document.getElementById('crypto-wallet');
+    if (walletBtn) {
+        walletBtn.addEventListener('click', function() {
+            alert('В будущем здесь появится подключение к TON и Solana кошелькам!');
+        });
+    }
+    const profileBlock = document.getElementById('profile-block');
+    if (profileBlock) {
+        profileBlock.addEventListener('click', function() {
+            alert('Профиль пользователя. В будущем здесь появится личный кабинет!');
+        });
+    }
 }); 
