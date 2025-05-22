@@ -54,19 +54,55 @@ document.addEventListener('DOMContentLoaded', function() {
     const playerTemplate = document.getElementById('player-template');
     const cardTemplate = document.getElementById('card-template');
     
+    // Вспомогательная функция задержки
+    function delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // Асинхронная раздача карт с анимацией
+    async function dealInitialCardsAnimated() {
+        // Очищаем руки игроков
+        game.players.forEach(p => p.cards = []);
+        renderPlayers();
+
+        // 2 круга по одной закрытой карте
+        for (let round = 0; round < 2; round++) {
+            for (let i = 0; i < game.players.length; i++) {
+                const card = game.deck.pop();
+                card.faceUp = false;
+                game.players[i].cards.push(card);
+                renderPlayers();
+                await delay(350);
+            }
+        }
+        // 1 круг по одной открытой карте
+        for (let i = 0; i < game.players.length; i++) {
+            const card = game.deck.pop();
+            card.faceUp = true;
+            game.players[i].cards.push(card);
+            renderPlayers();
+            await delay(350);
+        }
+        // Карта в центр (сброс)
+        const tableCard = game.deck.pop();
+        tableCard.faceUp = true;
+        game.discardPile = [tableCard];
+        updateDeckInfo();
+        await delay(350);
+
+        // После раздачи — обновить всё поле
+        renderPlayers();
+        renderPlayerHand();
+        updateDeckInfo();
+    }
+    
     // Инициализация игры
-    function initGame() {
+    async function initGame() {
         console.log('Инициализация новой игры...');
-        
-        // Предзагрузка изображений карт
         preloadCardImages();
-        
-        // Очищаем предыдущую игру, если она была
         if (game) {
             console.log('Очистка предыдущей игры');
         }
-        
-        // Создание новой игры с учетом выбранного количества игроков
         const playerCount = gameSettings.playerCount || 4;
         game = {
             players: [
@@ -76,39 +112,22 @@ document.addEventListener('DOMContentLoaded', function() {
             discardPile: [],
             gameStage: 'stage1',
             settings: {
-                useCardImages: true // Флаг для использования изображений карт
+                useCardImages: true
             }
         };
-        
-        // Добавляем ботов в соответствии с выбранным количеством игроков
         for (let i = 1; i < playerCount; i++) {
             game.players.push({ name: `Бот ${i}`, cards: [], isAI: true });
         }
-        
-        // Создаем колоду
         initializeDeck();
-        
-        // Перемешиваем колоду
         shuffleDeck();
-        
-        // Раздаем карты игрокам
-        dealInitialCards();
-        
-        // Определяем игрока с самой высокой открытой картой для первого хода
+        await dealInitialCardsAnimated();
         const firstPlayerIndex = determineFirstPlayer();
-        
-        // Отображаем игровое поле
         renderPlayers();
         renderPlayerHand();
         updateDeckInfo();
-        
-        // Обновляем информацию о стадии игры
         stageNumberElement.textContent = 'Стадия 1';
         stageDescriptionElement.textContent = 'Выкладка карт на 1 ранг выше';
-        
-        // Начинаем с игрока с самой высокой картой
         setCurrentPlayer(firstPlayerIndex);
-        
         console.log('Игра успешно инициализирована');
     }
     
@@ -205,153 +224,58 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Отрисовка игроков и их карт
     function renderPlayers() {
-        const playersContainer = document.querySelector('.players-container');
+        if (!playersContainer) return;
         playersContainer.innerHTML = '';
-        
-        // Количество игроков
         const playerCount = game.players.length;
-        
-        // Отображаем каждого игрока
-        game.players.forEach((player, playerIndex) => {
-            const playerElement = document.createElement('div');
-            playerElement.className = 'player';
-            
-            // Позиционируем игрока вокруг стола в зависимости от индекса
-            // Формула для размещения игроков по кругу
-            const angle = (playerIndex / playerCount) * 2 * Math.PI;
-            const tableRadius = 40; // В процентах от размера контейнера
-            const left = 50 + tableRadius * Math.cos(angle - Math.PI/2);
-            const top = 50 + tableRadius * Math.sin(angle - Math.PI/2);
-            
-            playerElement.style.left = `${left}%`;
-            playerElement.style.top = `${top}%`;
-            
-            // Добавляем класс активного игрока
-            if (playerIndex === currentPlayerIndex) {
-                playerElement.classList.add('active');
-            }
-            
-            // Добавляем класс для отличия ИИ и реального игрока
-            if (player.isAI) {
-                playerElement.classList.add('ai-player');
-            } else {
-                playerElement.classList.add('human-player');
-            }
-            
-            // Создаем метку имени игрока
-            const playerName = document.createElement('div');
-            playerName.className = 'player-name';
-            playerName.textContent = player.name;
-            
-            // Создаем аватар игрока
-            const playerAvatar = document.createElement('div');
-            playerAvatar.className = 'player-avatar';
-            const playerAvatarImg = document.createElement('img');
-            playerAvatarImg.src = 'img/bot-avatar.svg'; // Заглушка
-            playerAvatar.appendChild(playerAvatarImg);
-            
-            // Добавляем индикатор активного игрока
+        const centerX = 50;
+        const centerY = 50;
+        const radius = 38;
+        for (let i = 0; i < playerCount; i++) {
+            const player = game.players[i];
+            const angle = (2 * Math.PI / playerCount) * i - Math.PI / 2;
+            const x = centerX + radius * Math.cos(angle);
+            const y = centerY + radius * Math.sin(angle);
+            const playerElem = document.createElement('div');
+            playerElem.className = 'player';
+            playerElem.style.left = x + '%';
+            playerElem.style.top = y + '%';
+            if (i === currentPlayerIndex) playerElem.classList.add('active');
+            // Имя
+            const nameElem = document.createElement('div');
+            nameElem.className = 'player-name';
+            nameElem.textContent = player.name;
+            playerElem.appendChild(nameElem);
+            // Аватар
+            const avatarElem = document.createElement('div');
+            avatarElem.className = 'player-avatar';
+            const avatarImg = document.createElement('img');
+            avatarImg.src = player.isAI ? 'img/bot-avatar.svg' : 'img/player-avatar.svg';
+            avatarElem.appendChild(avatarImg);
+            playerElem.appendChild(avatarElem);
+            // Индикатор хода
             const activeIndicator = document.createElement('div');
             activeIndicator.className = 'player-active-indicator';
-            
-            // Создаем метку с количеством карт
-            const cardCount = document.createElement('div');
-            cardCount.className = 'player-cards';
-            cardCount.textContent = `Карт: ${player.cards.length}`;
-            
-            // Создаем контейнер для карт на столе
+            playerElem.appendChild(activeIndicator);
+            // Количество карт
+            const cardCountElem = document.createElement('div');
+            cardCountElem.className = 'player-cards';
+            cardCountElem.textContent = `Карт: ${player.cards.length}`;
+            playerElem.appendChild(cardCountElem);
+            // Карты на столе (раздача)
             const cardsContainer = document.createElement('div');
             cardsContainer.className = 'player-table-cards';
-            
-            // Отображаем карты игрока на столе
             player.cards.forEach((card, cardIndex) => {
-                const cardElement = document.createElement('div');
-                cardElement.className = 'table-card';
-                
-                // Добавляем id карты для идентификации
-                cardElement.dataset.cardId = card.id;
-                
-                // Размещаем карты веером
-                const offset = cardIndex * 15;
-                cardElement.style.transform = `translateX(${offset}px) rotate(${cardIndex * 5}deg)`;
-                
-                // Показываем лицевую или оборотную сторону карты в зависимости от ее состояния
-                if (card.faceUp) {
-                    cardElement.classList.add('card-front');
-                    
-                    // Используем изображения карт если включены в настройках
-                    if (game.settings.useCardImages) {
-                        // Используем изображение карты
-                        const cardImg = document.createElement('img');
-                        cardImg.src = getCardImageUrl(card);
-                        cardImg.className = 'card-image';
-                        cardImg.alt = `${card.value}${card.suit}`;
-                        cardElement.appendChild(cardImg);
-                    } else {
-                        // Стандартное отображение
-                        // Для открытых карт добавляем информацию о ранге и масти
-                        if (card.isRed) {
-                            cardElement.classList.add('red');
-                        }
-                        
-                        // Добавляем значение и масть
-                        const valueElem = document.createElement('div');
-                        valueElem.className = 'card-value';
-                        valueElem.textContent = card.value;
-                        
-                        const suitElem = document.createElement('div');
-                        suitElem.className = 'card-suit';
-                        suitElem.textContent = card.suit;
-                        
-                        cardElement.appendChild(valueElem);
-                        cardElement.appendChild(suitElem);
-                    }
-                } else {
-                    cardElement.classList.add('card-back');
-                    
-                    // Добавляем изображение рубашки карты
-                    if (game.settings.useCardImages) {
-                        const cardBackImg = document.createElement('img');
-                        cardBackImg.src = 'img/card-back.svg';
-                        cardBackImg.className = 'card-back-image';
-                        cardBackImg.alt = 'Рубашка карты';
-                        cardElement.appendChild(cardBackImg);
-                    }
+                const cardElem = createCardElement(card);
+                // Анимация раздачи: если карта только что добавлена, даём .dealing
+                if (!cardElem.classList.contains('dealing') && cardElem.animate) {
+                    cardElem.classList.add('dealing');
+                    setTimeout(() => cardElem.classList.remove('dealing'), 400);
                 }
-                
-                // Добавляем подсказку
-                cardElement.title = card.faceUp ? `${card.value}${card.suit}` : 'Закрытая карта';
-                
-                // Эффект при наведении
-                cardElement.addEventListener('mouseover', function() {
-                    if (!cardElement.classList.contains('highlighted')) {
-                        cardElement.style.transform = `translateX(${offset}px) translateY(-5px) rotate(${cardIndex * 5}deg)`;
-                        cardElement.style.boxShadow = '0 5px 10px rgba(0,0,0,0.2)';
-                        cardElement.style.zIndex = '10';
-                    }
-                });
-                
-                cardElement.addEventListener('mouseout', function() {
-                    if (!cardElement.classList.contains('highlighted')) {
-                        cardElement.style.transform = `translateX(${offset}px) rotate(${cardIndex * 5}deg)`;
-                        cardElement.style.boxShadow = '';
-                        cardElement.style.zIndex = '';
-                    }
-                });
-                
-                cardsContainer.appendChild(cardElement);
+                cardsContainer.appendChild(cardElem);
             });
-            
-            // Собираем все вместе в правильном порядке
-            playerElement.appendChild(playerName); // Имя игрока теперь первый элемент
-            playerElement.appendChild(playerAvatar);
-            playerElement.appendChild(activeIndicator);
-            playerElement.appendChild(cardCount);
-            playerElement.appendChild(cardsContainer);
-            
-            // Добавляем игрока на игровое поле
-            playersContainer.appendChild(playerElement);
-        });
+            playerElem.appendChild(cardsContainer);
+            playersContainer.appendChild(playerElem);
+        }
     }
     
     // Обновление отображения колоды и сброса
@@ -1628,7 +1552,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Запускаем игру
-    initGame();
+    (async () => { await initGame(); })();
 
     // Проверка и обработка перехода между стадиями игры
     function checkGameStageProgress() {
