@@ -271,60 +271,29 @@ document.addEventListener('DOMContentLoaded', function() {
             const cardsContainer = document.createElement('div');
             cardsContainer.className = 'player-table-cards';
             // Отображаем карты игрока на столе
-            player.cards.forEach((card, cardIndex) => {
+            // Новый порядок: 2 закрытые снизу, 1 открытая сверху
+            const closedCards = player.cards.filter(card => !card.faceUp);
+            const openCards = player.cards.filter(card => card.faceUp);
+            // Сначала закрытые карты (максимум 2)
+            closedCards.slice(0, 2).forEach((card, cardIndex) => {
                 const cardElement = createCardElement(card);
-                // Размещаем карты веером
-                const offset = cardIndex * 15;
-                cardElement.style.transform = `translateX(${offset}px) rotate(${cardIndex * 5}deg)`;
-                // Показываем лицевую или оборотную сторону карты в зависимости от ее состояния
-                if (card.faceUp) {
-                    cardElement.classList.add('card-front');
-                    if (game.settings.useCardImages) {
-                        const cardImg = document.createElement('img');
-                        cardImg.src = getCardImageUrl(card);
-                        cardImg.className = 'card-image';
-                        cardImg.alt = `${card.value}${card.suit}`;
-                        cardElement.appendChild(cardImg);
-                    } else {
-                        if (card.isRed) {
-                            cardElement.classList.add('red');
-                        }
-                        const valueElem = document.createElement('div');
-                        valueElem.className = 'card-value';
-                        valueElem.textContent = card.value;
-                        const suitElem = document.createElement('div');
-                        suitElem.className = 'card-suit';
-                        suitElem.textContent = card.suit;
-                        cardElement.appendChild(valueElem);
-                        cardElement.appendChild(suitElem);
-                    }
-                } else {
-                    cardElement.classList.add('card-back');
-                    if (game.settings.useCardImages) {
-                        const cardBackImg = document.createElement('img');
-                        cardBackImg.src = 'img/card-back.svg';
-                        cardBackImg.className = 'card-back-image';
-                        cardBackImg.alt = 'Рубашка карты';
-                        cardElement.appendChild(cardBackImg);
-                    }
-                }
-                cardElement.title = card.faceUp ? `${card.value}${card.suit}` : 'Закрытая карта';
-                cardElement.addEventListener('mouseover', function() {
-                    if (!cardElement.classList.contains('highlighted')) {
-                        cardElement.style.transform = `translateX(${offset}px) translateY(-5px) rotate(${cardIndex * 5}deg)`;
-                        cardElement.style.boxShadow = '0 5px 10px rgba(0,0,0,0.2)';
-                        cardElement.style.zIndex = '10';
-                    }
-                });
-                cardElement.addEventListener('mouseout', function() {
-                    if (!cardElement.classList.contains('highlighted')) {
-                        cardElement.style.transform = `translateX(${offset}px) rotate(${cardIndex * 5}deg)`;
-                        cardElement.style.boxShadow = '';
-                        cardElement.style.zIndex = '';
-                    }
-                });
+                cardElement.classList.add('table-card', 'card-back');
+                // Смещение для веера
+                cardElement.style.zIndex = cardIndex;
+                cardElement.style.left = `${cardIndex * 10}px`;
+                cardElement.style.top = `${20 - cardIndex * 2}px`;
                 cardsContainer.appendChild(cardElement);
             });
+            // Затем открытая карта (если есть)
+            if (openCards.length > 0) {
+                const card = openCards[openCards.length - 1]; // только верхняя открытая
+                const cardElement = createCardElement(card);
+                cardElement.classList.add('table-card', 'card-front');
+                cardElement.style.zIndex = 10;
+                cardElement.style.left = `10px`;
+                cardElement.style.top = `0px`;
+                cardsContainer.appendChild(cardElement);
+            }
             // Собираем все вместе в правильном порядке
             playerElement.appendChild(playerName);
             playerElement.appendChild(playerAvatar);
@@ -585,7 +554,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const openCards = playerCards.filter(card => card.faceUp);
         const sortedCards = [...closedCards, ...openCards];
         const handSize = sortedCards.length;
-        const maxOffset = Math.min(40, 200 / handSize);
+        const maxFanAngle = 40; // угол веера
+        const maxOffset = Math.min(50, 220 / handSize); // ширина веера
         sortedCards.forEach((card, index) => {
             const cardElement = document.createElement('div');
             cardElement.className = 'card hand-card';
@@ -595,40 +565,37 @@ document.addEventListener('DOMContentLoaded', function() {
             cardElement.dataset.cardIndex = index;
             // Веерное расположение
             const offsetPercent = index / Math.max(1, handSize - 1);
-            const offset = (offsetPercent - 0.5) * maxOffset * 2;
-            cardElement.style.transform = `translateY(${offset}px) rotate(${offset / 2}deg)`;
-            cardElement.style.marginLeft = `-${Math.min(40, 70 / handSize)}px`;
+            const angle = (offsetPercent - 0.5) * maxFanAngle;
+            const offsetX = (offsetPercent - 0.5) * maxOffset * 2;
+            cardElement.style.transform = `translateX(${offsetX}px) rotate(${angle}deg)`;
+            cardElement.style.marginLeft = `-${Math.min(44, 80 / handSize)}px`;
             cardElement.style.zIndex = card.faceUp ? (100 + index) : index;
             // Картинка карты
             if (card.faceUp) {
-                // Открытая карта — используем img/cards
                 const cardImg = document.createElement('img');
                 cardImg.src = getCardImageUrl(card);
                 cardImg.className = 'card-image';
                 cardImg.alt = `${card.value}${card.suit}`;
                 cardElement.appendChild(cardImg);
             } else {
-                // Закрытая карта — рубашка
                 const cardBackImg = document.createElement('img');
                 cardBackImg.src = 'img/card-back.svg';
                 cardBackImg.className = 'card-back-image';
                 cardBackImg.alt = 'Рубашка карты';
                 cardElement.appendChild(cardBackImg);
             }
-            // Подсказка
             cardElement.title = card.faceUp ? `${card.value}${card.suit}` : 'Закрытая карта';
-            // Выделение и обработчики
             cardElement.addEventListener('click', cardClickHandler);
             cardElement.addEventListener('mouseover', function() {
                 if (!cardElement.classList.contains('selected')) {
-                    cardElement.style.transform = `translateY(-20px) rotate(${offset / 2}deg)`;
+                    cardElement.style.transform = `translateY(-20px) rotate(${angle}deg)`;
                     cardElement.style.boxShadow = '0 5px 15px rgba(0,0,0,0.3)';
-                    cardElement.style.zIndex = 200 + index;
+                    cardElement.style.zIndex = 300 + index;
                 }
             });
             cardElement.addEventListener('mouseout', function() {
                 if (!cardElement.classList.contains('selected')) {
-                    cardElement.style.transform = `translateY(${offset}px) rotate(${offset / 2}deg)`;
+                    cardElement.style.transform = `translateX(${offsetX}px) rotate(${angle}deg)`;
                     cardElement.style.boxShadow = '';
                     cardElement.style.zIndex = card.faceUp ? (100 + index) : index;
                 }
