@@ -618,32 +618,34 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Проверка возможности положить карту на другую карту
     function canPlayCard(card, targetCard) {
-        // В первой стадии игры карту можно сыграть, если она на 1 ранг выше целевой карты
+        // В первой стадии игры карту можно сыграть, если она на 1 ранг выше целевой карты (масть и козырь не учитываются)
         if (game.gameStage === 'stage1') {
             // Определяем ранг карт для сравнения
             const cardValues = ['6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A', '2', '3', '4', '5'];
             const cardRank = cardValues.indexOf(card.value);
             const targetRank = cardValues.indexOf(targetCard.value);
-            
             // Проверка для туза (можно положить только 2 на туз)
             if (targetCard.value === 'A') {
                 return card.value === '2';
             }
-            
-            // В первой стадии важен только ранг карты, масть не имеет значения
-            // Проверяем, что наша карта на 1 ранг выше целевой
+            // В первой стадии важен только ранг карты, масть и козырь не имеют значения
             return cardRank === targetRank + 1;
         } else if (game.gameStage === 'stage2') {
-            // Во второй стадии карту можно сыграть, если совпадает масть или значение
+            // Во второй стадии: пики можно класть только на пики, козырь работает
             if (game.discardPile.length === 0) {
                 // На пустой сброс можно положить любую карту
                 return true;
             }
-            
             const topCard = game.discardPile[game.discardPile.length - 1];
+            // Если верхняя карта сброса — пика, то можно класть только пики
+            if (topCard.suit === '♠') {
+                return card.suit === '♠';
+            }
+            // Козырь: например, если есть переменная trumpSuit, можно добавить проверку
+            // Здесь пример без отдельного козыря, только правило для пик
+            // В остальных случаях — по масти или значению
             return (card.suit === topCard.suit || card.value === topCard.value);
         }
-        
         // Для третьей стадии или если стадия не определена
         return false;
     }
