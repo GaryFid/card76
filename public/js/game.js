@@ -793,92 +793,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Обработчики событий для кнопок
     drawCardButton.addEventListener('click', function() {
-        if (isMyTurn) {
-            if (game.gameStage === 'stage1') {
-                // Сначала проверяем, может ли игрок сыграть какой-то из своих карт на карты соперников
-                const canPlayAnyCard = playerCanMakeAnyMove();
-                
-                if (canPlayAnyCard) {
-                    showGameMessage('Сначала попробуйте сыграть одной из своих карт!', 2000);
-                    return;
-                }
-                
-                // В первой стадии берем карту из колоды
-                if (game.deck.length > 0) {
-                    // Берем карту из колоды
-                    const drawnCard = game.deck.pop();
-                    drawnCard.faceUp = true; // Открываем карту
-                    
-                    // Добавляем карту текущему игроку
-                    game.players[0].cards.push(drawnCard);
-                    
-                    // Обновляем отображение
-                    renderPlayerHand();
-                    updateDeckInfo();
-                    
-                    // Показываем сообщение о взятой карте
-                    showGameMessage(`Вы взяли карту из колоды: ${drawnCard.value}${drawnCard.suit}`);
-                    
-                    // Проверяем, не закончилась ли колода
-                    if (game.deck.length === 0) {
-                        console.log('Колода закончилась, переходим ко второй стадии');
-                        checkGameStageProgress();
-                    }
-                    
-                    // Проверяем, можно ли сыграть взятую карту на карты других игроков
-                    const canPlay = canPlayCardOnTable(drawnCard);
-                    
-                    if (canPlay) {
-                        // Если взятую карту можно сыграть, даем возможность игроку это сделать
-                        showGameMessage('Вы можете сыграть взятую карту на карту соперника', 2000);
-                        
-                        // Выделяем взятую карту
-                        setTimeout(() => {
-                            const newCardElement = document.querySelector(`.player-hand .card[data-card-id="${drawnCard.id}"]`);
-                            if (newCardElement) {
-                                newCardElement.click(); // Имитируем клик по карте для её выделения
-                            }
-                        }, 300);
-                        
-                        // Не передаем ход, так как игрок может сыграть карту
-                    } else {
-                        // Если нельзя сыграть карту на карты других игроков, проверяем возможность сыграть на свои карты
-                        const canPlayOnSelf = checkCanPlayOnSelf(drawnCard);
-                        
-                        if (canPlayOnSelf) {
-                            // Если можно сыграть на свои карты, показываем сообщение
-                            showGameMessage('Вы можете положить взятую карту на свою карту', 2000);
-                            
-                            // Не передаем ход сразу, давая игроку возможность сыграть карту на свою
-                            return;
-                        } else {
-                            // Если нельзя сыграть карту ни на чьи карты, передаем ход
-                            setTimeout(() => {
-                                showGameMessage('Ход переходит к следующему игроку', 1500);
-                                const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
-                                setCurrentPlayer(nextPlayerIndex);
-                            }, 2000);
-                        }
-                    }
-                } else {
-                    // Колода закончилась
-                    showGameMessage('В колоде больше нет карт. Начинается вторая стадия игры.');
-                    checkGameStageProgress();
-                    
-                    // Передаем ход следующему игроку
-                    setTimeout(() => {
-                        const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
-                        setCurrentPlayer(nextPlayerIndex);
-                    }, 1500);
-                }
-            } else {
-                // Логика для второй стадии (оставляем без изменений)
-                // ... existing code ...
-            }
-        }
+        if (isMyTurn && game.gameStage === 'stage1') playerStage1Turn();
     });
 
-    // Обработчик нажатия на кнопку "Сыграть"
     playCardButton.addEventListener('click', function() {
         if (!isMyTurn) return;
         
@@ -1791,4 +1708,99 @@ document.addEventListener('DOMContentLoaded', function() {
         // Формирование пути к изображению карты в соответствии с новой структурой
         return `img/cards/${value}_of_${suit}.png`;
     }
+
+    // --- Новый цикл хода игрока в первой стадии ---
+    async function playerStage1Turn() {
+        if (!isMyTurn || game.gameStage !== 'stage1') return;
+        let player = game.players[0];
+        let canContinue = true;
+        while (canContinue) {
+            // Берём верхнюю (последнюю) карту в руке
+            let topCard = player.cards[player.cards.length - 1];
+            if (!topCard) break;
+            // 1. Пытаемся положить на соперников
+            let moveMade = false;
+            for (let i = 1; i < game.players.length; i++) {
+                let opp = game.players[i];
+                let oppOpen = opp.cards.filter(c => c.faceUp);
+                if (oppOpen.length > 0) {
+                    let target = oppOpen[oppOpen.length - 1];
+                    if (canPlayCard(topCard, target)) {
+                        // Кладём карту на соперника
+                        player.cards.pop();
+                        opp.cards[opp.cards.indexOf(target)] = topCard;
+                        showGameMessage(`Вы положили ${topCard.value}${topCard.suit} на карту игрока ${opp.name}`);
+                        renderPlayers();
+                        renderPlayerHand();
+                        // Берём новую карту и продолжаем цикл
+                        if (game.deck.length > 0) {
+                            let newCard = game.deck.pop();
+                            newCard.faceUp = true;
+                            player.cards.push(newCard);
+                            updateDeckInfo();
+                            renderPlayerHand();
+                            showGameMessage(`Вы взяли карту из колоды: ${newCard.value}${newCard.suit}`);
+                            await new Promise(r => setTimeout(r, 600));
+                            continue;
+                        } else {
+                            checkGameStageProgress();
+                            return;
+                        }
+                    }
+                }
+            }
+            // 2. Если не можем — берём карту из колоды
+            if (game.deck.length > 0) {
+                let newCard = game.deck.pop();
+                newCard.faceUp = true;
+                player.cards.push(newCard);
+                updateDeckInfo();
+                renderPlayerHand();
+                showGameMessage(`Вы взяли карту из колоды: ${newCard.value}${newCard.suit}`);
+                await new Promise(r => setTimeout(r, 600));
+                // Пробуем сыграть только что взятой картой (она теперь topCard)
+                topCard = newCard;
+                // Снова цикл
+                // 1. Пытаемся положить на соперников (цикл выше)
+                // 2. Если не можем — пытаемся положить на свою открытую
+                let myOpen = player.cards.filter(c => c.faceUp && c !== topCard);
+                for (let my of myOpen) {
+                    if (canPlayCard(topCard, my)) {
+                        player.cards.pop();
+                        player.cards[player.cards.indexOf(my)] = topCard;
+                        showGameMessage(`Вы положили ${topCard.value}${topCard.suit} на свою карту`);
+                        renderPlayers();
+                        renderPlayerHand();
+                        // Берём новую карту и продолжаем цикл
+                        if (game.deck.length > 0) {
+                            let nextCard = game.deck.pop();
+                            nextCard.faceUp = true;
+                            player.cards.push(nextCard);
+                            updateDeckInfo();
+                            renderPlayerHand();
+                            showGameMessage(`Вы взяли карту из колоды: ${nextCard.value}${nextCard.suit}`);
+                            await new Promise(r => setTimeout(r, 600));
+                            continue;
+                        } else {
+                            checkGameStageProgress();
+                            return;
+                        }
+                    }
+                }
+                // 3. Если не можем никуда — оставляем карту себе и завершаем ход
+                showGameMessage('Не удалось сыграть карту, ход переходит дальше');
+                break;
+            } else {
+                // Колода пуста — завершаем ход
+                checkGameStageProgress();
+                break;
+            }
+        }
+        // Передаём ход следующему игроку
+        setTimeout(() => {
+            const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
+            setCurrentPlayer(nextPlayerIndex);
+        }, 1200);
+    }
+    // ... существующий код ...
 }); 
