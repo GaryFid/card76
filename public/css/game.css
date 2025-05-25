@@ -56,18 +56,21 @@ body {
 /* Колода карт */
 .card-deck {
     position: absolute;
-    z-index: 3;
+    z-index: 10;
     display: flex;
     gap: 20px;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
+    pointer-events: none;
 }
 
 .card-pile {
     position: relative;
     width: 70px;
     height: 100px;
+    z-index: 11;
+    pointer-events: auto;
 }
 
 .card-pile.deck {
@@ -689,13 +692,33 @@ body {
     height: 70px;
     border-radius: 5px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-    transition: transform 0.2s;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 12;
 }
 
-.mini-card.card-back {
-    background-color: #b00;
+.card-image, .card-back-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 5px;
+    display: block;
+}
+
+.card-pile.deck .mini-card {
+    background: #b00;
     background-image: linear-gradient(135deg, #b00 25%, #d00 25%, #d00 50%, #b00 50%, #b00 75%, #d00 75%, #d00);
     background-size: 10px 10px;
+}
+
+.card-pile.discard .mini-card {
+    background: #fff;
 }
 
 /* Стили для модального окна правил */

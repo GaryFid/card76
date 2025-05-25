@@ -313,13 +313,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const deckElement = document.querySelector('.card-pile.deck');
         deckElement.innerHTML = ''; // Очищаем содержимое
         
-        // Позиционируем колоду карт по центру стола
-        const cardDeck = document.querySelector('.card-deck');
-        cardDeck.style.position = 'absolute';
-        cardDeck.style.top = '50%';
-        cardDeck.style.left = '50%';
-        cardDeck.style.transform = 'translate(-50%, -50%)';
-        
         // Определяем сколько карт показывать в стопке (максимум 5)
         const numCardsToShow = Math.min(5, game.deck.length);
         
