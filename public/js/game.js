@@ -322,41 +322,21 @@ document.addEventListener('DOMContentLoaded', function() {
             for (let i = 0; i < numCardsToShow; i++) {
                 const cardElem = document.createElement('div');
                 cardElem.className = 'card mini-card card-back';
-                // Располагаем карты со смещением для эффекта стопки
                 cardElem.style.position = 'absolute';
                 cardElem.style.top = `${i * 2}px`;
                 cardElem.style.left = `${i * 2}px`;
                 cardElem.style.zIndex = i;
-                
                 // Добавляем изображение рубашки карты
                 if (game.settings.useCardImages) {
                     const cardBackImg = document.createElement('img');
-                    cardBackImg.src = 'img/card-back.svg';
+                    cardBackImg.src = 'img/cards/back.png';
                     cardBackImg.className = 'card-back-image';
                     cardBackImg.alt = 'Рубашка карты';
                     cardElem.appendChild(cardBackImg);
                 }
-                
-                // В первой стадии игры колода - это карты, которые можно взять
-                if (game.gameStage === 'stage1') {
-                    cardElem.title = 'Колода (нажмите "Взять карту")';
-                }
-                
-                // Добавляем анимацию при наведении
-                cardElem.addEventListener('mouseover', function() {
-                    cardElem.style.transform = 'translateY(-5px)';
-                    cardElem.style.boxShadow = '0 5px 15px rgba(0,0,0,0.3)';
-                    cardElem.style.transition = 'transform 0.2s ease, box-shadow 0.2s ease';
-                });
-                
-                cardElem.addEventListener('mouseout', function() {
-                    cardElem.style.transform = '';
-                    cardElem.style.boxShadow = '';
-                });
-                
+                cardElem.title = 'Колода (нажмите \"Взять карту\")';
                 deckElement.appendChild(cardElem);
             }
-            
             // Добавляем счетчик карт
             const countElem = document.createElement('div');
             countElem.className = 'card-count';
@@ -368,116 +348,52 @@ document.addEventListener('DOMContentLoaded', function() {
             emptyDeck.className = 'card mini-card';
             emptyDeck.style.border = '2px dashed rgba(255,255,255,0.3)';
             emptyDeck.style.backgroundColor = 'transparent';
-            
-            // Подсказка для пустой колоды
-            if (game.gameStage === 'stage1') {
-                emptyDeck.title = 'Колода пуста, начинается вторая стадия';
-            } else {
-                emptyDeck.title = 'Колода пуста';
-            }
-            
+            emptyDeck.title = game.gameStage === 'stage1' ? 'Колода пуста, начинается вторая стадия' : 'Колода пуста';
             deckElement.appendChild(emptyDeck);
-            
             // Сообщение о пустой колоде
             const emptyText = document.createElement('div');
             emptyText.className = 'card-count';
             emptyText.textContent = '0';
             deckElement.appendChild(emptyText);
         }
-        
-        // Обновляем отображение сброса
+        // --- Новое: отображаем верхнюю открытую карту сброса поверх колоды ---
         const discardElement = document.querySelector('.card-pile.discard');
         discardElement.innerHTML = '';
-        
         if (game.discardPile && game.discardPile.length > 0) {
-            // Отображаем верхнюю карту сброса
             const topCard = game.discardPile[game.discardPile.length - 1];
-            console.log(`Верхняя карта сброса: ${topCard.value}${topCard.suit}`);
-            
             // Создаем элемент верхней карты сброса
             const cardElement = document.createElement('div');
             cardElement.className = 'card mini-card';
-            
-            // Показываем лицевую сторону карты в сбросе
+            cardElement.style.position = 'absolute';
+            cardElement.style.top = '0px';
+            cardElement.style.left = '0px';
+            cardElement.style.zIndex = 10;
             if (game.settings.useCardImages) {
-                // Используем изображение карты
                 const cardImg = document.createElement('img');
                 cardImg.src = getCardImageUrl(topCard);
                 cardImg.className = 'card-image';
                 cardImg.alt = `${topCard.value}${topCard.suit}`;
                 cardElement.appendChild(cardImg);
             } else {
-                // Стандартное отображение
                 const cardFront = document.createElement('div');
                 cardFront.className = 'card-front';
-                if (topCard.isRed) {
-                    cardFront.classList.add('red');
-                }
-                
-                // Добавляем значение и масть
+                if (topCard.isRed) cardFront.classList.add('red');
                 const valueElem = document.createElement('div');
                 valueElem.className = 'card-value';
                 valueElem.textContent = topCard.value;
-                
                 const suitElem = document.createElement('div');
                 suitElem.className = 'card-suit';
                 suitElem.textContent = topCard.suit;
-                
                 cardFront.appendChild(valueElem);
                 cardFront.appendChild(suitElem);
                 cardElement.appendChild(cardFront);
             }
-            
-            // Добавляем id карты
             cardElement.dataset.cardId = topCard.id;
-            
-            // Специальное оформление для первой стадии - это показывается карта на которую можно класть
-            if (game.gameStage === 'stage1') {
-                cardElement.title = 'На первой стадии игроки могут класть карты рангом выше на карты других игроков';
-                // Добавляем стилизацию для карты сброса на первой стадии
-                cardElement.classList.add('stage1-discard');
-            } else {
-                cardElement.title = 'Сброс';
-            }
-            
-            // Добавляем анимацию при наведении на сброс
-            cardElement.addEventListener('mouseover', function() {
-                cardElement.style.transform = 'translateY(-5px) rotate(5deg)';
-                cardElement.style.boxShadow = '0 5px 15px rgba(0,0,0,0.3)';
-                cardElement.style.transition = 'transform 0.2s ease, box-shadow 0.2s ease';
-            });
-            
-            cardElement.addEventListener('mouseout', function() {
-                cardElement.style.transform = '';
-                cardElement.style.boxShadow = '';
-            });
-            
-            discardElement.appendChild(cardElement);
-            
-            // Добавляем счетчик карт в сбросе, если их больше одной
-            if (game.discardPile.length > 1) {
-                const discardCount = document.createElement('div');
-                discardCount.className = 'card-count';
-                discardCount.textContent = game.discardPile.length;
-                discardElement.appendChild(discardCount);
-            }
-        } else {
-            // Если сброс пуст, показываем пустое место с соответствующим дизайном для 2-й стадии
-            const emptyPile = document.createElement('div');
-            emptyPile.className = 'card mini-card';
-            emptyPile.style.border = '2px dashed rgba(255,255,255,0.3)';
-            emptyPile.style.backgroundColor = 'transparent';
-            
-            // Разные стили и подсказки для разных стадий
-            if (game.gameStage === 'stage2') {
-                emptyPile.title = 'Сбросьте карту сюда';
-                emptyPile.classList.add('stage2-empty-discard');
-            } else {
-                emptyPile.title = 'Сброс пуст';
-            }
-            
-            discardElement.appendChild(emptyPile);
+            cardElement.title = 'Верхняя карта сброса';
+            // Добавляем поверх колоды
+            deckElement.appendChild(cardElement);
         }
+        // --- Конец нового блока ---
     }
     
     // Создание элемента карты
