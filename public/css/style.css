@@ -97,7 +97,7 @@ main {
     border-radius: 8px;
     box-shadow: 0 2px 12px rgba(0,0,0,0.13);
     border: 2px solid #ff5252;
-    background: #fff;
+    background: #fff !important;
     opacity: 0.97;
     animation: main-card-loader-bounce 1.3s infinite;
 }
