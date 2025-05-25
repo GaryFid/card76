@@ -1830,7 +1830,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function preloadCardImages() {
         // Путь к изображениям карт
         const cardBackImage = new Image();
-        cardBackImage.src = 'img/card-back.svg';
+        cardBackImage.src = 'img/cards/back.png';
         
         // Проверка наличия пользовательских изображений карт, если их нет - используем стандартное отображение
         const testImage = new Image();
@@ -1849,7 +1849,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Функция для получения URL изображения карты
     function getCardImageUrl(card) {
-        if (!card) return 'img/card-back.svg';
+        if (!card) return 'img/cards/back.png';
         
         // Преобразование значения карты для формирования пути к изображению
         let value = '';
@@ -1870,7 +1870,7 @@ document.addEventListener('DOMContentLoaded', function() {
             case '♣': suit = 'clubs'; break;
         }
         
-        // Формирование пути к изображению карты в соответствии с нашей структурой
+        // Формирование пути к изображению карты в соответствии с новой структурой
         return `img/cards/${value}_of_${suit}.png`;
     }
 }); 
