@@ -954,4 +954,9 @@ body {
 }
 .card:not(.flipped) .card-front {
     display: none;
+}
+
+.card.mini-card[title*="Колода пуста"] {
+    border: 2px dashed #e0e0e0 !important;
+    background-color: #fff !important;
 } 

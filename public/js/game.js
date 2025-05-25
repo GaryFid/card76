@@ -1026,350 +1026,159 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Реализация хода ИИ
-    function playAITurn() {
-        console.log('Бот начинает свой ход...');
-        const aiPlayer = game.players[currentPlayerIndex];
-        console.log(`Бот #${currentPlayerIndex} (${aiPlayer.name}) делает ход. Стадия игры: ${game.gameStage}`);
-        console.log(`У бота ${aiPlayer.cards.length} карт в руке.`);
-        
-        // Проверяем, нужно ли перейти ко второй стадии игры
-        if (game.deck.length === 0 && game.gameStage === 'stage1') {
-            console.log('Колода пуста, переходим ко второй стадии игры...');
-            if (checkGameStageProgress()) {
-                console.log('Переход ко второй стадии игры выполнен');
-                // Теперь игра в стадии stage2, продолжаем ход бота по правилам второй стадии
-            }
-        }
-        
-        // Для первой стадии игры - логика набора и выкладывания карт
-        if (game.gameStage === 'stage1') {
-            console.log('Стадия 1: Бот ищет карты для хода...');
-            
-            let madeTurn = makeAIMove();
-            
-            // Если бот смог сделать ход
-            if (madeTurn) {
-                // Проверяем, может ли бот сделать еще ход (рекурсивно)
-                setTimeout(() => {
-                    playAITurn();
-                }, 15000); // Увеличиваем время хода бота до 15 секунд
-            } else {
-                // Если бот не смог сделать ход, передаем ход следующему игроку
-                setTimeout(() => {
-                    const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
-                    console.log(`Бот передает ход следующему игроку: ${nextPlayerIndex}`);
-                    setCurrentPlayer(nextPlayerIndex);
-                }, 15000); // Увеличиваем время хода бота до 15 секунд
-            }
-        }
-        // Для второй стадии используем другую логику (оставим на потом)
-    }
-
-    // Функция для выполнения одного хода ботом
-    function makeAIMove() {
-        const aiPlayer = game.players[currentPlayerIndex];
-        
-        // Выбираем все карты бота, которые можно использовать
-        const playableCards = aiPlayer.cards.filter(card => card.faceUp);
-        console.log(`У бота ${playableCards.length} открытых карт`);
-        
-        // Шаг 1: Проверяем, может ли бот положить карту на карты других игроков
-        let bestMove = findBestMoveForAI(playableCards);
-        
-        // Если нашли подходящий ход на карты противника
-        if (bestMove) {
-            console.log(`Бот нашел ход: ${bestMove.card.value}${bestMove.card.suit} -> ${bestMove.targetCard.value}${bestMove.targetCard.suit}`);
-            
-            // Удаляем карту из руки бота
-            const playedCard = aiPlayer.cards.splice(bestMove.cardIndex, 1)[0];
-            
-            // Кладем карту поверх карты противника
-            game.players[bestMove.targetPlayerIndex].cards[bestMove.targetCardIndex] = playedCard;
-            
-            // Обновляем отображение
-            renderPlayers();
-            
-            // Показываем сообщение
-            showGameMessage(`${aiPlayer.name} кладет карту ${playedCard.value}${playedCard.suit} на карту игрока ${bestMove.targetPlayer.name}`);
-            
-            // После хода берем новую карту из колоды
-            if (game.deck.length > 0) {
-                console.log(`Бот берет карту из колоды. До взятия: ${game.deck.length} карт`);
-                
-                // Берем карту из колоды
-                const drawnCard = game.deck.pop();
-                drawnCard.faceUp = true; // Открываем карту
-                
-                // Добавляем карту в руку бота
-                aiPlayer.cards.push(drawnCard);
-                
-                // Обновляем отображение
-                updateDeckInfo();
-                
-                // Показываем сообщение
-                showGameMessage(`${aiPlayer.name} берет карту из колоды: ${drawnCard.value}${drawnCard.suit}`);
-                
-                // Проверяем, не закончилась ли колода
-                if (game.deck.length === 0) {
-                    console.log('Колода закончилась, проверяем переход ко второй стадии');
-                    checkGameStageProgress();
-                }
-                
-                return true; // Ход сделан успешно
-            } else {
-                // Колода закончилась - переходим ко второй стадии
-                checkGameStageProgress();
-                return true; // Ход сделан успешно, но карты не взяли
-            }
-        } else {
-            console.log('Бот не нашел возможности положить карту на карты противников. Берет карту из колоды...');
-            
-            // Шаг 2: Если не можем сыграть на карты других, берём карту из колоды
-            if (game.deck.length > 0) {
-                console.log(`Бот берет карту из колоды. До взятия: ${game.deck.length} карт`);
-                
-                // Берем карту из колоды
-                const drawnCard = game.deck.pop();
-                drawnCard.faceUp = true; // Открываем карту
-                
-                // Добавляем карту в руку бота
-                aiPlayer.cards.push(drawnCard);
-                
-                // Обновляем отображение
-                updateDeckInfo();
-                
-                // Показываем сообщение
-                showGameMessage(`${aiPlayer.name} берет карту из колоды: ${drawnCard.value}${drawnCard.suit}`);
-                
-                // Проверяем, не закончилась ли колода
-                if (game.deck.length === 0) {
-                    console.log('Колода закончилась после хода бота, проверяем переход ко второй стадии');
-                    checkGameStageProgress();
-                }
-                
-                // Проверяем, можно ли сыграть только что взятой картой на карты противников
-                for (let i = 0; i < game.players.length; i++) {
-                    if (i === currentPlayerIndex) continue; // Пропускаем себя
-                    
-                    const targetPlayer = game.players[i];
-                    // Ищем только открытые карты соперников
-                    const targetOpenCards = targetPlayer.cards.filter(c => c.faceUp);
-                    
-                    for (const targetCard of targetOpenCards) {
-                        if (canPlayCard(drawnCard, targetCard)) {
-                            // Бот может сыграть взятой картой на карту соперника
-                            
-                            // Удаляем карту из руки бота
-                            const cardIndex = aiPlayer.cards.findIndex(c => c.id === drawnCard.id);
-                            const playedCard = aiPlayer.cards.splice(cardIndex, 1)[0];
-                            
-                            // Кладем карту поверх карты противника
-                            const targetCardIndex = targetPlayer.cards.findIndex(c => c.id === targetCard.id);
-                            targetPlayer.cards[targetCardIndex] = playedCard;
-                            
-                            // Обновляем отображение
-                            renderPlayers();
-                            
-                            // Показываем сообщение
-                            showGameMessage(`${aiPlayer.name} кладет взятую карту ${playedCard.value}${playedCard.suit} на карту игрока ${targetPlayer.name}`);
-                            
-                            // Берем еще одну карту из колоды
-                            if (game.deck.length > 0) {
-                                const newCard = game.deck.pop();
-                                newCard.faceUp = true;
-                                aiPlayer.cards.push(newCard);
-                                
-                                updateDeckInfo();
-                                showGameMessage(`${aiPlayer.name} берет карту из колоды: ${newCard.value}${newCard.suit}`);
-                                
-                                if (game.deck.length === 0) {
-                                    checkGameStageProgress();
-                                }
-                            }
-                            
-                            return true; // Ход сделан успешно
-                        }
-                    }
-                }
-                
-                // Шаг 3: Если не можем сыграть взятой картой на карты противников, 
-                // проверяем, можно ли положить карту на свои карты
-                const selfMove = canAIPlayCardOnSelf(drawnCard);
-                
-                if (selfMove) {
-                    console.log(`Бот нашел ход на свою карту со взятой картой ${drawnCard.value}${drawnCard.suit}`);
-                    
-                    // Удаляем карту из руки бота
-                    const cardIndex = aiPlayer.cards.findIndex(c => c.id === drawnCard.id);
-                    const playedCard = aiPlayer.cards.splice(cardIndex, 1)[0];
-                    
-                    // Находим подходящую открытую карту
-                    const targetCards = aiPlayer.cards.filter(c => c.faceUp && canPlayCard(playedCard, c));
-                    if (targetCards.length > 0) {
-                        // Кладем карту поверх своей карты
-                        const targetCardIndex = aiPlayer.cards.findIndex(c => c.id === targetCards[0].id);
-                        aiPlayer.cards[targetCardIndex] = playedCard;
-                        
-                        // Обновляем отображение
+    // --- Новый цикл хода ИИ в первой стадии ---
+    async function aiStage1Turn() {
+        let aiPlayer = game.players[currentPlayerIndex];
+        let canContinue = true;
+        while (canContinue) {
+            // Берём верхнюю карту
+            let topCard = aiPlayer.cards[aiPlayer.cards.length - 1];
+            if (!topCard) break;
+            // 1. Пытаемся положить на соперников
+            let moveMade = false;
+            for (let i = 0; i < game.players.length; i++) {
+                if (i === currentPlayerIndex) continue;
+                let opp = game.players[i];
+                let oppOpen = opp.cards.filter(c => c.faceUp);
+                if (oppOpen.length > 0) {
+                    let target = oppOpen[oppOpen.length - 1];
+                    if (canPlayCard(topCard, target)) {
+                        aiPlayer.cards.pop();
+                        opp.cards[opp.cards.indexOf(target)] = topCard;
+                        showGameMessage(`${aiPlayer.name} кладёт ${topCard.value}${topCard.suit} на карту игрока ${opp.name}`);
                         renderPlayers();
-                        
-                        // Показываем сообщение
-                        showGameMessage(`${aiPlayer.name} кладет взятую карту ${playedCard.value}${playedCard.suit} на свою карту`);
-                        
-                        // Берем карту из колоды после хода
+                        await delay(600);
+                        // Берём новую карту и продолжаем цикл
                         if (game.deck.length > 0) {
-                            const newCard = game.deck.pop();
+                            let newCard = game.deck.pop();
                             newCard.faceUp = true;
                             aiPlayer.cards.push(newCard);
-                            
                             updateDeckInfo();
-                            showGameMessage(`${aiPlayer.name} берет карту из колоды: ${newCard.value}${newCard.suit}`);
-                            
-                            if (game.deck.length === 0) {
+                            renderPlayers();
+                            await delay(600);
+                            continue;
+                        } else {
+                            checkGameStageProgress();
+                            return;
+                        }
+                    }
+                }
+            }
+            // 2. Пытаемся положить на свою открытую
+            let myOpen = aiPlayer.cards.filter(c => c.faceUp && c !== topCard);
+            for (let my of myOpen) {
+                if (canPlayCard(topCard, my)) {
+                    aiPlayer.cards.pop();
+                    aiPlayer.cards[aiPlayer.cards.indexOf(my)] = topCard;
+                    showGameMessage(`${aiPlayer.name} кладёт ${topCard.value}${topCard.suit} на свою карту`);
+                    renderPlayers();
+                    await delay(600);
+                    // Берём новую карту и продолжаем цикл
+                    if (game.deck.length > 0) {
+                        let nextCard = game.deck.pop();
+                        nextCard.faceUp = true;
+                        aiPlayer.cards.push(nextCard);
+                        updateDeckInfo();
+                        renderPlayers();
+                        await delay(600);
+                        continue;
+                    } else {
+                        checkGameStageProgress();
+                        return;
+                    }
+                }
+            }
+            // 3. Если не можем никуда — берём карту из колоды
+            if (game.deck.length > 0) {
+                let newCard = game.deck.pop();
+                newCard.faceUp = true;
+                aiPlayer.cards.push(newCard);
+                updateDeckInfo();
+                renderPlayers();
+                await delay(600);
+                // Пробуем сыграть только что взятой картой (она теперь topCard)
+                topCard = newCard;
+                // 1. Пытаемся положить на соперников
+                let placed = false;
+                for (let i = 0; i < game.players.length; i++) {
+                    if (i === currentPlayerIndex) continue;
+                    let opp = game.players[i];
+                    let oppOpen = opp.cards.filter(c => c.faceUp);
+                    if (oppOpen.length > 0) {
+                        let target = oppOpen[oppOpen.length - 1];
+                        if (canPlayCard(topCard, target)) {
+                            aiPlayer.cards.pop();
+                            opp.cards[opp.cards.indexOf(target)] = topCard;
+                            showGameMessage(`${aiPlayer.name} кладёт ${topCard.value}${topCard.suit} на карту игрока ${opp.name}`);
+                            renderPlayers();
+                            await delay(600);
+                            // Берём новую карту и продолжаем цикл
+                            if (game.deck.length > 0) {
+                                let nextCard = game.deck.pop();
+                                nextCard.faceUp = true;
+                                aiPlayer.cards.push(nextCard);
+                                updateDeckInfo();
+                                renderPlayers();
+                                await delay(600);
+                                placed = true;
+                                break;
+                            } else {
                                 checkGameStageProgress();
+                                return;
                             }
                         }
-                        
-                        return false; // Бот положил на свою карту, ход завершается
                     }
-                } else {
-                    // Шаг 4: Если не можем сыграть взятой картой ни на карты противников, ни на свои карты,
-                    // проверяем имеющиеся карты бота на возможность сыграть на свои карты
-                    const selfMoveWithExistingCard = findSelfMoveForAI(playableCards);
-                    
-                    if (selfMoveWithExistingCard) {
-                        console.log(`Бот нашел ход на свою карту с существующей картой ${selfMoveWithExistingCard.card.value}${selfMoveWithExistingCard.card.suit}`);
-                        
-                        // Удаляем карту из руки бота
-                        const playedCard = aiPlayer.cards.splice(selfMoveWithExistingCard.cardIndex, 1)[0];
-                        
-                        // Кладем карту поверх своей карты
-                        aiPlayer.cards[selfMoveWithExistingCard.targetCardIndex] = playedCard;
-                        
-                        // Обновляем отображение
+                }
+                if (placed) continue;
+                // 2. Пытаемся положить на свою открытую
+                myOpen = aiPlayer.cards.filter(c => c.faceUp && c !== topCard);
+                for (let my of myOpen) {
+                    if (canPlayCard(topCard, my)) {
+                        aiPlayer.cards.pop();
+                        aiPlayer.cards[aiPlayer.cards.indexOf(my)] = topCard;
+                        showGameMessage(`${aiPlayer.name} кладёт ${topCard.value}${topCard.suit} на свою карту`);
                         renderPlayers();
-                        
-                        // Показываем сообщение
-                        showGameMessage(`${aiPlayer.name} кладет карту ${playedCard.value}${playedCard.suit} на свою карту`);
-                        
-                        return false; // Ход завершен, бот положил карту себе
+                        await delay(600);
+                        // Берём новую карту и продолжаем цикл
+                        if (game.deck.length > 0) {
+                            let nextCard = game.deck.pop();
+                            nextCard.faceUp = true;
+                            aiPlayer.cards.push(nextCard);
+                            updateDeckInfo();
+                            renderPlayers();
+                            await delay(600);
+                            continue;
+                        } else {
+                            checkGameStageProgress();
+                            return;
+                        }
                     }
-                    
-                    console.log('Бот не нашел возможности положить карту на свои карты. Ход переходит к следующему игроку');
                 }
-                
-                // Если не можем ни сыграть взятой картой на карты противников, ни положить на свои карты
-                return false; // Ход завершен, бот просто взял карту
+                // 3. Если не можем никуда — оставляем карту себе и завершаем ход
+                showGameMessage(`${aiPlayer.name} не может сыграть карту, ход переходит дальше`);
+                break;
             } else {
-                // Колода закончилась - проверяем переход ко второй стадии
+                // Колода пуста — завершаем ход
                 checkGameStageProgress();
-                return false; // Ход завершен
+                break;
             }
         }
+        // Передаём ход следующему игроку
+        setTimeout(() => {
+            const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
+            setCurrentPlayer(nextPlayerIndex);
+        }, 1200);
     }
-    
-    // Поиск лучшего хода для ИИ
-    function findBestMoveForAI(playableCards) {
-        console.log(`Стадия 1: Бот ищет карты для хода...`);
-        
-        // Перебираем все карты, которыми можно сыграть
-        for (const card of playableCards) {
-            console.log(`Проверяем карту ${card.value}${card.suit}`);
-            
-            // Проверяем возможность сыграть на карты других игроков
-            for (let i = 0; i < game.players.length; i++) {
-                // Пропускаем себя
-                if (i === currentPlayerIndex) continue;
-                
-                const targetPlayer = game.players[i];
-                console.log(`Игрок ${i} имеет ${targetPlayer.cards.filter(c => c.faceUp).length} открытых карт`);
-                
-                // Берем только открытые карты игрока
-                const openCards = targetPlayer.cards.filter(c => c.faceUp);
-                if (openCards.length === 0) continue;
-                
-                // Берем только верхнюю открытую карту для проверки
-                const topCard = openCards[openCards.length - 1];
-                
-                // Проверяем, можно ли положить карту на эту карту
-                if (canPlayCard(card, topCard)) {
-                    console.log(`Найдена подходящая цель: ${topCard.value}${topCard.suit}`);
-                    
-                    // Возвращаем информацию о найденном ходе
-                    return {
-                        card: card,
-                        cardIndex: game.players[currentPlayerIndex].cards.indexOf(card),
-                        targetPlayer: targetPlayer,
-                        targetPlayerIndex: i,
-                        targetCard: topCard,
-                        targetCardIndex: targetPlayer.cards.indexOf(topCard)
-                    };
-                }
-            }
+
+    // --- Заменяю playAITurn на вызов aiStage1Turn ---
+    function playAITurn() {
+        if (game.gameStage === 'stage1') {
+            aiStage1Turn();
+        } else {
+            // старая логика для других стадий
         }
-        
-        // Если не нашли подходящий ход
-        console.log('Бот не нашел возможности положить карту на карты противников. Бот ложит карту себе и передает ход уже по часовой стрелке.');
-        return null;
     }
-    
-    // Функция поиска хода на свои карты для бота
-    function findSelfMoveForAI(playableCards) {
-        const aiPlayer = game.players[currentPlayerIndex];
-        
-        // Для каждой открытой карты в руке бота
-        for (const card of playableCards) {
-            console.log(`Проверяем возможность положить карту ${card.value}${card.suit} на свою карту`);
-            
-            // Ищем подходящие открытые карты в своей руке
-            const selfTargetCards = aiPlayer.cards.filter(c => c.faceUp && c.id !== card.id);
-            
-            for (const targetCard of selfTargetCards) {
-                // Проверка правила "на 1 ранг выше"
-                const cardRank = cardValues.indexOf(card.value);
-                const targetRank = cardValues.indexOf(targetCard.value);
-                
-                // Проверка для туза (можно положить только 2 на туз)
-                if (targetCard.value === 'A' && card.value === '2') {
-                    console.log(`Найдена подходящая своя карта: ${targetCard.value}${targetCard.suit}`);
-                    return {
-                        card: card,
-                        cardIndex: aiPlayer.cards.findIndex(c => c.id === card.id),
-                        targetCard: targetCard,
-                        targetCardIndex: aiPlayer.cards.findIndex(c => c.id === targetCard.id)
-                    };
-                }
-                // Проверка стандартного правила "на 1 ранг выше"
-                else if (cardRank === targetRank + 1) {
-                    console.log(`Найдена подходящая своя карта: ${targetCard.value}${targetCard.suit}`);
-                    return {
-                        card: card,
-                        cardIndex: aiPlayer.cards.findIndex(c => c.id === card.id),
-                        targetCard: targetCard,
-                        targetCardIndex: aiPlayer.cards.findIndex(c => c.id === targetCard.id)
-                    };
-                }
-            }
-        }
-        
-        return null; // Не найдено подходящего хода
-    }
-    
-    // Функция проверки, может ли бот положить карту на свою карту
-    function canAIPlayCardOnSelf(card) {
-        const aiPlayer = game.players[currentPlayerIndex];
-        const openCards = aiPlayer.cards.filter(c => c.faceUp && c.id !== card.id); // Исключаем саму карту
-        
-        for (const targetCard of openCards) {
-            if (canPlayCard(card, targetCard)) {
-                return true;
-            }
-        }
-        
-        return false;
-    }
-    
+
     // Настройки и модальное окно
     settingsButton.addEventListener('click', function() {
         settingsModal.classList.add('visible');
