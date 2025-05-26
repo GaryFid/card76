@@ -258,38 +258,41 @@ document.addEventListener('DOMContentLoaded', function() {
             cardCount.textContent = `Карт: ${player.cards.length}`;
             const cardsContainer = document.createElement('div');
             cardsContainer.className = 'player-table-cards';
-            // --- 2 закрытые карты (рубашкой вниз) ---
-            const closedCards = player.cards.filter(card => !card.faceUp);
-            for (let i = 0; i < Math.min(2, closedCards.length); i++) {
-                const cardElem = document.createElement('div');
-                cardElem.className = 'card table-card card-back';
-                cardElem.style.zIndex = i;
-                cardElem.style.left = `${i * 10}px`;
-                cardElem.style.top = `${20 - i * 2}px`;
-                // Рубашка через img
-                const cardBackImg = document.createElement('img');
-                cardBackImg.src = 'img/cards/back.png';
-                cardBackImg.className = 'card-back-image';
-                cardBackImg.alt = 'Рубашка карты';
-                cardElem.appendChild(cardBackImg);
-                cardsContainer.appendChild(cardElem);
-            }
-            // --- 1 открытая карта (если есть) ---
-            const openCards = player.cards.filter(card => card.faceUp);
-            if (openCards.length > 0) {
-                const card = openCards[openCards.length - 1];
-                const cardElem = document.createElement('div');
-                cardElem.className = 'card table-card card-front';
-                cardElem.style.zIndex = 10;
-                cardElem.style.left = `10px`;
-                cardElem.style.top = `0px`;
-                // Картинка карты через img
-                const cardImg = document.createElement('img');
-                cardImg.src = getCardImageUrl(card);
-                cardImg.className = 'card-image';
-                cardImg.alt = `${card.value}${card.suit}`;
-                cardElem.appendChild(cardImg);
-                cardsContainer.appendChild(cardElem);
+            // --- Только для других игроков отображаем карты на столе ---
+            if (playerIndex !== 0) {
+                // 2 закрытые карты (рубашкой вниз)
+                const closedCards = player.cards.filter(card => !card.faceUp);
+                for (let i = 0; i < Math.min(2, closedCards.length); i++) {
+                    const cardElem = document.createElement('div');
+                    cardElem.className = 'card table-card card-back';
+                    cardElem.style.zIndex = i;
+                    cardElem.style.left = `${i * 10}px`;
+                    cardElem.style.top = `${20 - i * 2}px`;
+                    // Рубашка через img
+                    const cardBackImg = document.createElement('img');
+                    cardBackImg.src = 'img/cards/back.png';
+                    cardBackImg.className = 'card-back-image';
+                    cardBackImg.alt = 'Рубашка карты';
+                    cardElem.appendChild(cardBackImg);
+                    cardsContainer.appendChild(cardElem);
+                }
+                // 1 открытая карта (если есть)
+                const openCards = player.cards.filter(card => card.faceUp);
+                if (openCards.length > 0) {
+                    const card = openCards[openCards.length - 1];
+                    const cardElem = document.createElement('div');
+                    cardElem.className = 'card table-card card-front';
+                    cardElem.style.zIndex = 10;
+                    cardElem.style.left = `10px`;
+                    cardElem.style.top = `0px`;
+                    // Картинка карты через img
+                    const cardImg = document.createElement('img');
+                    cardImg.src = getCardImageUrl(card);
+                    cardImg.className = 'card-image';
+                    cardImg.alt = `${card.value}${card.suit}`;
+                    cardElem.appendChild(cardImg);
+                    cardsContainer.appendChild(cardElem);
+                }
             }
             playerElement.appendChild(playerName);
             playerElement.appendChild(playerAvatar);
@@ -646,6 +649,31 @@ document.addEventListener('DOMContentLoaded', function() {
         const value = valueMap[card.value] || card.value;
         const suit = suitMap[card.suit] || card.suit;
         return `img/cards/${value}_of_${suit}.png`;
+    }
+
+    // --- Добавляю функцию для отображения руки игрока ---
+    function renderPlayerHand() {
+        if (!playerHandElement) return;
+        playerHandElement.innerHTML = '';
+        const player = game.players[0];
+        player.cards.forEach((card, idx) => {
+            const cardElem = document.createElement('div');
+            cardElem.className = 'hand-card';
+            if (card.faceUp) {
+                const cardImg = document.createElement('img');
+                cardImg.src = getCardImageUrl(card);
+                cardImg.className = 'card-image';
+                cardImg.alt = `${card.value}${card.suit}`;
+                cardElem.appendChild(cardImg);
+            } else {
+                const cardBackImg = document.createElement('img');
+                cardBackImg.src = 'img/cards/back.png';
+                cardBackImg.className = 'card-back-image';
+                cardBackImg.alt = 'Рубашка карты';
+                cardElem.appendChild(cardBackImg);
+            }
+            playerHandElement.appendChild(cardElem);
+        });
     }
 
     (async () => { await initGame(); })();
