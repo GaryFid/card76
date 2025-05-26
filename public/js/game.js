@@ -633,4 +633,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     // ... существующий код ...
+
+    (async () => { await initGame(); })();
 }); 
