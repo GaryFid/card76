@@ -267,7 +267,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 cardElem.style.zIndex = i;
                 cardElem.style.left = `${i * 10}px`;
                 cardElem.style.top = `${20 - i * 2}px`;
-                // Рубашка
+                // Рубашка через img
                 const cardBackImg = document.createElement('img');
                 cardBackImg.src = 'img/cards/back.png';
                 cardBackImg.className = 'card-back-image';
@@ -284,7 +284,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 cardElem.style.zIndex = 10;
                 cardElem.style.left = `10px`;
                 cardElem.style.top = `0px`;
-                // Картинка карты
+                // Картинка карты через img
                 const cardImg = document.createElement('img');
                 cardImg.src = getCardImageUrl(card);
                 cardImg.className = 'card-image';
