@@ -99,7 +99,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Инициализация игры
     async function initGame() {
         console.log('Инициализация новой игры...');
-        preloadCardImages();
         if (game) {
             console.log('Очистка предыдущей игры');
         }
@@ -633,6 +632,21 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     // ... существующий код ...
+
+    // --- ДОБАВЛЯЮ функцию для получения пути к картинке карты ---
+    function getCardImageUrl(card) {
+        // Преобразуем значения и масти к формату ace_of_hearts.png
+        const valueMap = {
+            'A': 'ace', 'K': 'king', 'Q': 'queen', 'J': 'jack',
+            '10': '10', '9': '9', '8': '8', '7': '7', '6': '6', '5': '5', '4': '4', '3': '3', '2': '2'
+        };
+        const suitMap = {
+            '♥': 'hearts', '♦': 'diamonds', '♣': 'clubs', '♠': 'spades'
+        };
+        const value = valueMap[card.value] || card.value;
+        const suit = suitMap[card.suit] || card.suit;
+        return `img/cards/${value}_of_${suit}.png`;
+    }
 
     (async () => { await initGame(); })();
 }); 
