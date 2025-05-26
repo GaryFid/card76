@@ -281,7 +281,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (openCards.length > 0) {
                     const card = openCards[openCards.length - 1];
                     const cardElem = document.createElement('div');
-                    cardElem.className = 'card table-card card-front';
+                    cardElem.className = 'card table-card card-front drop-target';
                     cardElem.style.zIndex = 10;
                     cardElem.style.left = `10px`;
                     cardElem.style.top = `0px`;
@@ -291,6 +291,27 @@ document.addEventListener('DOMContentLoaded', function() {
                     cardImg.className = 'card-image';
                     cardImg.alt = `${card.value}${card.suit}`;
                     cardElem.appendChild(cardImg);
+                    // --- drop events ---
+                    cardElem.addEventListener('dragover', function(e) {
+                        e.preventDefault();
+                        cardElem.classList.add('drag-over');
+                    });
+                    cardElem.addEventListener('dragleave', function(e) {
+                        cardElem.classList.remove('drag-over');
+                    });
+                    cardElem.addEventListener('drop', function(e) {
+                        e.preventDefault();
+                        cardElem.classList.remove('drag-over');
+                        const cardIdx = +e.dataTransfer.getData('card-index');
+                        handlePlayerCardDrop(cardIdx, playerIndex);
+                    });
+                    // Touch events (mobile)
+                    cardElem.addEventListener('touchmove', function(e) {
+                        e.preventDefault();
+                    });
+                    cardElem.addEventListener('touchend', function(e) {
+                        // Для мобильных: обработка в handleTouchEnd
+                    });
                     cardsContainer.appendChild(cardElem);
                 }
             }
@@ -665,6 +686,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 cardImg.className = 'card-image';
                 cardImg.alt = `${card.value}${card.suit}`;
                 cardElem.appendChild(cardImg);
+                // --- drag&drop только для открытых карт ---
+                cardElem.setAttribute('draggable', 'true');
+                cardElem.addEventListener('dragstart', function(e) {
+                    e.dataTransfer.setData('card-index', idx);
+                });
+                // Touch events (mobile)
+                cardElem.addEventListener('touchstart', function(e) {
+                    cardElem.classList.add('dragging');
+                    cardElem.dataset.touchStart = '1';
+                });
+                cardElem.addEventListener('touchend', function(e) {
+                    cardElem.classList.remove('dragging');
+                    delete cardElem.dataset.touchStart;
+                });
             } else {
                 const cardBackImg = document.createElement('img');
                 cardBackImg.src = 'img/cards/back.png';
@@ -674,6 +709,85 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             playerHandElement.appendChild(cardElem);
         });
+        // --- Для мобильных: обработка touchmove/touchend на всём поле ---
+        playerHandElement.addEventListener('touchmove', handleTouchMove, {passive:false});
+        playerHandElement.addEventListener('touchend', handleTouchEnd, {passive:false});
+    }
+
+    // --- Добавляю функцию смены текущего игрока ---
+    function setCurrentPlayer(index) {
+        currentPlayerIndex = index;
+        isMyTurn = (currentPlayerIndex === 0);
+        renderPlayers();
+        renderPlayerHand();
+        if (isMyTurn) {
+            // Можно добавить активацию кнопок, подсветку и т.д.
+        } else {
+            playAITurn();
+        }
+    }
+
+    // --- Логика обработки drop ---
+    function handlePlayerCardDrop(cardIdx, targetPlayerIdx) {
+        if (!isMyTurn) return;
+        const player = game.players[0];
+        const card = player.cards[cardIdx];
+        if (!card || !card.faceUp) return;
+        const targetPlayer = game.players[targetPlayerIdx];
+        const targetOpen = targetPlayer.cards.filter(c => c.faceUp);
+        if (targetOpen.length === 0) return;
+        const targetCard = targetOpen[targetOpen.length - 1];
+        if (!canPlayCard(card, targetCard)) {
+            showGameMessage('Нельзя положить эту карту на выбранную!');
+            return;
+        }
+        // Совершаем ход: кладём карту на соперника
+        player.cards.splice(cardIdx, 1);
+        targetPlayer.cards[targetPlayer.cards.indexOf(targetCard)] = card;
+        showGameMessage(`Вы положили ${card.value}${card.suit} на карту игрока ${targetPlayer.name}`);
+        renderPlayers();
+        renderPlayerHand();
+        // После успешного хода — берём новую карту и передаём ход
+        if (game.deck.length > 0) {
+            let newCard = game.deck.pop();
+            newCard.faceUp = true;
+            player.cards.push(newCard);
+            updateDeckInfo();
+            renderPlayerHand();
+            showGameMessage(`Вы взяли карту из колоды: ${newCard.value}${newCard.suit}`);
+        }
+        setTimeout(() => {
+            const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
+            setCurrentPlayer(nextPlayerIndex);
+        }, 1200);
+    }
+
+    // --- Touch-Drag поддержка для мобильных ---
+    let touchDragIdx = null;
+    function handleTouchMove(e) {
+        if (e.touches.length !== 1) return;
+        const touch = e.touches[0];
+        const elem = document.elementFromPoint(touch.clientX, touch.clientY);
+        if (elem && elem.classList.contains('drop-target')) {
+            elem.classList.add('drag-over');
+        }
+    }
+    function handleTouchEnd(e) {
+        const touch = e.changedTouches[0];
+        const elem = document.elementFromPoint(touch.clientX, touch.clientY);
+        if (elem && elem.classList.contains('drop-target')) {
+            // Найти индекс карты, которую тащили
+            const handCards = Array.from(playerHandElement.children);
+            for (let i = 0; i < handCards.length; i++) {
+                if (handCards[i].classList.contains('dragging')) {
+                    handlePlayerCardDrop(i, +elem.closest('.player').dataset.playerIndex);
+                    handCards[i].classList.remove('dragging');
+                    break;
+                }
+            }
+        }
+        // Убрать подсветку
+        document.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drag-over'));
     }
 
     (async () => { await initGame(); })();
