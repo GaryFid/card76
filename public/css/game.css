@@ -31,7 +31,7 @@ body {
     position: absolute;
     width: 100%;
     height: 100%;
-    background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0) 100%);
+    background: transparent !important;
     z-index: 1;
     pointer-events: none;
 }
@@ -103,8 +103,8 @@ body {
     position: absolute;
     width: 100%;
     height: 100%;
-    z-index: 2;
-    pointer-events: none; /* Чтобы игроки не блокировали взаимодействие со столом */
+    z-index: 3 !important;
+    pointer-events: none;
 }
 
 .player {
@@ -960,4 +960,8 @@ body {
 .card.mini-card[title*="Колода пуста"] {
     border: 2px dashed #e0e0e0 !important;
     background-color: #fff !important;
+}
+
+.card-pile.deck, .card-pile.discard {
+    z-index: 4 !important;
 } 
