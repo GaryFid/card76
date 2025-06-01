@@ -69,14 +69,14 @@
                     <div class="menu-text">Рейтинг</div>
                 </div>
                 
+                <div class="menu-item menu-item-shop" id="shop">
+                    <div class="menu-icon">🛒</div>
+                    <div class="menu-text">Магазин</div>
+                </div>
+                
                 <div class="menu-item" id="rules">
                     <div class="menu-icon">📋</div>
                     <div class="menu-text">Правила</div>
-                </div>
-                
-                <div class="menu-item" id="shop">
-                    <div class="menu-icon">🛒</div>
-                    <div class="menu-text">Магазин</div>
                 </div>
             </div>
         </main>
@@ -87,5 +87,10 @@
     </div>
     
     <script src="js/main.js"></script>
+    <script>
+    document.getElementById('shop').onclick = () => {
+        window.location.href = 'shop.html';
+    };
+    </script>
 </body>
 </html> 

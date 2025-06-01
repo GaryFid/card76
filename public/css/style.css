@@ -363,4 +363,18 @@ footer {
         width: 22px;
         height: 22px;
     }
+}
+
+.menu-item-shop {
+    background: linear-gradient(90deg, #ffb347 0%, #ffcc33 100%);
+    box-shadow: 0 4px 16px rgba(255, 204, 51, 0.25);
+    border-radius: 16px;
+    color: #222;
+    font-weight: bold;
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+.menu-item-shop:hover {
+    transform: scale(1.04);
+    box-shadow: 0 8px 24px rgba(255, 204, 51, 0.35);
+    color: #000;
 } 
