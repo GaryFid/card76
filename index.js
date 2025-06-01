@@ -16,6 +16,7 @@ const { gameSetupScene } = require('./scenes/gameSetup');
 const { gameScene } = require('./scenes/game');
 const { rulesScene } = require('./scenes/rules');
 const { ratingScene } = require('./scenes/rating');
+const { shopScene } = require('./scenes/shop');
 
 // Импорт стратегий аутентификации
 require('./config/passport');
@@ -32,7 +33,8 @@ if (config.enableBot && !config.testMode) {
     gameSetupScene,
     gameScene,
     rulesScene,
-    ratingScene
+    ratingScene,
+    shopScene
   ]);
 
   // Middleware
