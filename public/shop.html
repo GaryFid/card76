@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Магазин — Разгильдяй</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        /* Стили для анимированных рядов карт */
+        .cards-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
+            margin: 16px 0;
+            overflow: hidden;
+            height: 60px;
+        }
+        .card-anim {
+            width: 48px;
+            height: 60px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+            animation: float 2s infinite ease-in-out alternate;
+        }
+        .card-anim:nth-child(2) { animation-delay: 0.2s; }
+        .card-anim:nth-child(3) { animation-delay: 0.4s; }
+        .card-anim:nth-child(4) { animation-delay: 0.6s; }
+        .card-anim:nth-child(5) { animation-delay: 0.8s; }
+        @keyframes float {
+            from { transform: translateY(0); }
+            to { transform: translateY(-12px); }
+        }
+        /* Слайдер товаров */
+        .shop-slider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            margin: 32px 0;
+        }
+        .slider-arrow {
+            font-size: 2.5rem;
+            cursor: pointer;
+            user-select: none;
+            color: #888;
+            transition: color 0.2s;
+        }
+        .slider-arrow:hover { color: #222; }
+        .product-card {
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+            padding: 32px 24px;
+            min-width: 260px;
+            max-width: 320px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: box-shadow 0.2s;
+        }
+        .product-card img {
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
+            margin-bottom: 16px;
+        }
+        .product-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .product-desc {
+            font-size: 1rem;
+            color: #666;
+            margin-bottom: 16px;
+        }
+        .product-price {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .buy-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            justify-content: center;
+        }
+        .buy-btn {
+            background: #2a9d8f;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 24px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .buy-btn:hover { background: #21867a; }
+        .currency-dropdown {
+            position: relative;
+        }
+        .currency-btn {
+            background: #f4f4f4;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+        .currency-list {
+            display: none;
+            position: absolute;
+            top: 48px;
+            left: 0;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+            z-index: 10;
+            min-width: 120px;
+        }
+        .currency-list.active { display: block; }
+        .currency-item {
+            padding: 10px 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .currency-item:hover { background: #f0f0f0; }
+        @media (max-width: 600px) {
+            .shop-slider { flex-direction: column; gap: 0; }
+            .slider-arrow { display: none; }
+            .product-card { min-width: 90vw; max-width: 98vw; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Верхний анимированный ряд карт -->
+        <div class="cards-row">
+            <div class="card-anim">♠️</div>
+            <div class="card-anim">♥️</div>
+            <div class="card-anim">♦️</div>
+            <div class="card-anim">♣️</div>
+            <div class="card-anim">🃏</div>
+        </div>
+        <h2 style="text-align:center; margin: 0 0 12px 0;">Магазин</h2>
+        <!-- Слайдер товаров -->
+        <div class="shop-slider">
+            <div class="slider-arrow" id="slider-prev">&#8592;</div>
+            <div class="product-card" id="product-card">
+                <!-- Динамически наполняется JS -->
+            </div>
+            <div class="slider-arrow" id="slider-next">&#8594;</div>
+        </div>
+        <!-- Нижний анимированный ряд карт -->
+        <div class="cards-row">
+            <div class="card-anim">♠️</div>
+            <div class="card-anim">♥️</div>
+            <div class="card-anim">♦️</div>
+            <div class="card-anim">♣️</div>
+            <div class="card-anim">🃏</div>
+        </div>
+    </div>
+    <script>
+        // Список товаров
+        const products = [
+            {
+                title: 'Колода карт',
+                desc: 'Открой новую уникальную колоду для игры!',
+                price: '100',
+                img: 'img/shop-deck.png',
+            },
+            {
+                title: 'Буст уровня',
+                desc: 'Мгновенно повысить уровень игрока!',
+                price: '150',
+                img: 'img/shop-boost.png',
+            },
+            {
+                title: 'Премиум на месяц',
+                desc: 'Доступ к эксклюзивным функциям и скинам.',
+                price: '300',
+                img: 'img/shop-premium.png',
+            },
+            {
+                title: 'Монетка "Северная звезда"',
+                desc: 'Внутриигровая валюта для покупок.',
+                price: '50',
+                img: 'img/shop-coin.png',
+            },
+            {
+                title: 'Рамка для аватара',
+                desc: 'Сделай свой профиль уникальным!',
+                price: '80',
+                img: 'img/shop-frame.png',
+            },
+        ];
+        // Список валют
+        const currencies = [
+            { code: 'TON', icon: 'img/ton-icon.svg', name: 'Toncoin' },
+            { code: 'SOL', icon: 'img/solana-icon.svg', name: 'Solana' },
+            { code: 'JET', icon: 'img/jetton-icon.svg', name: 'JetTon' },
+            { code: 'TRUMP', icon: 'img/trump-icon.svg', name: 'TRUMP' },
+        ];
+        let currentProduct = 0;
+        let currentCurrency = 0;
+        function renderProduct() {
+            const p = products[currentProduct];
+            const c = currencies[currentCurrency];
+            document.getElementById('product-card').innerHTML = `
+                <img src="${p.img}" alt="${p.title}">
+                <div class="product-title">${p.title}</div>
+                <div class="product-desc">${p.desc}</div>
+                <div class="product-price">${p.price} <img src="${c.icon}" alt="${c.code}" style="width:22px;vertical-align:middle;"></div>
+                <div class="buy-row">
+                    <button class="buy-btn">Купить</button>
+                    <div class="currency-dropdown">
+                        <button class="currency-btn" id="currency-btn">
+                            <img src="${c.icon}" alt="${c.code}" style="width:22px;">
+                        </button>
+                        <div class="currency-list" id="currency-list">
+                            ${currencies.map((cur, i) => `
+                                <div class="currency-item" data-idx="${i}">
+                                    <img src="${cur.icon}" alt="${cur.code}" style="width:20px;">
+                                    <span>${cur.name}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+            // Навешиваем обработчики на валюты
+            document.getElementById('currency-btn').onclick = (e) => {
+                e.stopPropagation();
+                document.getElementById('currency-list').classList.toggle('active');
+            };
+            document.querySelectorAll('.currency-item').forEach(item => {
+                item.onclick = (e) => {
+                    currentCurrency = +item.dataset.idx;
+                    document.getElementById('currency-list').classList.remove('active');
+                    renderProduct();
+                };
+            });
+            // Закрытие списка валют при клике вне
+            document.body.onclick = (e) => {
+                if (!e.target.closest('.currency-dropdown')) {
+                    document.getElementById('currency-list').classList.remove('active');
+                }
+            };
+        }
+        document.getElementById('slider-prev').onclick = () => {
+            currentProduct = (currentProduct - 1 + products.length) % products.length;
+            renderProduct();
+        };
+        document.getElementById('slider-next').onclick = () => {
+            currentProduct = (currentProduct + 1) % products.length;
+            renderProduct();
+        };
+        renderProduct();
+    </script>
+</body>
+</html> 
