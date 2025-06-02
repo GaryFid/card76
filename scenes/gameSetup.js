@@ -99,6 +99,11 @@ for (let i = 4; i <= 9; i++) {
       
       game.deck = remainingDeck;
       game.discardPile = [remainingDeck.pop()]; // Первая карта открывается
+      if (typeof game.determineFirstPlayer === 'function') {
+        game.determineFirstPlayer();
+      } else {
+        game.currentPlayer = 0;
+      }
       
       await game.save();
       
@@ -144,6 +149,11 @@ gameSetupScene.action('start_game', async (ctx) => {
     game.deck = remainingDeck;
     game.discardPile = [remainingDeck.pop()]; // Первая карта открывается
     game.status = 'active';
+    if (typeof game.determineFirstPlayer === 'function') {
+      game.determineFirstPlayer();
+    } else {
+      game.currentPlayer = 0;
+    }
     
     await game.save();
     

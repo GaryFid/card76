@@ -8,7 +8,7 @@ class Game {
     this.players = data.players || [];
     this.deck = data.deck || [];
     this.discardPile = data.discardPile || [];
-    this.currentTurn = data.currentTurn || 0;
+    this.currentPlayer = data.currentPlayer || 0;
     this.winnerId = data.winnerId || null;
     this.withAI = data.withAI || false;
     this.aiTestMode = data.aiTestMode || false;
@@ -222,7 +222,7 @@ class Game {
     });
     
     // Устанавливаем текущий ход на игрока с самой высокой картой
-    this.currentTurn = highestCardPlayer;
+    this.currentPlayer = highestCardPlayer;
     
     return highestCardPlayer;
   }
@@ -257,7 +257,7 @@ class Game {
     if (this.gameStage === 'stage1') {
       // Проходим по всем игрокам
       for (let i = 0; i < this.players.length; i++) {
-        if (i === this.currentTurn) continue; // Пропускаем текущего игрока
+        if (i === this.currentPlayer) continue; // Пропускаем текущего игрока
         
         const player = this.players[i];
         
