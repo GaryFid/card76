@@ -134,55 +134,66 @@ main {
 }
 
 .menu-item {
-    background: linear-gradient(135deg, #fff 60%, #e0e0e0 100%);
-    border-radius: 14px;
+    background: linear-gradient(135deg, #3390ec 0%, #1bffff 100%);
+    border-radius: 16px;
     padding: 24px 15px;
     text-align: center;
     cursor: pointer;
-    transition: transform 0.22s, box-shadow 0.22s, background 0.4s;
+    transition: transform 0.22s, box-shadow 0.22s, background 0.4s, color 0.22s;
     display: flex;
     flex-direction: column;
     align-items: center;
-    border: 1.5px solid #3390ec;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+    border: none;
+    box-shadow: 0 2px 10px rgba(51,144,236,0.13);
     position: relative;
     overflow: hidden;
+    color: #fff;
+    font-weight: 600;
+    font-size: 1.1rem;
+    letter-spacing: 0.5px;
+    outline: none;
+    will-change: transform, box-shadow;
+    animation: menu-fade-in 1.2s;
 }
-
 .menu-item:hover, .menu-item:active {
-    transform: translateY(-6px) scale(1.04);
-    box-shadow: 0 8px 24px rgba(30,80,220,0.13);
-    background: linear-gradient(90deg, #2e3192 0%, #1bffff 100%);
+    transform: translateY(-6px) scale(1.06);
+    box-shadow: 0 8px 32px #1bffff55;
+    background: linear-gradient(135deg, #1bffff 0%, #3390ec 100%);
     color: #fff;
 }
-
 .menu-icon {
     font-size: 2.2rem;
     margin-bottom: 12px;
     filter: drop-shadow(0 2px 6px #3390ec33);
     transition: filter 0.3s;
 }
-
 .menu-item:hover .menu-icon {
-    filter: drop-shadow(0 0 12px #1bffff);
+    filter: drop-shadow(0 0 16px #1bffff);
 }
-
-.menu-text {
-    font-weight: 600;
-    font-size: 1.1rem;
-    letter-spacing: 0.5px;
-}
-
-#start-game, #play-ai {
-    background: linear-gradient(90deg, #43ea6d 0%, #2ecc40 100%);
+.menu-item-shop {
+    background: linear-gradient(135deg, #3390ec 0%, #1bffff 100%);
     color: #fff;
-    border: none;
-    box-shadow: 0 2px 12px rgba(67,234,109,0.13);
+    font-weight: 700;
+    border-radius: 16px;
+    box-shadow: 0 4px 16px #1bffff33;
+    transition: transform 0.15s, box-shadow 0.15s, background 0.3s;
 }
-
-#start-game:hover, #play-ai:hover {
-    background: linear-gradient(90deg, #2e3192 0%, #1bffff 100%);
+.menu-item-shop:hover {
+    background: linear-gradient(135deg, #1bffff 0%, #3390ec 100%);
     color: #fff;
+    transform: scale(1.06);
+    box-shadow: 0 8px 32px #1bffff55;
+}
+#start-game, #play-ai, #rating, #rules {
+    background: linear-gradient(135deg, #3390ec 0%, #1bffff 100%) !important;
+    color: #fff !important;
+    border: none !important;
+    box-shadow: 0 2px 10px rgba(51,144,236,0.13) !important;
+}
+#start-game:hover, #play-ai:hover, #rating:hover, #rules:hover {
+    background: linear-gradient(135deg, #1bffff 0%, #3390ec 100%) !important;
+    color: #fff !important;
+    box-shadow: 0 8px 32px #1bffff55 !important;
 }
 
 footer {
@@ -363,18 +374,4 @@ footer {
         width: 22px;
         height: 22px;
     }
-}
-
-.menu-item-shop {
-    background: linear-gradient(90deg, #ffb347 0%, #ffcc33 100%);
-    box-shadow: 0 4px 16px rgba(255, 204, 51, 0.25);
-    border-radius: 16px;
-    color: #222;
-    font-weight: bold;
-    transition: transform 0.15s, box-shadow 0.15s;
-}
-.menu-item-shop:hover {
-    transform: scale(1.04);
-    box-shadow: 0 8px 24px rgba(255, 204, 51, 0.35);
-    color: #000;
 } 
