@@ -4,7 +4,7 @@
 
 // Константы
 const SUITS = ['♠', '♥', '♦', '♣']; // Масти: пики, черви, бубны, трефы
-const VALUES = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'В', 'Д', 'К', 'Т']; // Значения карт от 2 до туза
+const VALUES = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']; // Значения карт от 2 до туза
 
 /**
  * Создает новую колоду карт
@@ -80,15 +80,15 @@ function canPlayCard(card, topCard, stage = 'stage1', isSelfCard = false) {
   if (!topCard) return true; // Если первый ход, можно ходить любой картой
   
   // Определяем ранг карт для сравнения
-  const VALUES_RANK = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'В', 'Д', 'К', 'Т'];
+  const VALUES_RANK = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
   
   // Правила игры "Разгильдяй" для стадии 1:
   if (stage === 'stage1') {
     const cardIndex = VALUES_RANK.indexOf(card.value);
     const topCardIndex = VALUES_RANK.indexOf(topCard.value);
     
-    // Для карты "Туз" можно положить только "2"
-    if (topCard.value === 'Т' && card.value === '2') {
+    // Для карты "A" можно положить только "2"
+    if (topCard.value === 'A' && card.value === '2') {
       return true;
     }
     
@@ -125,7 +125,7 @@ function aiMove(hand, topCard, stage = 'stage1') {
   // Стратегия для ИИ в зависимости от стадии игры
   if (stage === 'stage1') {
     // В стадии 1 предпочитаем класть более высокие карты
-    const VALUES_RANK = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'В', 'Д', 'К', 'Т'];
+    const VALUES_RANK = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
     
     // Сортируем карты по рангу (от высшего к низшему)
     playableCards.sort((a, b) => {
