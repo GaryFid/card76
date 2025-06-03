@@ -107,6 +107,15 @@
     
     <script src="js/main.js"></script>
     <script>
+    // Проверка авторизации при запуске приложения
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      if (!user || !user.id) {
+        window.location.href = '/register.html';
+      }
+    } catch {
+      window.location.href = '/register.html';
+    }
     document.getElementById('shop').onclick = () => {
         window.location.href = 'shop.html';
     };

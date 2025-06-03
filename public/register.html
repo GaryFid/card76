@@ -46,40 +46,6 @@
             font-style: italic;
             letter-spacing: 1px;
         }
-        .tab-switcher {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 24px;
-            gap: 8px;
-        }
-        .tab-btn {
-            flex: 1;
-            padding: 10px 0;
-            border: none;
-            background: #e3eafc;
-            color: #1e3c72;
-            font-weight: 700;
-            font-size: 1.1em;
-            border-radius: 8px 8px 0 0;
-            cursor: pointer;
-            transition: background 0.2s, color 0.2s;
-            outline: none;
-        }
-        .tab-btn.active {
-            background: #2196f3;
-            color: #fff;
-            box-shadow: 0 2px 8px #2196f3aa;
-        }
-        .auth-form {
-            display: none;
-            flex-direction: column;
-            gap: 16px;
-            margin-top: 8px;
-            animation: fadeIn 0.7s;
-        }
-        .auth-form.active {
-            display: flex;
-        }
         .input {
             padding: 12px;
             border-radius: 8px;
@@ -87,11 +53,13 @@
             font-size: 1.1em;
             outline: none;
             transition: border 0.2s;
+            width: 100%;
+            margin-bottom: 14px;
         }
         .input:focus {
             border: 1.5px solid #2196f3;
         }
-        .auth-btn, .tg-btn {
+        .auth-btn, .register-btn, .social-btn {
             padding: 12px;
             border-radius: 8px;
             border: none;
@@ -102,28 +70,87 @@
             cursor: pointer;
             box-shadow: 0 2px 8px #2196f3aa;
             transition: background 0.2s, transform 0.1s;
+            width: 100%;
+            margin-bottom: 12px;
         }
-        .auth-btn:hover, .tg-btn:hover {
+        .auth-btn:hover, .register-btn:hover, .social-btn:hover {
             background: linear-gradient(90deg, #21cbf3 0%, #2196f3 100%);
             transform: translateY(-2px) scale(1.03);
         }
-        .tg-btn {
-            background: linear-gradient(90deg, #2aabee 60%, #229ed9 100%);
-            margin-top: 8px;
+        .register-btn {
+            background: linear-gradient(90deg, #ff9800 60%, #ffb300 100%);
+            margin-bottom: 18px;
+        }
+        .socials {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 18px;
+        }
+        .social-btn {
+            background: #e3eafc;
+            color: #1e3c72;
+            box-shadow: none;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            font-size: 1.7em;
+            border: 2px solid #b0c4de;
+            transition: border 0.2s, background 0.2s;
         }
-        .tg-btn img {
-            width: 22px;
-            height: 22px;
+        .social-btn.active {
+            background: linear-gradient(90deg, #2aabee 60%, #229ed9 100%);
+            color: #fff;
+            border: 2px solid #2196f3;
         }
-        .divider {
-            margin: 12px 0 0 0;
-            color: #b0c4de;
-            font-size: 0.95em;
-            font-style: italic;
+        .social-btn img {
+            width: 28px;
+            height: 28px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            left: 0; top: 0; width: 100vw; height: 100vh;
+            background: rgba(30,60,114,0.18);
+            z-index: 3000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.active { display: flex; }
+        .modal-box {
+            background: #fff;
+            border-radius: 18px;
+            padding: 32px 24px;
+            max-width: 400px;
+            width: 95vw;
+            box-shadow: 0 8px 32px #1e3c72aa;
+            position: relative;
+            text-align: center;
+        }
+        .modal-close {
+            position: absolute;
+            right: 18px;
+            top: 12px;
+            font-size: 2em;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+        .modal-title {
+            font-size: 1.3em;
+            font-weight: 700;
+            margin-bottom: 18px;
+        }
+        .modal .input { margin-bottom: 10px; }
+        .modal .register-btn { margin-bottom: 0; }
+        .form-message {
+            margin-top: 8px;
+            font-size: 1em;
+            color: #e53935;
+            font-weight: 600;
         }
     </style>
 </head>
@@ -131,50 +158,122 @@
     <div class="auth-container">
         <div class="game-logo">P.I.D.R.</div>
         <div class="game-slogan">Punishment Inevitable: Dumb Rules<br>Карточная битва без пощады!</div>
-        <div class="tab-switcher">
-            <button class="tab-btn active" id="loginTab">Вход</button>
-            <button class="tab-btn" id="registerTab">Регистрация</button>
-        </div>
-        <form class="auth-form active" id="loginForm" autocomplete="on">
+        <form id="loginForm" autocomplete="on">
             <input class="input" type="text" name="username" placeholder="Имя пользователя" required>
             <input class="input" type="password" name="password" placeholder="Пароль" required>
             <button class="auth-btn" type="submit">Войти</button>
-            <div class="divider">или</div>
-            <button class="tg-btn" type="button" id="tgLoginBtn"><img src="https://telegram.org/img/t_logo.svg" alt="tg">Войти через Telegram</button>
         </form>
-        <form class="auth-form" id="registerForm" autocomplete="on">
-            <input class="input" type="text" name="username" placeholder="Имя пользователя" required>
-            <input class="input" type="password" name="password" placeholder="Пароль" required>
-            <input class="input" type="password" name="password2" placeholder="Повторите пароль" required>
-            <button class="auth-btn" type="submit">Зарегистрироваться</button>
-            <div class="divider">или</div>
-            <button class="tg-btn" type="button" id="tgRegisterBtn"><img src="https://telegram.org/img/t_logo.svg" alt="tg">Зарегистрироваться через Telegram</button>
-        </form>
+        <button class="register-btn" id="openRegisterModal" type="button">Зарегистрироваться</button>
+        <div class="socials">
+            <button class="social-btn active" id="tgLoginBtn" title="Войти через Telegram"><img src="https://telegram.org/img/t_logo.svg" alt="tg"></button>
+            <button class="social-btn" id="vkLoginBtn" title="Войти через VK"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/vk.svg" alt="vk"></button>
+            <button class="social-btn" id="googleLoginBtn" title="Войти через Google"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/google.svg" alt="google"></button>
+            <button class="social-btn" id="yaLoginBtn" title="Войти через Яндекс"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/yandex.svg" alt="ya"></button>
+            <button class="social-btn" id="okLoginBtn" title="Войти через Одноклассники"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/odnoklassniki.svg" alt="ok"></button>
+        </div>
+    </div>
+    <!-- Модальное окно регистрации -->
+    <div class="modal" id="registerModal">
+        <div class="modal-box">
+            <button class="modal-close" id="closeRegisterModal">×</button>
+            <div class="modal-title">Регистрация</div>
+            <form id="registerForm" autocomplete="on">
+                <input class="input" type="text" name="username" placeholder="Имя пользователя" required>
+                <input class="input" type="email" name="email" placeholder="Email" required>
+                <input class="input" type="password" name="password" placeholder="Пароль" required>
+                <input class="input" type="password" name="password2" placeholder="Повторите пароль" required>
+                <button class="register-btn" type="submit">Зарегистрироваться</button>
+                <div class="form-message" id="registerMsg"></div>
+            </form>
+        </div>
     </div>
     <script>
-        const loginTab = document.getElementById('loginTab');
-        const registerTab = document.getElementById('registerTab');
-        const loginForm = document.getElementById('loginForm');
-        const registerForm = document.getElementById('registerForm');
-        loginTab.onclick = () => {
-            loginTab.classList.add('active');
-            registerTab.classList.remove('active');
-            loginForm.classList.add('active');
-            registerForm.classList.remove('active');
-        };
-        registerTab.onclick = () => {
-            registerTab.classList.add('active');
-            loginTab.classList.remove('active');
-            registerForm.classList.add('active');
-            loginForm.classList.remove('active');
-        };
-        // TODO: Реализовать обработку форм и Telegram входа/регистрации
-        document.getElementById('tgLoginBtn').onclick = () => {
-            window.location.href = '/check-updates.html?from=register&type=login';
-        };
-        document.getElementById('tgRegisterBtn').onclick = () => {
-            window.location.href = '/auth/telegram';
-        };
+    // Открытие/закрытие модального окна регистрации
+    const openRegisterModal = document.getElementById('openRegisterModal');
+    const closeRegisterModal = document.getElementById('closeRegisterModal');
+    const registerModal = document.getElementById('registerModal');
+    openRegisterModal.onclick = () => registerModal.classList.add('active');
+    closeRegisterModal.onclick = () => registerModal.classList.remove('active');
+    window.onclick = (e) => { if (e.target === registerModal) registerModal.classList.remove('active'); };
+
+    // Вход
+    document.getElementById('loginForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const data = Object.fromEntries(new FormData(e.target));
+        const btn = e.target.querySelector('button[type="submit"]');
+        btn.disabled = true;
+        btn.textContent = 'Вход...';
+        try {
+            const res = await fetch('/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const json = await res.json();
+            if (json.success) {
+                localStorage.setItem('user', JSON.stringify(json.user));
+                window.location.href = '/index.html';
+            } else {
+                showMessage(e.target, json.error || 'Ошибка входа', true);
+            }
+        } catch (err) {
+            showMessage(e.target, 'Ошибка сервера', true);
+        }
+        btn.disabled = false;
+        btn.textContent = 'Войти';
+    };
+    function showMessage(form, msg, isError = false) {
+        let el = form.querySelector('.form-message');
+        if (!el) {
+            el = document.createElement('div');
+            el.className = 'form-message';
+            form.appendChild(el);
+        }
+        el.textContent = msg;
+        el.style.color = isError ? '#e53935' : '#2196f3';
+    }
+    // Регистрация
+    document.getElementById('registerForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const data = Object.fromEntries(new FormData(e.target));
+        if (data.password !== data.password2) {
+            showMessage(e.target, 'Пароли не совпадают', true);
+            return;
+        }
+        showMessage(e.target, 'Регистрация...');
+        try {
+            const res = await fetch('/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: data.username, email: data.email, password: data.password })
+            });
+            const json = await res.json();
+            if (json.success) {
+                showMessage(e.target, 'Успешная регистрация! Перенаправление...');
+                setTimeout(() => window.location.href = '/index.html', 800);
+            } else {
+                showMessage(e.target, json.error || 'Ошибка регистрации', true);
+            }
+        } catch (err) {
+            showMessage(e.target, 'Ошибка сервера', true);
+        }
+    };
+    // Соцсети
+    document.getElementById('tgLoginBtn').onclick = () => {
+        window.location.href = '/check-updates.html?from=register&type=login';
+    };
+    document.getElementById('vkLoginBtn').onclick = () => {
+        alert('Вход через VK появится скоро!');
+    };
+    document.getElementById('googleLoginBtn').onclick = () => {
+        alert('Вход через Google появится скоро!');
+    };
+    document.getElementById('yaLoginBtn').onclick = () => {
+        alert('Вход через Яндекс появится скоро!');
+    };
+    document.getElementById('okLoginBtn').onclick = () => {
+        alert('Вход через Одноклассники появится скоро!');
+    };
     </script>
 </body>
 </html> 
