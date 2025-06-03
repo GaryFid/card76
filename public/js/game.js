@@ -323,6 +323,7 @@ document.addEventListener('DOMContentLoaded', function() {
             playerElement.appendChild(cardsContainer);
             playersContainer.appendChild(playerElement);
         });
+        highlightValidDropTargets();
     }
     
     // --- Исправленный updateDeckInfo: только одна верхняя карта колоды ---
@@ -331,21 +332,32 @@ document.addEventListener('DOMContentLoaded', function() {
         deckElement.innerHTML = '';
         // Показываем только одну верхнюю карту колоды (рубашка)
         if (game.deck.length > 0) {
-                const cardElem = document.createElement('div');
-                cardElem.className = 'card mini-card card-back';
-                cardElem.style.position = 'absolute';
+            const cardElem = document.createElement('div');
+            cardElem.className = 'card mini-card card-back deck-draggable';
+            cardElem.style.position = 'absolute';
             cardElem.style.top = '0px';
             cardElem.style.left = '0px';
             cardElem.style.zIndex = 0;
-                if (game.settings.useCardImages) {
-                    const cardBackImg = document.createElement('img');
+            cardElem.setAttribute('draggable', 'true');
+            cardElem.title = 'Взять карту из колоды';
+            if (game.settings.useCardImages) {
+                const cardBackImg = document.createElement('img');
                 cardBackImg.src = 'img/cards/back.png';
-                    cardBackImg.className = 'card-back-image';
-                    cardBackImg.alt = 'Рубашка карты';
-                    cardElem.appendChild(cardBackImg);
+                cardBackImg.className = 'card-back-image';
+                cardBackImg.alt = 'Рубашка карты';
+                cardElem.appendChild(cardBackImg);
+            }
+            // Drag&drop для взятия карты
+            cardElem.addEventListener('dragstart', function(e) {
+                e.dataTransfer.setData('take-card', '1');
+            });
+            // Клик по колоде для взятия карты
+            cardElem.addEventListener('click', function(e) {
+                if (isMyTurn && game.gameStage === 'stage1') {
+                    takeCardFromDeck();
                 }
-                    cardElem.title = 'Колода (нажмите "Взять карту")';
-                deckElement.appendChild(cardElem);
+            });
+            deckElement.appendChild(cardElem);
             // Счётчик
             const countElem = document.createElement('div');
             countElem.className = 'card-count';
@@ -356,7 +368,7 @@ document.addEventListener('DOMContentLoaded', function() {
             emptyDeck.className = 'card mini-card';
             emptyDeck.style.border = '2px dashed #e0e0e0';
             emptyDeck.style.backgroundColor = '#fff';
-                emptyDeck.title = 'Колода пуста';
+            emptyDeck.title = 'Колода пуста';
             deckElement.appendChild(emptyDeck);
             const emptyText = document.createElement('div');
             emptyText.className = 'card-count';
@@ -435,7 +447,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             setTimeout(() => {
                                 const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
                                 setCurrentPlayer(nextPlayerIndex);
-                            }, 1200);
+                            }, 5000);
                             return;
                         }
                     }
@@ -471,7 +483,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
             setCurrentPlayer(nextPlayerIndex);
             checkGameStageProgress();
-        }, 1200);
+        }, 5000);
     }
     // ... существующий код ...
     // --- Кнопки для ручного управления ---
@@ -521,7 +533,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             setTimeout(() => {
                                 const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
                                 setCurrentPlayer(nextPlayerIndex);
-                            }, 1200);
+                            }, 5000);
                             return;
                         }
                     }
@@ -559,7 +571,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
             setCurrentPlayer(nextPlayerIndex);
             checkGameStageProgress();
-        }, 1200);
+        }, 5000);
     }
     // --- Заменяю playAITurn на вызов aiStage1Turn ---
     function playAITurn() {
@@ -600,11 +612,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 cardImg.className = 'card-image';
                 cardImg.alt = `${card.value}${card.suit}`;
                 cardElem.appendChild(cardImg);
-                // --- drag&drop только для открытых карт ---
-                cardElem.setAttribute('draggable', 'true');
-                cardElem.addEventListener('dragstart', function(e) {
-                    e.dataTransfer.setData('card-index', idx);
-                });
+                // drag&drop только для верхней карты
+                if (idx === player.cards.length - 1) {
+                    cardElem.setAttribute('draggable', 'true');
+                    cardElem.addEventListener('dragstart', function(e) {
+                        e.dataTransfer.setData('card-index', idx);
+                    });
+                }
                 // Touch events (mobile)
                 cardElem.addEventListener('touchstart', function(e) {
                     cardElem.classList.add('dragging');
@@ -623,9 +637,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             playerHandElement.appendChild(cardElem);
         });
+        // Drop-зона для колоды (чтобы можно было бросить верхнюю карту в колоду, если потребуется по правилам)
         // --- Для мобильных: обработка touchmove/touchend на всём поле ---
         playerHandElement.addEventListener('touchmove', handleTouchMove, {passive:false});
         playerHandElement.addEventListener('touchend', handleTouchEnd, {passive:false});
+        highlightValidDropTargets();
     }
 
     // --- Добавляю функцию смены текущего игрока ---
@@ -644,6 +660,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- Логика обработки drop ---
     function handlePlayerCardDrop(cardIdx, targetPlayerIdx) {
         if (!isMyTurn) return;
+        // Если targetPlayerIdx === -1, значит дроп на колоду (взять карту)
+        if (targetPlayerIdx === -1) {
+            takeCardFromDeck();
+            return;
+        }
         const player = game.players[0];
         const card = player.cards[cardIdx];
         if (!card || !card.faceUp) return;
@@ -673,7 +694,7 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(() => {
             const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
             setCurrentPlayer(nextPlayerIndex);
-        }, 1200);
+        }, 5000);
     }
 
     // --- Touch-Drag поддержка для мобильных ---
@@ -746,6 +767,46 @@ document.addEventListener('DOMContentLoaded', function() {
             // Здесь можно вызвать функцию для логики 2-й стадии
             // Например: playerStage2Turn() / aiStage2Turn()
         }
+    }
+
+    function highlightValidDropTargets() {
+        // Подсвечиваем только те drop-target, куда можно положить верхнюю карту игрока
+        const player = game.players[0];
+        const topCard = player.cards[player.cards.length - 1];
+        document.querySelectorAll('.drop-target').forEach(el => {
+            el.classList.remove('valid-drop');
+        });
+        if (!topCard) return;
+        for (let i = 1; i < game.players.length; i++) {
+            let opp = game.players[i];
+            let oppOpen = opp.cards.filter(c => c.faceUp);
+            if (oppOpen.length > 0) {
+                let target = oppOpen[oppOpen.length - 1];
+                if (canPlayCard(topCard, target)) {
+                    // Найти DOM-элемент drop-target для этого игрока
+                    const playerElems = document.querySelectorAll('.player');
+                    if (playerElems[i]) {
+                        const drop = playerElems[i].querySelector('.drop-target');
+                        if (drop) drop.classList.add('valid-drop');
+                    }
+                }
+            }
+        }
+    }
+
+    // Функция для взятия карты из колоды игроком
+    function takeCardFromDeck() {
+        if (!isMyTurn || game.gameStage !== 'stage1') return;
+        if (game.deck.length === 0) return;
+        let player = game.players[0];
+        let newCard = game.deck.pop();
+        newCard.faceUp = true;
+        player.cards.push(newCard);
+        updateDeckInfo();
+        renderPlayerHand();
+        showGameMessage(`Вы взяли карту из колоды: ${newCard.value}${newCard.suit}`);
+        lastTookCardPlayerIndex = 0;
+        highlightValidDropTargets();
     }
 
     (async () => { await initGame(); })();

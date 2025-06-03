@@ -349,4 +349,10 @@ footer {
         width: 22px;
         height: 22px;
     }
+}
+
+.valid-drop {
+    outline: 3px solid #43ea6d;
+    box-shadow: 0 0 16px 4px #43ea6d55;
+    transition: outline 0.2s, box-shadow 0.2s;
 } 
