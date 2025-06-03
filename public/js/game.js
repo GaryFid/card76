@@ -26,6 +26,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let selectedCardIndex = -1;
     let targetPlayerIndex = -1;
     let targetCardIndex = -1;
+    let lastTookCardPlayerIndex = 0; // Индекс игрока, который последним взял карту из колоды в 1-й стадии
     
     // Порядок карт от наименьшей к наибольшей
     const cardValues = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
@@ -407,7 +408,6 @@ document.addEventListener('DOMContentLoaded', function() {
             let topCard = player.cards[player.cards.length - 1];
             if (!topCard) break;
             let moveMade = false;
-            // Пробуем положить верхнюю карту на открытую карту любого соперника
             for (let i = 1; i < game.players.length; i++) {
                 let opp = game.players[i];
                 let oppOpen = opp.cards.filter(c => c.faceUp);
@@ -419,7 +419,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         showGameMessage(`Вы положили ${topCard.value}${topCard.suit} на карту игрока ${opp.name}`);
                         renderPlayers();
                         renderPlayerHand();
-                        // После успешного хода сразу берём новую карту (если есть)
                         if (game.deck.length > 0) {
                             let newCard = game.deck.pop();
                             newCard.faceUp = true;
@@ -427,12 +426,12 @@ document.addEventListener('DOMContentLoaded', function() {
                             updateDeckInfo();
                             renderPlayerHand();
                             showGameMessage(`Вы взяли карту из колоды: ${newCard.value}${newCard.suit}`);
-                            // Продолжаем цикл с новой верхней картой
+                            lastTookCardPlayerIndex = 0;
                             moveMade = true;
                             break;
                         } else {
-                            // Колода пуста — ход завершается
                             showGameMessage('Колода пуста, ход завершён');
+                            checkGameStageProgress();
                             setTimeout(() => {
                                 const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
                                 setCurrentPlayer(nextPlayerIndex);
@@ -443,7 +442,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
             if (moveMade) continue;
-            // Если не смогли походить — берём одну карту из колоды (если есть)
             if (game.deck.length > 0) {
                 let newCard = game.deck.pop();
                 newCard.faceUp = true;
@@ -451,8 +449,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateDeckInfo();
                 renderPlayerHand();
                 showGameMessage(`Вы взяли карту из колоды: ${newCard.value}${newCard.suit}`);
-                // Пробуем снова с новой верхней картой
-                // Если и её некуда положить — оставляем себе и завершаем ход
+                lastTookCardPlayerIndex = 0;
                 let canPlace = false;
                 for (let i = 1; i < game.players.length; i++) {
                     let opp = game.players[i];
@@ -473,6 +470,7 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(() => {
             const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
             setCurrentPlayer(nextPlayerIndex);
+            checkGameStageProgress();
         }, 1200);
     }
     // ... существующий код ...
@@ -494,7 +492,6 @@ document.addEventListener('DOMContentLoaded', function() {
             let topCard = aiPlayer.cards[aiPlayer.cards.length - 1];
             if (!topCard) break;
             let moveMade = false;
-            // Пробуем положить верхнюю карту на открытую карту любого соперника
             for (let i = 0; i < game.players.length; i++) {
                 if (i === currentPlayerIndex) continue;
                 let opp = game.players[i];
@@ -507,7 +504,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         showGameMessage(`${aiPlayer.name} кладёт ${topCard.value}${topCard.suit} на карту игрока ${opp.name}`);
                         renderPlayers();
                         await delay(600);
-                        // После успешного хода сразу берём новую карту (если есть)
                         if (game.deck.length > 0) {
                             let newCard = game.deck.pop();
                             newCard.faceUp = true;
@@ -516,10 +512,12 @@ document.addEventListener('DOMContentLoaded', function() {
                             renderPlayers();
                             showGameMessage(`${aiPlayer.name} взял карту из колоды: ${newCard.value}${newCard.suit}`);
                             await delay(600);
+                            lastTookCardPlayerIndex = currentPlayerIndex;
                             moveMade = true;
                             break;
                         } else {
                             showGameMessage('Колода пуста, ход завершён');
+                            checkGameStageProgress();
                             setTimeout(() => {
                                 const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
                                 setCurrentPlayer(nextPlayerIndex);
@@ -530,7 +528,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
             if (moveMade) continue;
-            // Если не смогли походить — берём одну карту из колоды (если есть)
             if (game.deck.length > 0) {
                 let newCard = game.deck.pop();
                 newCard.faceUp = true;
@@ -539,8 +536,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 renderPlayers();
                 showGameMessage(`${aiPlayer.name} взял карту из колоды: ${newCard.value}${newCard.suit}`);
                 await delay(600);
-                // Пробуем снова с новой верхней картой
-                // Если и её некуда положить — оставляем себе и завершаем ход
+                lastTookCardPlayerIndex = currentPlayerIndex;
                 let canPlace = false;
                 for (let i = 0; i < game.players.length; i++) {
                     if (i === currentPlayerIndex) continue;
@@ -562,6 +558,7 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(() => {
             const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
             setCurrentPlayer(nextPlayerIndex);
+            checkGameStageProgress();
         }, 1200);
     }
     // --- Заменяю playAITurn на вызов aiStage1Turn ---
@@ -737,6 +734,18 @@ document.addEventListener('DOMContentLoaded', function() {
         //     log.appendChild(p);
         //     log.scrollTop = log.scrollHeight;
         // }
+    }
+
+    function checkGameStageProgress() {
+        // Если колода пуста — переходим на 2-ю стадию
+        if (game.deck.length === 0 && game.gameStage === 'stage1') {
+            showGameMessage('Колода пуста! Начинается 2-я стадия.');
+            game.gameStage = 'stage2';
+            // Ходит тот, кто последний взял карту из колоды
+            setCurrentPlayer(lastTookCardPlayerIndex);
+            // Здесь можно вызвать функцию для логики 2-й стадии
+            // Например: playerStage2Turn() / aiStage2Turn()
+        }
     }
 
     (async () => { await initGame(); })();
