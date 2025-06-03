@@ -3,66 +3,178 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Регистрация - P.I.D.R. - Punishment Inevitable: Dumb Rules</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/register.css">
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <title>P.I.D.R. — Вход и регистрация</title>
+    <link rel="stylesheet" href="/css/game.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Montserrat', Arial, sans-serif;
+            margin: 0;
+        }
+        .auth-container {
+            background: rgba(255,255,255,0.95);
+            border-radius: 24px;
+            box-shadow: 0 8px 32px rgba(30,60,114,0.25), 0 2px 8px rgba(34,34,34,0.13);
+            padding: 40px 32px 32px 32px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+            position: relative;
+            animation: fadeIn 1.2s cubic-bezier(.4,0,.2,1);
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .game-logo {
+            font-size: 2.5em;
+            font-weight: 900;
+            letter-spacing: 2px;
+            color: #2196f3;
+            text-shadow: 0 2px 12px #1e3c72, 0 1px 0 #fff;
+            margin-bottom: 8px;
+            user-select: none;
+        }
+        .game-slogan {
+            font-size: 1.1em;
+            color: #2a5298;
+            margin-bottom: 24px;
+            font-style: italic;
+            letter-spacing: 1px;
+        }
+        .tab-switcher {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 24px;
+            gap: 8px;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 10px 0;
+            border: none;
+            background: #e3eafc;
+            color: #1e3c72;
+            font-weight: 700;
+            font-size: 1.1em;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s;
+            outline: none;
+        }
+        .tab-btn.active {
+            background: #2196f3;
+            color: #fff;
+            box-shadow: 0 2px 8px #2196f3aa;
+        }
+        .auth-form {
+            display: none;
+            flex-direction: column;
+            gap: 16px;
+            margin-top: 8px;
+            animation: fadeIn 0.7s;
+        }
+        .auth-form.active {
+            display: flex;
+        }
+        .input {
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #b0c4de;
+            font-size: 1.1em;
+            outline: none;
+            transition: border 0.2s;
+        }
+        .input:focus {
+            border: 1.5px solid #2196f3;
+        }
+        .auth-btn, .tg-btn {
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            font-size: 1.1em;
+            font-weight: 700;
+            background: linear-gradient(90deg, #2196f3 60%, #21cbf3 100%);
+            color: #fff;
+            cursor: pointer;
+            box-shadow: 0 2px 8px #2196f3aa;
+            transition: background 0.2s, transform 0.1s;
+        }
+        .auth-btn:hover, .tg-btn:hover {
+            background: linear-gradient(90deg, #21cbf3 0%, #2196f3 100%);
+            transform: translateY(-2px) scale(1.03);
+        }
+        .tg-btn {
+            background: linear-gradient(90deg, #2aabee 60%, #229ed9 100%);
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .tg-btn img {
+            width: 22px;
+            height: 22px;
+        }
+        .divider {
+            margin: 12px 0 0 0;
+            color: #b0c4de;
+            font-size: 0.95em;
+            font-style: italic;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>P.I.D.R. - Punishment Inevitable: Dumb Rules</h1>
-            <p>Нашкрябай погремуху</p>
-        </header>
-        
-        <main>
-            <div class="register-container">
-                <div class="register-form">
-                    <form id="register-form">
-                        <div class="form-group">
-                            <label for="username">Ник</label>
-                            <input type="text" id="username" name="username" placeholder="Введите ваш ник" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="email">Email</label>
-                            <input type="email" id="email" name="email" placeholder="Введите ваш email" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="password">Пароль</label>
-                            <input type="password" id="password" name="password" placeholder="Придумайте пароль" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Зарегистрироваться</button>
-                    </form>
-                </div>
-                
-                <div class="auth-divider">
-                    <span>или</span>
-                </div>
-                
-                <div class="social-auth">
-                    <div class="social-auth-icons">
-                        <button class="social-btn google" title="Google"><svg viewBox="0 0 48 48" class="icon-svg"><g><path fill="#4285F4" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.2-5.6 7-10.3 7-6.1 0-11-4.9-11-11s4.9-11 11-11c2.6 0 5 .9 6.9 2.5l6.6-6.6C34.5 6.5 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11 0 19.7-8 19.7-20 0-1.3-.1-2.7-.3-3.5z"/><path fill="#34A853" d="M6.3 14.1l6.6 4.8C15.1 16.1 19.2 13 24 13c2.6 0 5 .9 6.9 2.5l6.6-6.6C34.5 6.5 29.6 4 24 4c-7.2 0-13.4 4.1-16.7 10.1z"/><path fill="#FBBC05" d="M24 44c5.4 0 10.3-1.8 14.1-4.9l-6.5-5.3c-2 1.4-4.5 2.2-7.6 2.2-4.7 0-8.7-2.8-10.3-7H6.3C9.6 39.9 16.8 44 24 44z"/><path fill="#EA4335" d="M43.6 20.5H42V20H24v8h11.3c-1.1 2.9-3.2 5.2-6.1 6.7l6.5 5.3C39.7 41.2 44 34.7 44 24c0-1.3-.1-2.7-.4-3.5z"/></g></svg><span>Google</span></button>
-                        <button class="social-btn yandex" title="Яндекс"><svg viewBox="0 0 48 48" class="icon-svg"><circle cx="24" cy="24" r="20" fill="#fff200"/><path d="M24 10c-4.4 0-8 3.6-8 8 0 2.7 1.3 5.1 3.3 6.6L24 38l4.7-13.4C30.7 23.1 32 20.7 32 18c0-4.4-3.6-8-8-8zm0 3c2.8 0 5 2.2 5 5 0 1.7-.8 3.2-2.1 4.1l-.9.6-.9-.6C21.8 21.2 21 19.7 21 18c0-2.8 2.2-5 5-5z" fill="#ff2a2a"/></svg><span>Яндекс</span></button>
-                        <button class="social-btn vk" title="ВКонтакте"><svg viewBox="0 0 48 48" class="icon-svg"><circle cx="24" cy="24" r="20" fill="#2787f5"/><path d="M33.7 17.3c.2-.7 0-1.2-.9-1.2h-2.7c-.8 0-1.1.4-1.3.9 0 0-1.5 3.7-3.6 6.1-.7.7-1 .9-1.3.9-.2 0-.5-.2-.5-.9v-6c0-.8-.2-1.2-.9-1.2h-4.2c-.5 0-.8.4-.8.8 0 .7 1 .9 1.1 2.9v4.4c0 1-.2 1.1-.6 1.1-.9 0-3.1-3.4-4.4-7.3-.2-.6-.5-.8-1.3-.8H8.9c-.8 0-1 .4-.8 1.1.8 2.1 3.9 8.7 11.2 8.7 2.3 0 4.1-.7 4.1-.7.5-.1.6-.3.6-.8v-2.1c0-.7.1-.8.6-.8.3 0 .8.1 2 .9 1.4 1 1.6 1.5 2.4 1.5h2.7c.8 0 1.2-.4.9-1.2-.2-.7-1-1.7-2.1-2.8-.6-.6-.8-.9-.8-1.2z" fill="#fff"/></svg><span>VK</span></button>
-                        <button class="social-btn telegram" title="Telegram"><svg viewBox="0 0 48 48" class="icon-svg"><circle cx="24" cy="24" r="20" fill="#0088cc"/><path d="M36.6 14.2l-3.6 17.1c-.3 1.2-1.1 1.5-2.2.9l-6.1-4.5-2.9 2.8c-.3.3-.5.5-1 .5l.4-5.7 10.4-9.4c.5-.4-.1-.7-.8-.3l-12.9 8.1-5.6-1.8c-1.2-.4-1.2-1.2.2-1.7l22-8.5c1.1-.4 2.1.3 1.7 1.7z" fill="#fff"/></svg><span>Telegram</span></button>
-                    </div>
-                    <div class="guest-auth">
-                        <button id="guest-auth" class="btn-guest">Продолжить как гость</button>
-                    </div>
-                </div>
-
-                <!-- Временно скрытые методы авторизации -->
-                <div class="disabled-auth-notice">
-                    <p>Авторизация через Telegram и Google временно недоступна</p>
-                </div>
-            </div>
-        </main>
-        
-        <footer>
-            <p>© 2025 P.I.D.R. - Punishment Inevitable: Dumb Rules</p>
-        </footer>
+    <div class="auth-container">
+        <div class="game-logo">P.I.D.R.</div>
+        <div class="game-slogan">Punishment Inevitable: Dumb Rules<br>Карточная битва без пощады!</div>
+        <div class="tab-switcher">
+            <button class="tab-btn active" id="loginTab">Вход</button>
+            <button class="tab-btn" id="registerTab">Регистрация</button>
+        </div>
+        <form class="auth-form active" id="loginForm" autocomplete="on">
+            <input class="input" type="text" name="username" placeholder="Имя пользователя" required>
+            <input class="input" type="password" name="password" placeholder="Пароль" required>
+            <button class="auth-btn" type="submit">Войти</button>
+            <div class="divider">или</div>
+            <button class="tg-btn" type="button" id="tgLoginBtn"><img src="https://telegram.org/img/t_logo.svg" alt="tg">Войти через Telegram</button>
+        </form>
+        <form class="auth-form" id="registerForm" autocomplete="on">
+            <input class="input" type="text" name="username" placeholder="Имя пользователя" required>
+            <input class="input" type="password" name="password" placeholder="Пароль" required>
+            <input class="input" type="password" name="password2" placeholder="Повторите пароль" required>
+            <button class="auth-btn" type="submit">Зарегистрироваться</button>
+            <div class="divider">или</div>
+            <button class="tg-btn" type="button" id="tgRegisterBtn"><img src="https://telegram.org/img/t_logo.svg" alt="tg">Зарегистрироваться через Telegram</button>
+        </form>
     </div>
-
-    <script src="js/register.js"></script>
+    <script>
+        const loginTab = document.getElementById('loginTab');
+        const registerTab = document.getElementById('registerTab');
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        loginTab.onclick = () => {
+            loginTab.classList.add('active');
+            registerTab.classList.remove('active');
+            loginForm.classList.add('active');
+            registerForm.classList.remove('active');
+        };
+        registerTab.onclick = () => {
+            registerTab.classList.add('active');
+            loginTab.classList.remove('active');
+            registerForm.classList.add('active');
+            loginForm.classList.remove('active');
+        };
+        // TODO: Реализовать обработку форм и Telegram входа/регистрации
+        document.getElementById('tgLoginBtn').onclick = () => {
+            window.location.href = '/auth/telegram';
+        };
+        document.getElementById('tgRegisterBtn').onclick = () => {
+            window.location.href = '/auth/telegram';
+        };
+    </script>
 </body>
 </html> 

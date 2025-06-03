@@ -119,4 +119,77 @@ document.addEventListener('DOMContentLoaded', function() {
             tgApp.MainButton.hide();
         });
     }
+});
+
+// JS для форм входа и регистрации P.I.D.R.
+
+document.addEventListener('DOMContentLoaded', () => {
+  const loginForm = document.getElementById('loginForm');
+  const registerForm = document.getElementById('registerForm');
+
+  function showMessage(form, msg, isError = false) {
+    let el = form.querySelector('.form-message');
+    if (!el) {
+      el = document.createElement('div');
+      el.className = 'form-message';
+      form.appendChild(el);
+    }
+    el.textContent = msg;
+    el.style.color = isError ? '#e53935' : '#2196f3';
+    el.style.marginTop = '8px';
+    el.style.fontWeight = 'bold';
+    el.style.fontSize = '1em';
+  }
+
+  if (loginForm) {
+    loginForm.onsubmit = async (e) => {
+      e.preventDefault();
+      const data = Object.fromEntries(new FormData(loginForm));
+      showMessage(loginForm, 'Вход...');
+      try {
+        const res = await fetch('/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        const json = await res.json();
+        if (json.success) {
+          showMessage(loginForm, 'Успешный вход! Перенаправление...');
+          setTimeout(() => window.location.href = '/game-setup', 800);
+        } else {
+          showMessage(loginForm, json.error || 'Ошибка входа', true);
+        }
+      } catch (err) {
+        showMessage(loginForm, 'Ошибка сервера', true);
+      }
+    };
+  }
+
+  if (registerForm) {
+    registerForm.onsubmit = async (e) => {
+      e.preventDefault();
+      const data = Object.fromEntries(new FormData(registerForm));
+      if (data.password !== data.password2) {
+        showMessage(registerForm, 'Пароли не совпадают', true);
+        return;
+      }
+      showMessage(registerForm, 'Регистрация...');
+      try {
+        const res = await fetch('/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: data.username, password: data.password })
+        });
+        const json = await res.json();
+        if (json.success) {
+          showMessage(registerForm, 'Успешная регистрация! Перенаправление...');
+          setTimeout(() => window.location.href = '/game-setup', 800);
+        } else {
+          showMessage(registerForm, json.error || 'Ошибка регистрации', true);
+        }
+      } catch (err) {
+        showMessage(registerForm, 'Ошибка сервера', true);
+      }
+    };
+  }
 }); 

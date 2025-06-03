@@ -11,28 +11,50 @@ router.get('/register', (req, res) => {
 // Регистрация через форму
 router.post('/register', async (req, res) => {
   try {
-    const { username, type } = req.body;
-    
-    // Проверка существования пользователя
-    let user = await User.findOne({ where: { username } });
-    
-    if (!user) {
-      // Создаем нового пользователя
-      user = await User.create({
-        username,
-        authType: type || 'basic'
-      });
+    const { username, password } = req.body;
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Имя пользователя и пароль обязательны' });
     }
-    
-    // Аутентификация пользователя
+    let user = await User.findOne({ where: { username } });
+    if (user) {
+      return res.status(400).json({ error: 'Пользователь с таким именем уже существует' });
+    }
+    user = await User.create({ username, password });
     req.login(user, (err) => {
       if (err) {
         return res.status(500).json({ error: 'Ошибка аутентификации' });
       }
-      return res.json({ success: true, user });
+      return res.json({ success: true, user: { id: user.id, username: user.username, rating: user.rating } });
     });
   } catch (error) {
     console.error('Ошибка регистрации:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  }
+});
+
+// Вход через форму
+router.post('/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Имя пользователя и пароль обязательны' });
+    }
+    const user = await User.findOne({ where: { username } });
+    if (!user) {
+      return res.status(400).json({ error: 'Пользователь не найден' });
+    }
+    const valid = await user.checkPassword(password);
+    if (!valid) {
+      return res.status(400).json({ error: 'Неверный пароль' });
+    }
+    req.login(user, (err) => {
+      if (err) {
+        return res.status(500).json({ error: 'Ошибка аутентификации' });
+      }
+      return res.json({ success: true, user: { id: user.id, username: user.username, rating: user.rating } });
+    });
+  } catch (error) {
+    console.error('Ошибка входа:', error);
     res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
