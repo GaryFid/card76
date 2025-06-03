@@ -101,6 +101,55 @@
     document.getElementById('start-game').onclick = () => {
         window.location.href = 'game.html';
     };
+    function showWelcomeMessage() {
+        // Удаляем старое содержимое
+        document.body.innerHTML = '';
+        // Создаём контейнер
+        const container = document.createElement('div');
+        container.style.display = 'flex';
+        container.style.flexDirection = 'column';
+        container.style.alignItems = 'center';
+        container.style.justifyContent = 'center';
+        container.style.height = '100vh';
+        container.style.background = 'linear-gradient(135deg, #3390ec 0%, #fff 100%)';
+        // Картинка карт
+        const img = document.createElement('img');
+        img.src = 'img/cards/ace_of_spades.png';
+        img.alt = 'Карты';
+        img.style.width = '120px';
+        img.style.marginBottom = '24px';
+        img.style.boxShadow = '0 8px 32px rgba(0,0,0,0.18)';
+        img.style.borderRadius = '12px';
+        // Сообщение
+        const msg = document.createElement('div');
+        msg.innerHTML = `<h2 style='color:#222;margin-bottom:10px;'>Добро пожаловать в <span style="color:#3390ec">Разгильдяй</span>!</h2>
+        <p style='font-size:18px;color:#444;margin-bottom:18px;'>Готов сыграть в самую весёлую карточную игру?<br>Собери друзей или попробуй силы против ботов!</p>`;
+        // Кнопка
+        const btn = document.createElement('button');
+        btn.textContent = 'Играть!';
+        btn.className = 'game-btn';
+        btn.style.fontSize = '20px';
+        btn.style.padding = '14px 38px';
+        btn.style.marginTop = '10px';
+        btn.style.background = 'linear-gradient(90deg, #3390ec 0%, #1bffff 100%)';
+        btn.style.color = '#fff';
+        btn.style.border = 'none';
+        btn.style.borderRadius = '10px';
+        btn.style.boxShadow = '0 2px 12px rgba(51,144,236,0.13)';
+        btn.style.cursor = 'pointer';
+        btn.onclick = () => {
+            window.location.href = 'game.html';
+        };
+        // Собираем
+        container.appendChild(img);
+        container.appendChild(msg);
+        container.appendChild(btn);
+        document.body.appendChild(container);
+    }
+    // Проверка авторизации
+    if (!localStorage.getItem('user')) {
+        showWelcomeMessage();
+    }
     </script>
 </body>
 </html> 
