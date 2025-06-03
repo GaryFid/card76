@@ -261,6 +261,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 cardElem.style.zIndex = i;
                 cardElem.style.left = `${i * 10}px`;
                 cardElem.style.top = `${20 - i * 2}px`;
+                cardElem.style.boxShadow = '0 2px 8px #2222, 0 8px 32px #3390ec22';
+                cardElem.style.transition = 'box-shadow 0.2s';
                 const cardBackImg = document.createElement('img');
                 cardBackImg.src = 'img/cards/back.png';
                 cardBackImg.className = 'card-back-image';
@@ -276,6 +278,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 cardElem.style.zIndex = 10 + idx;
                 cardElem.style.left = `${30 + idx * 18}px`;
                 cardElem.style.top = `0px`;
+                cardElem.style.boxShadow = '0 2px 8px #2222, 0 8px 32px #3390ec22';
+                cardElem.style.transition = 'box-shadow 0.2s';
                 const cardImg = document.createElement('img');
                 cardImg.src = getCardImageUrl(card);
                 cardImg.className = 'card-image';
@@ -314,7 +318,7 @@ document.addEventListener('DOMContentLoaded', function() {
         highlightValidDropTargets();
     }
     
-    // --- Колода: всегда рубашкой вверх, при клике появляется preview-карта и две кнопки ---
+    // --- Колода: стопка с анимацией и красивой тенью, всегда по центру, кликабельна ---
     let previewCard = null;
     function updateDeckInfo() {
         const deckElement = document.querySelector('.card-pile.deck');
@@ -332,15 +336,16 @@ document.addEventListener('DOMContentLoaded', function() {
         closedDeckElem.style.display = 'flex';
         closedDeckElem.style.alignItems = 'center';
         closedDeckElem.style.justifyContent = 'center';
-        closedDeckElem.style.boxShadow = '0 4px 18px rgba(30,80,220,0.18)';
+        closedDeckElem.style.boxShadow = '0 8px 32px #3390ec55, 0 2px 8px #2222';
+        closedDeckElem.style.transition = 'box-shadow 0.2s';
         closedDeckElem.style.cursor = (awaitingDeckActionPlayerIndex === currentPlayerIndex) ? 'pointer' : 'not-allowed';
         closedDeckElem.addEventListener('mouseenter', function() {
             if (awaitingDeckActionPlayerIndex === currentPlayerIndex) {
-                closedDeckElem.style.boxShadow = '0 0 0 4px #3390ec55';
+                closedDeckElem.style.boxShadow = '0 0 0 6px #3390ec88, 0 8px 32px #3390ec55';
             }
         });
         closedDeckElem.addEventListener('mouseleave', function() {
-            closedDeckElem.style.boxShadow = '0 4px 18px rgba(30,80,220,0.18)';
+            closedDeckElem.style.boxShadow = '0 8px 32px #3390ec55, 0 2px 8px #2222';
         });
         closedDeckElem.addEventListener('click', function() {
             if (game.deck.length > 0 && awaitingDeckActionPlayerIndex === currentPlayerIndex) {
@@ -348,6 +353,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateDeckInfo();
             }
         });
+        // Анимация стопки (слегка смещённые рубашки)
+        for (let i = 0; i < Math.min(4, game.deck.length); i++) {
+            const stackCard = document.createElement('img');
+            stackCard.src = 'img/cards/back.png';
+            stackCard.className = 'card-back-image';
+            stackCard.style.position = 'absolute';
+            stackCard.style.left = `${i * 3}px`;
+            stackCard.style.top = `${i * 2}px`;
+            stackCard.style.width = '80px';
+            stackCard.style.height = '120px';
+            stackCard.style.opacity = 0.7 - i * 0.12;
+            closedDeckElem.appendChild(stackCard);
+        }
         deckElement.appendChild(closedDeckElem);
         // Счётчик
         const countElem = document.createElement('div');
@@ -374,7 +392,7 @@ document.addEventListener('DOMContentLoaded', function() {
             previewElem.style.display = 'flex';
             previewElem.style.alignItems = 'center';
             previewElem.style.justifyContent = 'center';
-            previewElem.style.boxShadow = '0 4px 18px rgba(30,80,220,0.18)';
+            previewElem.style.boxShadow = '0 8px 32px #3390ec55, 0 2px 8px #2222';
             if (game.settings.useCardImages) {
                 const cardImg = document.createElement('img');
                 cardImg.src = getCardImageUrl(previewCard);
@@ -585,6 +603,8 @@ document.addEventListener('DOMContentLoaded', function() {
         for (let i = 0; i < Math.min(2, closed.length); i++) {
             const cardElem = document.createElement('div');
             cardElem.className = 'hand-card card-back';
+            cardElem.style.boxShadow = '0 2px 8px #2222, 0 8px 32px #3390ec22';
+            cardElem.style.transition = 'box-shadow 0.2s';
             const cardBackImg = document.createElement('img');
             cardBackImg.src = 'img/cards/back.png';
             cardBackImg.className = 'card-back-image';
@@ -597,6 +617,8 @@ document.addEventListener('DOMContentLoaded', function() {
         openCards.forEach((card, idx) => {
             const cardElem = document.createElement('div');
             cardElem.className = 'hand-card';
+            cardElem.style.boxShadow = '0 2px 8px #2222, 0 8px 32px #3390ec22';
+            cardElem.style.transition = 'box-shadow 0.2s';
             const cardImg = document.createElement('img');
             cardImg.src = getCardImageUrl(card);
             cardImg.className = 'card-image';
