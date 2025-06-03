@@ -216,6 +216,11 @@ document.addEventListener('DOMContentLoaded', function() {
         return highestCardPlayer;
     }
     
+    // --- Функция сортировки карт: закрытые слева, открытые справа ---
+    function sortPlayerCards(player) {
+        player.cards.sort((a, b) => (a.faceUp === b.faceUp) ? 0 : a.faceUp ? 1 : -1);
+    }
+
     // Отрисовка игроков и их карт
     function renderPlayers() {
         let playersContainer = document.querySelector('.players-container');
@@ -227,6 +232,7 @@ document.addEventListener('DOMContentLoaded', function() {
         playersContainer.innerHTML = '';
         const playerCount = game.players.length;
         game.players.forEach((player, playerIndex) => {
+            sortPlayerCards(player);
             const playerElement = document.createElement('div');
             playerElement.className = 'player';
             const angle = (playerIndex / playerCount) * 2 * Math.PI;
@@ -656,6 +662,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!playerHandElement) return;
         playerHandElement.innerHTML = '';
         const player = game.players[0];
+        sortPlayerCards(player);
         // 2 закрытые слева
         const closed = player.cards.filter(c => !c.faceUp);
         for (let i = 0; i < Math.min(2, closed.length); i++) {
@@ -712,8 +719,13 @@ document.addEventListener('DOMContentLoaded', function() {
         renderPlayers();
         renderPlayerHand();
         if (isMyTurn) {
-            // Можно добавить активацию кнопок, подсветку и т.д.
+            drawCardButton.disabled = false;
+            playCardButton.disabled = false;
+            endTurnButton.disabled = false;
         } else {
+            drawCardButton.disabled = true;
+            playCardButton.disabled = true;
+            endTurnButton.disabled = true;
             playAITurn();
         }
     }
@@ -879,12 +891,12 @@ document.addEventListener('DOMContentLoaded', function() {
         let newCard = game.deck.pop();
         newCard.faceUp = true;
         player.cards.push(newCard);
+        sortPlayerCards(player);
         updateDeckInfo();
         renderPlayerHand();
         showGameMessage(`Вы взяли карту из колоды: ${newCard.value}${newCard.suit}`);
         lastTookCardPlayerIndex = 0;
         highlightValidDropTargets();
-        // Проверка: если после взятия карты нет открытых карт, ход завершается
         if (player.cards.filter(c => c.faceUp).length === 0) {
             showGameMessage('У вас не осталось открытых карт. Ждите 3-й стадии!');
             setTimeout(() => {
@@ -898,35 +910,68 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- ДОБАВЛЯЮ кнопку 'Передать ход' ---
     const endTurnButton = document.getElementById('end-turn');
 
-    // --- Функция для активации только кнопки 'Передать ход' ---
-    function enableOnlyEndTurnUI() {
-        drawCardButton.disabled = true;
-        playCardButton.disabled = true;
-        selfCardButton.disabled = true;
-        endTurnButton.disabled = false;
-    }
-    // --- Функция для активации всех кнопок ---
-    function enableAllActionButtons() {
-        drawCardButton.disabled = false;
-        playCardButton.disabled = false;
-        selfCardButton.disabled = false;
-        endTurnButton.disabled = false;
-    }
-    // --- Функция для активации только хода новой картой (если нужно) ---
-    function enableNewCardMoveUI() {
-        drawCardButton.disabled = true;
-        playCardButton.disabled = false;
-        selfCardButton.disabled = true;
-        endTurnButton.disabled = true;
-    }
-
-    // --- Обработчик кнопки 'Передать ход' ---
-    endTurnButton.onclick = function() {
-        if (!isMyTurn) return;
-        const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
-        setCurrentPlayer(nextPlayerIndex);
-        checkGameStageProgress();
+    // --- Добавляю обработчики для кнопок игрока ---
+    drawCardButton.onclick = function() {
+        if (!isMyTurn || game.gameStage !== 'stage1') return;
+        takeCardFromDeck();
     };
+
+    playCardButton.onclick = function() {
+        if (!isMyTurn || game.gameStage !== 'stage1') return;
+        // Попробовать сыграть верхней открытой картой на любого соперника
+        const player = game.players[0];
+        const openCards = player.cards.filter(c => c.faceUp);
+        if (openCards.length === 0) {
+            showGameMessage('Нет открытых карт для хода!');
+            return;
+        }
+        const topCard = openCards[openCards.length - 1];
+        let moved = false;
+        for (let i = 1; i < game.players.length; i++) {
+            let opp = game.players[i];
+            let oppOpen = opp.cards.filter(c => c.faceUp);
+            if (oppOpen.length > 0) {
+                let target = oppOpen[oppOpen.length - 1];
+                if (canPlayCard(topCard, target)) {
+                    // Кладём карту на соперника
+                    const idx = player.cards.indexOf(topCard);
+                    player.cards.splice(idx, 1);
+                    const oppIdx = opp.cards.indexOf(target);
+                    if (oppIdx !== -1) {
+                        opp.cards[oppIdx].faceUp = false;
+                        opp.cards.push(opp.cards[oppIdx]);
+                        opp.cards.splice(oppIdx, 1);
+                        topCard.faceUp = true;
+                        opp.cards.push(topCard);
+                    }
+                    showGameMessage(`Вы положили ${topCard.value}${topCard.suit} на карту игрока ${opp.name}`);
+                    renderPlayers();
+                    renderPlayerHand();
+                    // После успешного хода — берём карту из колоды (если есть)
+                    if (game.deck.length > 0) {
+                        let newCard = game.deck.pop();
+                        newCard.faceUp = true;
+                        player.cards.push(newCard);
+                        updateDeckInfo();
+                        renderPlayerHand();
+                        showGameMessage(`Вы взяли карту из колоды: ${newCard.value}${newCard.suit}`);
+                    }
+                    moved = true;
+                    break;
+                }
+            }
+        }
+        if (!moved) {
+            showGameMessage('Нет подходящих целей для хода этой картой!');
+        } else {
+            setTimeout(() => {
+                const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
+                setCurrentPlayer(nextPlayerIndex);
+            }, 1000);
+        }
+    };
+
+    // Кнопка "Передать ход" уже реализована ниже (endTurnButton.onclick)
 
     // --- Добавляю функцию playAITurn для вызова хода ИИ ---
     function playAITurn() {
