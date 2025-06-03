@@ -403,7 +403,6 @@ document.addEventListener('DOMContentLoaded', function() {
     async function playerStage1Turn() {
         if (!isMyTurn || game.gameStage !== 'stage1') return;
         let player = game.players[0];
-        let triedDraw = false;
         while (true) {
             let topCard = player.cards[player.cards.length - 1];
             if (!topCard) break;
@@ -420,27 +419,54 @@ document.addEventListener('DOMContentLoaded', function() {
                         showGameMessage(`Вы положили ${topCard.value}${topCard.suit} на карту игрока ${opp.name}`);
                         renderPlayers();
                         renderPlayerHand();
-                        moveMade = true;
-                        break;
+                        // После успешного хода сразу берём новую карту (если есть)
+                        if (game.deck.length > 0) {
+                            let newCard = game.deck.pop();
+                            newCard.faceUp = true;
+                            player.cards.push(newCard);
+                            updateDeckInfo();
+                            renderPlayerHand();
+                            showGameMessage(`Вы взяли карту из колоды: ${newCard.value}${newCard.suit}`);
+                            // Продолжаем цикл с новой верхней картой
+                            moveMade = true;
+                            break;
+                        } else {
+                            // Колода пуста — ход завершается
+                            showGameMessage('Колода пуста, ход завершён');
+                            setTimeout(() => {
+                                const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
+                                setCurrentPlayer(nextPlayerIndex);
+                            }, 1200);
+                            return;
+                        }
                     }
                 }
             }
-            if (moveMade) {
-                // После успешного хода пробуем снова с новой верхней картой
-                continue;
-            }
-            // Если не смогли походить и ещё не брали карту — берём одну карту из колоды
-            if (!triedDraw && game.deck.length > 0) {
+            if (moveMade) continue;
+            // Если не смогли походить — берём одну карту из колоды (если есть)
+            if (game.deck.length > 0) {
                 let newCard = game.deck.pop();
                 newCard.faceUp = true;
                 player.cards.push(newCard);
                 updateDeckInfo();
                 renderPlayerHand();
                 showGameMessage(`Вы взяли карту из колоды: ${newCard.value}${newCard.suit}`);
-                triedDraw = true;
-                continue;
+                // Пробуем снова с новой верхней картой
+                // Если и её некуда положить — оставляем себе и завершаем ход
+                let canPlace = false;
+                for (let i = 1; i < game.players.length; i++) {
+                    let opp = game.players[i];
+                    let oppOpen = opp.cards.filter(c => c.faceUp);
+                    if (oppOpen.length > 0) {
+                        let target = oppOpen[oppOpen.length - 1];
+                        if (canPlayCard(newCard, target)) {
+                            canPlace = true;
+                            break;
+                        }
+                    }
+                }
+                if (canPlace) continue;
             }
-            // Если уже брали карту и всё равно некуда положить — оставляем карту себе и завершаем ход
             showGameMessage('Не удалось сыграть карту, ход переходит дальше');
             break;
         }
@@ -464,7 +490,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- Новая логика для бота ---
     async function aiStage1Turn() {
         let aiPlayer = game.players[currentPlayerIndex];
-        let triedDraw = false;
         while (true) {
             let topCard = aiPlayer.cards[aiPlayer.cards.length - 1];
             if (!topCard) break;
@@ -482,17 +507,31 @@ document.addEventListener('DOMContentLoaded', function() {
                         showGameMessage(`${aiPlayer.name} кладёт ${topCard.value}${topCard.suit} на карту игрока ${opp.name}`);
                         renderPlayers();
                         await delay(600);
-                        moveMade = true;
-                        break;
+                        // После успешного хода сразу берём новую карту (если есть)
+                        if (game.deck.length > 0) {
+                            let newCard = game.deck.pop();
+                            newCard.faceUp = true;
+                            aiPlayer.cards.push(newCard);
+                            updateDeckInfo();
+                            renderPlayers();
+                            showGameMessage(`${aiPlayer.name} взял карту из колоды: ${newCard.value}${newCard.suit}`);
+                            await delay(600);
+                            moveMade = true;
+                            break;
+                        } else {
+                            showGameMessage('Колода пуста, ход завершён');
+                            setTimeout(() => {
+                                const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
+                                setCurrentPlayer(nextPlayerIndex);
+                            }, 1200);
+                            return;
+                        }
                     }
                 }
             }
-            if (moveMade) {
-                // После успешного хода пробуем снова с новой верхней картой
-                continue;
-            }
-            // Если не смогли походить и ещё не брали карту — берём одну карту из колоды
-            if (!triedDraw && game.deck.length > 0) {
+            if (moveMade) continue;
+            // Если не смогли походить — берём одну карту из колоды (если есть)
+            if (game.deck.length > 0) {
                 let newCard = game.deck.pop();
                 newCard.faceUp = true;
                 aiPlayer.cards.push(newCard);
@@ -500,10 +539,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 renderPlayers();
                 showGameMessage(`${aiPlayer.name} взял карту из колоды: ${newCard.value}${newCard.suit}`);
                 await delay(600);
-                triedDraw = true;
-                continue;
+                // Пробуем снова с новой верхней картой
+                // Если и её некуда положить — оставляем себе и завершаем ход
+                let canPlace = false;
+                for (let i = 0; i < game.players.length; i++) {
+                    if (i === currentPlayerIndex) continue;
+                    let opp = game.players[i];
+                    let oppOpen = opp.cards.filter(c => c.faceUp);
+                    if (oppOpen.length > 0) {
+                        let target = oppOpen[oppOpen.length - 1];
+                        if (canPlayCard(newCard, target)) {
+                            canPlace = true;
+                            break;
+                        }
+                    }
+                }
+                if (canPlace) continue;
             }
-            // Если уже брали карту и всё равно некуда положить — оставляем карту себе и завершаем ход
             showGameMessage(`${aiPlayer.name} не может сыграть карту, ход переходит дальше`);
             break;
         }
