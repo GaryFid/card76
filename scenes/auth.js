@@ -8,7 +8,7 @@ const authScene = new Scenes.BaseScene('auth');
 authScene.enter(async (ctx) => {
   try {
     await ctx.reply(
-      'Добро пожаловать!\nВыберите способ входа или регистрации:',
+      '👋 Привет! Это карточная игра P.I.D.R. — сыграем партию? Выберите способ входа или регистрации:',
       Markup.keyboard([
         ['Войти через Telegram'],
         ['Зарегистрироваться'],
@@ -25,11 +25,24 @@ authScene.hears('Войти через Telegram', async (ctx) => {
   try {
     const telegramId = ctx.from.id.toString();
     let user = await User.findOne({ where: { telegramId } });
+    // Если пользователь новый, пробуем получить аватар из Telegram
     if (!user) {
+      let avatarUrl = '';
+      // Попытка получить аватар через Telegram API
+      if (ctx.from && ctx.from.username) {
+        // Можно использовать https://t.me/i/userpic/320/{username}.jpg
+        avatarUrl = `https://t.me/i/userpic/320/${ctx.from.username}.jpg`;
+      }
       user = await User.create({
         telegramId,
-        username: ctx.from.username
+        username: ctx.from.username,
+        avatar: avatarUrl
       });
+    } else if (!user.avatar && ctx.from && ctx.from.username) {
+      // Если у пользователя нет аватара, но есть username — обновим
+      const avatarUrl = `https://t.me/i/userpic/320/${ctx.from.username}.jpg`;
+      user.avatar = avatarUrl;
+      await user.save();
     }
     ctx.session.user = user;
     await ctx.reply(`Вход выполнен! Добро пожаловать, ${user.username || 'Игрок'}!`);

@@ -6,6 +6,41 @@
     <title>P.I.D.R. - Punishment Inevitable: Dumb Rules</title>
     <link rel="stylesheet" href="css/style.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+    .profile-dropdown {
+      display: none;
+      position: absolute;
+      right: 0;
+      top: 56px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 16px #1e3c72aa;
+      min-width: 180px;
+      z-index: 1200;
+      padding: 8px 0;
+      font-size: 1.08em;
+      animation: fadeIn 0.3s;
+    }
+    .profile-dropdown.active {
+      display: block;
+    }
+    .profile-dropdown-btn {
+      width: 100%;
+      background: none;
+      border: none;
+      text-align: left;
+      padding: 12px 24px;
+      color: #1e3c72;
+      font-weight: 600;
+      font-size: 1em;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .profile-dropdown-btn:hover {
+      background: #e3eafc;
+      color: #2196f3;
+    }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -41,9 +76,13 @@
                             </div>
                         </div>
                     </div>
-                    <div class="profile-block" id="profile-block">
+                    <div class="profile-block" id="profile-block" style="position:relative;">
                         <img src="img/player-avatar.svg" alt="Профиль" class="profile-avatar">
                         <span class="profile-name" id="profile-name">Гость</span>
+                        <div class="profile-dropdown" id="profileDropdown">
+                          <button class="profile-dropdown-btn" id="editProfileBtn">✏️ Редактировать профиль</button>
+                          <button class="profile-dropdown-btn" id="logoutBtn">🚪 Выйти из аккаунта</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -174,10 +213,30 @@
     if (!localStorage.getItem('user')) {
         showWelcomeMessage();
     }
-    // Открытие модалки профиля
-    const profileBlock = document.getElementById('profile-block');
-    if (profileBlock) {
-      profileBlock.onclick = function() {
+    // --- Выпадающее меню профиля ---
+    const profileBlock = document.querySelector('.profile-block');
+    const profileDropdown = document.getElementById('profileDropdown');
+    const editProfileBtn = document.getElementById('editProfileBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    let dropdownOpen = false;
+    if (profileBlock && profileDropdown) {
+      profileBlock.onclick = function(e) {
+        e.stopPropagation();
+        dropdownOpen = !dropdownOpen;
+        profileDropdown.classList.toggle('active', dropdownOpen);
+      };
+      document.addEventListener('click', function() {
+        profileDropdown.classList.remove('active');
+        dropdownOpen = false;
+      });
+    }
+    // --- Открытие модалки профиля по кнопке в дропдауне ---
+    if (editProfileBtn) {
+      editProfileBtn.onclick = function(e) {
+        e.stopPropagation();
+        profileDropdown.classList.remove('active');
+        dropdownOpen = false;
+        // Открыть модалку профиля
         const user = JSON.parse(localStorage.getItem('user') || '{}');
         document.getElementById('modalNick').value = user.username || '';
         document.getElementById('modalAvatar').src = user.avatar || 'img/player-avatar.svg';
@@ -185,11 +244,14 @@
         document.getElementById('profileModalMsg').textContent = '';
       };
     }
-    // Закрытие модалки
-    const closeProfileModal = document.getElementById('closeProfileModal');
-    if (closeProfileModal) {
-      closeProfileModal.onclick = function() {
-        document.getElementById('profileModal').style.display = 'none';
+    // --- Выход из аккаунта ---
+    if (logoutBtn) {
+      logoutBtn.onclick = function(e) {
+        e.stopPropagation();
+        profileDropdown.classList.remove('active');
+        dropdownOpen = false;
+        localStorage.removeItem('user');
+        window.location.href = '/register.html';
       };
     }
     // Предпросмотр аватара

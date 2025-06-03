@@ -256,4 +256,19 @@ router.post('/user/:id/avatar', uploadAvatar.single('avatar'), async (req, res) 
   }
 });
 
+// --- ВРЕМЕННЫЙ ЭНДПОИНТ: удалить всех гостей (только для админа) ---
+router.post('/admin/delete-guests', async (req, res) => {
+  try {
+    const user = req.user;
+    if (!user || user.username !== '@GreenWood9009') {
+      return res.status(403).json({ error: 'Доступ запрещён' });
+    }
+    const { User } = require('../models');
+    const count = await User.destroy({ where: { authType: 'guest' } });
+    res.json({ success: true, count });
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
 module.exports = router; 
