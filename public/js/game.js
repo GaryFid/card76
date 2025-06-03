@@ -259,23 +259,26 @@ document.addEventListener('DOMContentLoaded', function() {
             cardCount.textContent = `Карт: ${player.cards.length}`;
             const cardsContainer = document.createElement('div');
             cardsContainer.className = 'player-table-cards';
-            // --- Только для других игроков отображаем карты на столе ---
+            // В renderPlayers для каждого игрока (кроме игрока 0) всегда показываю 2 карты рубашкой вверх и одну открытую (если есть)
             if (playerIndex !== 0) {
                 // 2 закрытые карты (рубашкой вниз)
-                const closedCards = player.cards.filter(card => !card.faceUp);
-                for (let i = 0; i < Math.min(2, closedCards.length); i++) {
-                    const cardElem = document.createElement('div');
-                    cardElem.className = 'card table-card card-back';
-                    cardElem.style.zIndex = i;
-                    cardElem.style.left = `${i * 10}px`;
-                    cardElem.style.top = `${20 - i * 2}px`;
-                    // Рубашка через img
-                    const cardBackImg = document.createElement('img');
-                    cardBackImg.src = 'img/cards/back.png';
-                    cardBackImg.className = 'card-back-image';
-                    cardBackImg.alt = 'Рубашка карты';
-                    cardElem.appendChild(cardBackImg);
-                    cardsContainer.appendChild(cardElem);
+                let closedCount = 0;
+                for (let i = 0; i < player.cards.length; i++) {
+                    if (!player.cards[i].faceUp && closedCount < 2) {
+                        const cardElem = document.createElement('div');
+                        cardElem.className = 'card table-card card-back';
+                        cardElem.style.zIndex = closedCount;
+                        cardElem.style.left = `${closedCount * 10}px`;
+                        cardElem.style.top = `${20 - closedCount * 2}px`;
+                        const cardBackImg = document.createElement('img');
+                        cardBackImg.src = 'img/cards/back.png';
+                        cardBackImg.className = 'card-back-image';
+                        cardBackImg.alt = 'Рубашка карты';
+                        cardElem.appendChild(cardBackImg);
+                        cardsContainer.appendChild(cardElem);
+                        closedCount++;
+                    }
+                    if (closedCount === 2) break;
                 }
                 // 1 открытая карта (если есть)
                 const openCards = player.cards.filter(card => card.faceUp);
@@ -286,7 +289,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     cardElem.style.zIndex = 10;
                     cardElem.style.left = `10px`;
                     cardElem.style.top = `0px`;
-                    // Картинка карты через img
                     const cardImg = document.createElement('img');
                     cardImg.src = getCardImageUrl(card);
                     cardImg.className = 'card-image';
