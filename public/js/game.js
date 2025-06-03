@@ -790,5 +790,24 @@ document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drag-over'));
     }
 
+    // === Функция проверки возможности хода карты ===
+    function canPlayCard(card, topCard, stage = 'stage1', isSelfCard = false) {
+        if (!topCard) return true; // Если первый ход, можно ходить любой картой
+        const VALUES_RANK = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+        if (stage === 'stage1') {
+            const cardIndex = VALUES_RANK.indexOf(card.value);
+            const topCardIndex = VALUES_RANK.indexOf(topCard.value);
+            if (topCard.value === 'A' && card.value === '2') {
+                return true;
+            }
+            if (cardIndex === (topCardIndex + 1) % VALUES_RANK.length) {
+                return true;
+            }
+            return false;
+        }
+        // Для других стадий — стандартное правило
+        return card.suit === topCard.suit || card.value === topCard.value;
+    }
+
     (async () => { await initGame(); })();
 }); 
