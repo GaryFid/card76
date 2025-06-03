@@ -259,7 +259,7 @@ document.addEventListener('DOMContentLoaded', function() {
             cardCount.textContent = `Карт: ${player.cards.length}`;
             const cardsContainer = document.createElement('div');
             cardsContainer.className = 'player-table-cards';
-            // В renderPlayers для каждого игрока (кроме игрока 0) всегда показываю 2 карты рубашкой вверх и одну открытую (если есть)
+            // Для всех игроков кроме игрока 0 (человека) — 2 закрытые и 1 открытая карта
             if (playerIndex !== 0) {
                 // 2 закрытые карты (рубашкой вниз)
                 let closedCount = 0;
@@ -280,7 +280,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                     if (closedCount === 2) break;
                 }
-                // 1 открытая карта (если есть)
+                // 1 открытая карта (верхняя)
                 const openCards = player.cards.filter(card => card.faceUp);
                 if (openCards.length > 0) {
                     const card = openCards[openCards.length - 1];
@@ -513,7 +513,25 @@ document.addEventListener('DOMContentLoaded', function() {
         if (isMyTurn && game.gameStage === 'stage1') playerStage1Turn();
     };
     playCardButton.onclick = function() {
-        if (isMyTurn && game.gameStage === 'stage1') playerStage1Turn();
+        if (!isMyTurn || game.gameStage !== 'stage1') return;
+        const player = game.players[0];
+        // Найти индекс верхней открытой карты
+        const openCards = player.cards.map((c, i) => c.faceUp ? i : -1).filter(i => i !== -1);
+        if (openCards.length === 0) return;
+        const topOpenIdx = openCards[openCards.length - 1];
+        // Найти возможные цели
+        for (let i = 1; i < game.players.length; i++) {
+            let opp = game.players[i];
+            let oppOpen = opp.cards.filter(c => c.faceUp);
+            if (oppOpen.length > 0) {
+                let target = oppOpen[oppOpen.length - 1];
+                if (canPlayCard(player.cards[topOpenIdx], target)) {
+                    handlePlayerCardDrop(topOpenIdx, i);
+                    return;
+                }
+            }
+        }
+        showGameMessage('Нет подходящих целей для хода!');
     };
     selfCardButton.onclick = function() {
         if (isMyTurn && game.gameStage === 'stage1') playerStage1Turn();
@@ -711,12 +729,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- Логика обработки drop ---
     function handlePlayerCardDrop(cardIdx, targetPlayerIdx) {
         if (!isMyTurn) return;
+        const player = game.players[0];
+        // Найти индекс верхней открытой карты
+        const openCards = player.cards.map((c, i) => c.faceUp ? i : -1).filter(i => i !== -1);
+        if (openCards.length === 0) return;
+        const topOpenIdx = openCards[openCards.length - 1];
+        if (cardIdx !== topOpenIdx) return; // Только верхней открытой картой можно ходить
         // Если targetPlayerIdx === -1, значит дроп на колоду (взять карту)
         if (targetPlayerIdx === -1) {
             takeCardFromDeck();
             return;
         }
-        const player = game.players[0];
         const card = player.cards[cardIdx];
         if (!card || !card.faceUp) return;
         const targetPlayer = game.players[targetPlayerIdx];
@@ -727,7 +750,7 @@ document.addEventListener('DOMContentLoaded', function() {
             showGameMessage('Нельзя положить эту карту на выбранную!');
             return;
         }
-        // Совершаем ход: кладём карту на соперника
+        // Совершаем ход: кладём верхнюю открытую карту на соперника
         player.cards.splice(cardIdx, 1);
         targetPlayer.cards[targetPlayer.cards.indexOf(targetCard)] = card;
         showGameMessage(`Вы положили ${card.value}${card.suit} на карту игрока ${targetPlayer.name}`);
@@ -868,6 +891,39 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 10000);
         }
     }
+
+    // --- ДОБАВЛЯЮ кнопку 'Передать ход' ---
+    const endTurnButton = document.getElementById('end-turn');
+
+    // --- Функция для активации только кнопки 'Передать ход' ---
+    function enableOnlyEndTurnUI() {
+        drawCardButton.disabled = true;
+        playCardButton.disabled = true;
+        selfCardButton.disabled = true;
+        endTurnButton.disabled = false;
+    }
+    // --- Функция для активации всех кнопок ---
+    function enableAllActionButtons() {
+        drawCardButton.disabled = false;
+        playCardButton.disabled = false;
+        selfCardButton.disabled = false;
+        endTurnButton.disabled = false;
+    }
+    // --- Функция для активации только хода новой картой (если нужно) ---
+    function enableNewCardMoveUI() {
+        drawCardButton.disabled = true;
+        playCardButton.disabled = false;
+        selfCardButton.disabled = true;
+        endTurnButton.disabled = true;
+    }
+
+    // --- Обработчик кнопки 'Передать ход' ---
+    endTurnButton.onclick = function() {
+        if (!isMyTurn) return;
+        const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
+        setCurrentPlayer(nextPlayerIndex);
+        checkGameStageProgress();
+    };
 
     (async () => { await initGame(); })();
 }); 
