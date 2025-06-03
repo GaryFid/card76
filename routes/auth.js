@@ -14,7 +14,7 @@ router.post('/register', async (req, res) => {
     const { username, type } = req.body;
     
     // Проверка существования пользователя
-    let user = await User.findByUsername(username);
+    let user = await User.findOne({ where: { username } });
     
     if (!user) {
       // Создаем нового пользователя
@@ -44,23 +44,19 @@ router.post('/api/auth/register', async (req, res) => {
     
     // Если это авторизация через Telegram, ищем по telegramId
     if (userData.type === 'telegram' && userData.telegramId) {
-      let user = await User.findByTelegramId(userData.telegramId);
+      let user = await User.findOne({ where: { telegramId: userData.telegramId } });
       
       if (user) {
         // Обновляем данные пользователя, если нужно
-        user = await user.update({
+        await user.update({
           username: userData.username || user.username,
-          firstName: userData.firstName || user.firstName,
-          lastName: userData.lastName || user.lastName,
-          lastActive: new Date().toISOString()
+          lastActive: new Date()
         });
       } else {
         // Создаем нового пользователя
         user = await User.create({
           telegramId: userData.telegramId,
           username: userData.username,
-          firstName: userData.firstName,
-          lastName: userData.lastName,
           authType: 'telegram'
         });
       }
@@ -79,7 +75,7 @@ router.post('/api/auth/register', async (req, res) => {
       });
     } else {
       // Проверяем существование пользователя
-      user = await User.findByUsername(userData.username);
+      user = await User.findOne({ where: { username: userData.username } });
       
       if (!user) {
         // Создаем нового пользователя

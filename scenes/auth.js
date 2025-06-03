@@ -7,26 +7,16 @@ const authScene = new Scenes.BaseScene('auth');
 // Обработчик входа в сцену
 authScene.enter(async (ctx) => {
   try {
-    // Проверяем, зарегистрирован ли уже пользователь
-    const telegramId = ctx.from.id;
-    let user = await User.findOne({ 'telegram.id': telegramId });
-    
+    const telegramId = ctx.from.id.toString();
+    let user = await User.findOne({ where: { telegramId } });
     if (!user) {
-      // Создаем нового пользователя напрямую через данные Telegram
-      user = new User({
-        telegram: {
-          id: telegramId,
-          username: ctx.from.username,
-          firstName: ctx.from.first_name,
-          lastName: ctx.from.last_name
-        }
+      user = await User.create({
+        telegramId,
+        username: ctx.from.username
       });
-      await user.save();
     }
-    
-    // Пользователь авторизован через Telegram
     ctx.session.user = user;
-    await ctx.reply(`Добро пожаловать, ${user.telegram.username || user.telegram.firstName || 'Игрок'}!`);
+    await ctx.reply(`Добро пожаловать, ${user.username || 'Игрок'}!`);
     return ctx.scene.enter('menu');
   } catch (error) {
     console.error('Ошибка авторизации:', error);

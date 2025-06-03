@@ -29,120 +29,55 @@ const isAuthenticated = (req, res, next) => {
 // Регистрация/авторизация пользователя
 router.post('/auth/register', async (req, res) => {
   try {
-    console.log('Получен запрос на регистрацию:', req.body);
-    
     const userData = req.body;
-    
-    // Проверяем наличие имени пользователя
     if (!userData.username) {
-      return res.status(400).json({
-        success: false,
-        error: 'Имя пользователя обязательно'
-      });
+      return res.status(400).json({ success: false, error: 'Имя пользователя обязательно' });
     }
-    
-    // Проверяем длину имени пользователя
     if (userData.username.length < 4 && userData.type !== 'guest') {
-      return res.status(400).json({
-        success: false,
-        error: 'Имя должно содержать не менее 4 символов'
-      });
+      return res.status(400).json({ success: false, error: 'Имя должно содержать не менее 4 символов' });
     }
-    
     let user = null;
-    
-    // Определяем тип регистрации: обычная или гостевая
     if (userData.type === 'guest') {
-      // Создаем гостевого пользователя
-      user = await User.create({
-        username: userData.username,
-        authType: 'guest'
-      });
-      
-      console.log('Создан гостевой пользователь:', user.username);
+      user = await User.create({ username: userData.username, authType: 'guest' });
     } else {
-      // Проверяем существование пользователя с таким именем
-      user = await User.findByUsername(userData.username);
-      
+      user = await User.findOne({ where: { username: userData.username } });
       if (user) {
-        // Обновляем время последней активности
-        user = await user.update({
-          lastActive: new Date().toISOString()
-        });
-        
-        console.log('Вход существующего пользователя:', user.username);
+        await user.update({ lastActive: new Date() });
       } else {
-        // Создаем нового пользователя
-        user = await User.create({
-          username: userData.username,
-          authType: 'basic'
-        });
-        
-        console.log('Создан новый пользователь:', user.username);
+        user = await User.create({ username: userData.username, authType: 'basic' });
       }
     }
-    
-    // Отправляем успешный ответ с данными пользователя
-    res.json({ 
-      success: true, 
-      user: {
-        id: user.id,
-        username: user.username,
-        rating: user.rating,
-        gamesPlayed: user.gamesPlayed,
-        gamesWon: user.gamesWon,
-        authType: user.authType
-      } 
-    });
+    res.json({ success: true, user: {
+      id: user.id,
+      username: user.username,
+      rating: user.rating,
+      authType: user.authType
+    }});
   } catch (error) {
-    console.error('Ошибка регистрации API:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Внутренняя ошибка сервера' 
-    });
+    res.status(500).json({ success: false, error: 'Внутренняя ошибка сервера' });
   }
 });
 
 // Получить информацию о текущем пользователе
 router.get('/user/:id', async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
-    
+    const user = await User.findByPk(req.params.id);
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'Пользователь не найден'
-      });
+      return res.status(404).json({ success: false, message: 'Пользователь не найден' });
     }
-    
-    res.json({
-      success: true,
-      user
-    });
+    res.json({ success: true, user });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Ошибка при получении информации о пользователе',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Ошибка при получении информации о пользователе', error: error.message });
   }
 });
 
 // Получить рейтинг игроков
 router.get('/rating', async (req, res) => {
   try {
-    const topPlayers = await User.findTopByRating(20);
-    
-    res.json({
-      success: true,
-      players: topPlayers
-    });
+    const topPlayers = await User.findAll({ order: [['rating', 'DESC']], limit: 20 });
+    res.json({ success: true, players: topPlayers });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Ошибка при получении рейтинга',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Ошибка при получении рейтинга', error: error.message });
   }
 });
 
