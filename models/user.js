@@ -9,6 +9,11 @@ const User = sequelize.define('User', {
   rating: { type: DataTypes.INTEGER, defaultValue: 1000 },
   email: { type: DataTypes.STRING, unique: true, allowNull: true },
   password: { type: DataTypes.STRING, allowNull: true },
+  coins: { type: DataTypes.INTEGER, defaultValue: 0 },
+  avatar: { type: DataTypes.STRING, allowNull: true },
+  level: { type: DataTypes.INTEGER, defaultValue: 1 },
+  school: { type: DataTypes.STRING, allowNull: true },
+  referralCode: { type: DataTypes.STRING, unique: true, allowNull: true },
 }, {
   tableName: 'users',
   timestamps: true,
@@ -16,6 +21,15 @@ const User = sequelize.define('User', {
     beforeCreate: async (user) => {
       if (user.password) {
         user.password = await bcrypt.hash(user.password, 10);
+      }
+      if (!user.referralCode) {
+        let code;
+        let exists = true;
+        while (exists) {
+          code = generateReferralCode();
+          exists = await User.findOne({ where: { referralCode: code } });
+        }
+        user.referralCode = code;
       }
     },
     beforeUpdate: async (user) => {
@@ -30,5 +44,14 @@ User.prototype.checkPassword = async function(password) {
   if (!this.password) return false;
   return bcrypt.compare(password, this.password);
 };
+
+function generateReferralCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 8; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
 
 module.exports = User; 

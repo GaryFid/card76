@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Профиль — P.I.D.R.</title>
+  <link rel="stylesheet" href="/css/game.css">
+  <style>
+    body {
+      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Montserrat', Arial, sans-serif;
+      margin: 0;
+    }
+    .profile-container {
+      background: rgba(255,255,255,0.97);
+      border-radius: 24px;
+      box-shadow: 0 8px 32px rgba(30,60,114,0.25), 0 2px 8px rgba(34,34,34,0.13);
+      padding: 40px 32px 32px 32px;
+      max-width: 400px;
+      width: 100%;
+      text-align: center;
+      position: relative;
+      animation: fadeIn 1.2s cubic-bezier(.4,0,.2,1);
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(40px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .game-logo {
+      font-size: 2.1em;
+      font-weight: 900;
+      letter-spacing: 2px;
+      color: #2196f3;
+      text-shadow: 0 2px 12px #1e3c72, 0 1px 0 #fff;
+      margin-bottom: 8px;
+      user-select: none;
+    }
+    .profile-avatar {
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      object-fit: cover;
+      box-shadow: 0 2px 12px #2196f3aa;
+      margin-bottom: 12px;
+      background: #e3eafc;
+      border: 3px solid #2196f3;
+      display: inline-block;
+    }
+    .profile-nick {
+      font-size: 1.4em;
+      font-weight: 700;
+      color: #1e3c72;
+      margin-bottom: 4px;
+    }
+    .profile-rating {
+      font-size: 1.1em;
+      color: #2196f3;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .profile-wallet {
+      font-size: 1.1em;
+      color: #388e3c;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .profile-level {
+      font-size: 1.1em;
+      color: #ff9800;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .profile-school {
+      font-size: 1.05em;
+      color: #2a5298;
+      margin-bottom: 8px;
+    }
+    .profile-ref {
+      margin: 18px 0 0 0;
+      padding: 16px 10px 10px 10px;
+      background: #e3eafc;
+      border-radius: 12px;
+      font-size: 1em;
+      color: #1e3c72;
+      word-break: break-all;
+      position: relative;
+    }
+    .copy-btn {
+      margin-top: 10px;
+      background: linear-gradient(90deg, #2196f3 60%, #21cbf3 100%);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 18px;
+      font-size: 1em;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 2px 8px #2196f3aa;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .copy-btn:hover {
+      background: linear-gradient(90deg, #21cbf3 0%, #2196f3 100%);
+      transform: translateY(-2px) scale(1.03);
+    }
+  </style>
+</head>
+<body>
+  <div class="profile-container" id="profileBox">
+    <div class="game-logo">P.I.D.R.</div>
+    <img class="profile-avatar" id="profileAvatar" src="/img/avatar-default.png" alt="avatar">
+    <div class="profile-nick" id="profileNick">...</div>
+    <div class="profile-rating" id="profileRating">...</div>
+    <div class="profile-wallet" id="profileCoins">...</div>
+    <div class="profile-level" id="profileLevel">...</div>
+    <div class="profile-school" id="profileSchool">...</div>
+    <div class="profile-ref" id="profileRef">
+      <span>Ваша реферальная ссылка:</span>
+      <div id="refLinkBox" style="margin-top:6px;font-weight:600"></div>
+      <button class="copy-btn" id="copyRefBtn">Скопировать ссылку</button>
+    </div>
+  </div>
+  <script>
+    // Получаем пользователя из localStorage (или через API)
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    document.getElementById('profileNick').textContent = user.username || 'Неизвестно';
+    document.getElementById('profileRating').textContent = 'Рейтинг: ' + (user.rating ?? '—');
+    document.getElementById('profileCoins').textContent = 'Монеты: ' + (user.coins ?? 0);
+    document.getElementById('profileLevel').textContent = 'Уровень: ' + (user.level ?? 1);
+    document.getElementById('profileSchool').textContent = user.school ? ('Школа: ' + user.school) : '';
+    if (user.avatar) {
+      document.getElementById('profileAvatar').src = user.avatar;
+    }
+    // Формируем реферальную ссылку
+    const refCode = user.referralCode || '';
+    const refLink = window.location.origin + '/register?ref=' + refCode;
+    document.getElementById('refLinkBox').textContent = refLink;
+    document.getElementById('copyRefBtn').onclick = () => {
+      navigator.clipboard.writeText(refLink);
+      document.getElementById('copyRefBtn').textContent = 'Скопировано!';
+      setTimeout(() => document.getElementById('copyRefBtn').textContent = 'Скопировать ссылку', 1200);
+    };
+  </script>
+</body>
+</html> 

@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { User, Game } = require('../models');
+const path = require('path');
+const fs = require('fs');
+const multer = require('multer');
 
 // Добавим парсер JSON для обработки тела запроса
 router.use(express.json());
@@ -25,6 +28,20 @@ const isAuthenticated = (req, res, next) => {
     message: 'Требуется авторизация'
   });
 };
+
+// Настройка multer для загрузки аватаров
+const avatarStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadPath = path.join(__dirname, '../public/uploads/avatars');
+    fs.mkdirSync(uploadPath, { recursive: true });
+    cb(null, uploadPath);
+  },
+  filename: function (req, file, cb) {
+    const ext = path.extname(file.originalname);
+    cb(null, 'user_' + req.params.id + '_' + Date.now() + ext);
+  }
+});
+const uploadAvatar = multer({ storage: avatarStorage, limits: { fileSize: 2 * 1024 * 1024 } });
 
 // Регистрация/авторизация пользователя
 router.post('/auth/register', async (req, res) => {
@@ -189,6 +206,53 @@ router.get('/games/:id', async (req, res) => {
       message: 'Ошибка при получении информации об игре',
       error: error.message
     });
+  }
+});
+
+// --- Админка: получить всех пользователей (только для @GreenWood9009) ---
+router.get('/admin/users', async (req, res) => {
+  try {
+    const user = req.user;
+    if (!user || user.username !== '@GreenWood9009') {
+      return res.status(403).json({ error: 'Доступ запрещён' });
+    }
+    const users = await User.findAll({
+      attributes: ['id', 'username', 'rating', 'level', 'telegramId', 'createdAt']
+    });
+    res.json({ success: true, users });
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
+// --- Обновление профиля пользователя (ник, аватар) ---
+// PATCH /api/user/:id — обновить профиль
+router.patch('/user/:id', async (req, res) => {
+  try {
+    const user = await User.findByPk(req.params.id);
+    if (!user) return res.status(404).json({ success: false, error: 'Пользователь не найден' });
+    const { username, avatar } = req.body;
+    if (username && username.length < 4) {
+      return res.status(400).json({ success: false, error: 'Имя должно быть не менее 4 символов' });
+    }
+    if (username) user.username = username;
+    if (avatar) user.avatar = avatar;
+    await user.save();
+    res.json({ success: true, user: { id: user.id, username: user.username, avatar: user.avatar } });
+  } catch (e) {
+    res.status(500).json({ success: false, error: 'Ошибка обновления профиля' });
+  }
+});
+
+// POST /api/user/:id/avatar — загрузка аватара
+router.post('/user/:id/avatar', uploadAvatar.single('avatar'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ success: false, error: 'Файл не загружен' });
+    // Формируем URL для доступа к аватару
+    const avatarUrl = '/uploads/avatars/' + req.file.filename;
+    res.json({ success: true, avatarUrl });
+  } catch (e) {
+    res.status(500).json({ success: false, error: 'Ошибка загрузки аватара' });
   }
 });
 
