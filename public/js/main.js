@@ -279,10 +279,19 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    const profileBlock = document.getElementById('profile-block');
+    // --- Открытие модалки профиля из блока в шапке ---
+    const profileBlock = document.querySelector('.profile-block');
     if (profileBlock) {
         profileBlock.addEventListener('click', function() {
-            alert('Профиль пользователя. В будущем здесь появится личный кабинет!');
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            const modalNick = document.getElementById('modalNick');
+            const modalAvatar = document.getElementById('modalAvatar');
+            const profileModal = document.getElementById('profileModal');
+            const profileModalMsg = document.getElementById('profileModalMsg');
+            if (modalNick) modalNick.value = user.username || '';
+            if (modalAvatar) modalAvatar.src = user.avatar || 'img/player-avatar.svg';
+            if (profileModal) profileModal.style.display = 'flex';
+            if (profileModalMsg) profileModalMsg.textContent = '';
         });
     }
 }); 
