@@ -60,6 +60,9 @@ document.addEventListener('DOMContentLoaded', function() {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
+    // --- Флаг: кто сейчас должен взять карту из колоды (0 — игрок, 1+ — ИИ, null — никто) ---
+    let awaitingDeckActionPlayerIndex = null;
+
     // Асинхронная раздача карт с анимацией
     async function dealInitialCardsAnimated() {
         // Очищаем руки игроков
@@ -168,32 +171,23 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Раздать начальные карты игрокам
     function dealInitialCards() {
-        // Раздаем каждому игроку по 2 закрытые карты и 1 открытую
         for (let player of game.players) {
-            // Если у игрока еще нет карт, создаем массив для них
-            if (!player.cards) {
-                player.cards = [];
-            }
-            
-            // Раздаем 2 закрытые карты
+            player.cards = [];
+            // 2 закрытые
             for (let i = 0; i < 2; i++) {
                 const card = game.deck.pop();
                 card.faceUp = false;
                 player.cards.push(card);
             }
-            
-            // Раздаем 1 открытую карту
+            // 1 открытая
             const openCard = game.deck.pop();
             openCard.faceUp = true;
             player.cards.push(openCard);
         }
-        
-        // Кладем одну открытую карту в сброс для начала игры
+        // Кладём одну открытую карту в сброс для начала игры
         const tableCard = game.deck.pop();
         tableCard.faceUp = true;
         game.discardPile = [tableCard];
-        
-        console.log('Карты розданы, начальная карта в сбросе:', tableCard.value + tableCard.suit);
     }
     
     // Определение игрока с самой высокой открытой картой
@@ -259,9 +253,9 @@ document.addEventListener('DOMContentLoaded', function() {
             cardCount.textContent = `Карт: ${player.cards.length}`;
             const cardsContainer = document.createElement('div');
             cardsContainer.className = 'player-table-cards';
-            // --- 2 закрытые карты у аватара ---
+            // --- закрытые карты (рубашки) ---
             let closed = player.cards.filter(c => !c.faceUp);
-            for (let i = 0; i < Math.min(2, closed.length); i++) {
+            for (let i = 0; i < closed.length; i++) {
                 const cardElem = document.createElement('div');
                 cardElem.className = 'card table-card card-back';
                 cardElem.style.zIndex = i;
@@ -274,7 +268,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 cardElem.appendChild(cardBackImg);
                 cardsContainer.appendChild(cardElem);
             }
-            // --- остальные закрытые карты не отображаем ---
             // --- все открытые карты (faceUp) в ряд ---
             const openCards = player.cards.filter(card => card.faceUp);
             openCards.forEach((card, idx) => {
@@ -321,7 +314,7 @@ document.addEventListener('DOMContentLoaded', function() {
         highlightValidDropTargets();
     }
     
-    // --- Колода: по центру всегда закрытая, при нажатии справа появляется открытая карта-предпросмотр и 2 кнопки ---
+    // --- Колода: всегда рубашкой вверх, при клике появляется preview-карта и две кнопки ---
     let previewCard = null;
     function updateDeckInfo() {
         const deckElement = document.querySelector('.card-pile.deck');
@@ -334,8 +327,9 @@ document.addEventListener('DOMContentLoaded', function() {
         closedDeckElem.style.left = '0px';
         closedDeckElem.style.zIndex = 0;
         closedDeckElem.title = 'Показать верхнюю карту';
+        closedDeckElem.style.cursor = (awaitingDeckActionPlayerIndex === currentPlayerIndex) ? 'pointer' : 'not-allowed';
         closedDeckElem.addEventListener('click', function() {
-            if (game.deck.length > 0) {
+            if (game.deck.length > 0 && awaitingDeckActionPlayerIndex === currentPlayerIndex) {
                 previewCard = game.deck[game.deck.length - 1];
                 updateDeckInfo();
             }
@@ -364,7 +358,7 @@ document.addEventListener('DOMContentLoaded', function() {
             previewElem.title = 'Верхняя карта колоды';
             deckElement.appendChild(previewElem);
             // Кнопки "Взять себе" и "Сыграть"
-            if (isMyTurn && game.gameStage === 'stage1') {
+            if (awaitingDeckActionPlayerIndex === currentPlayerIndex) {
                 const btnContainer = document.createElement('div');
                 btnContainer.style.position = 'absolute';
                 btnContainer.style.left = '130px';
@@ -377,9 +371,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 takeBtn.textContent = 'Взять себе';
                 takeBtn.className = 'game-btn';
                 takeBtn.onclick = function() {
-                    takeCardFromDeck();
+                    // Удаляем карту из колоды и кладём в руку
+                    let card = game.deck.pop();
+                    card.faceUp = true;
+                    game.players[currentPlayerIndex].cards.push(card);
                     previewCard = null;
+                    awaitingDeckActionPlayerIndex = null;
                     updateDeckInfo();
+                    renderPlayerHand();
+                    renderPlayers();
+                    setTimeout(() => {
+                        const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
+                        setCurrentPlayer(nextPlayerIndex);
+                    }, 1000);
                 };
                 // Сыграть (если можно)
                 const playBtn = document.createElement('button');
@@ -388,7 +392,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 playBtn.onclick = function() {
                     // Попробовать сыграть этой картой на любую открытую карту соперника
                     let canPlay = false;
-                    for (let i = 1; i < game.players.length; i++) {
+                    for (let i = 0; i < game.players.length; i++) {
+                        if (i === currentPlayerIndex) continue;
                         let opp = game.players[i];
                         let oppOpen = opp.cards.filter(c => c.faceUp);
                         if (oppOpen.length > 0) {
@@ -405,15 +410,16 @@ document.addEventListener('DOMContentLoaded', function() {
                                     previewCard.faceUp = true;
                                     opp.cards.push(previewCard);
                                 }
-                                showGameMessage(`Вы сыграли ${previewCard.value}${previewCard.suit} на карту игрока ${opp.name}`);
+                                showGameMessage(`${game.players[currentPlayerIndex].name} сыграл(а) ${previewCard.value}${previewCard.suit} на карту игрока ${opp.name}`);
                                 previewCard = null;
+                                awaitingDeckActionPlayerIndex = null;
                                 updateDeckInfo();
                                 renderPlayers();
                                 renderPlayerHand();
                                 setTimeout(() => {
                                     const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
                                     setCurrentPlayer(nextPlayerIndex);
-                                }, 10000);
+                                }, 1000);
                                 canPlay = true;
                                 break;
                             }
@@ -453,252 +459,100 @@ document.addEventListener('DOMContentLoaded', function() {
             discardElement.appendChild(cardElement);
         }
     }
-    // ... существующий код ...
-    // --- Новая логика первой стадии для игрока ---
+
+    // --- Игрок и бот всегда ходят только верхней открытой картой ---
     async function playerStage1Turn() {
         if (!isMyTurn || game.gameStage !== 'stage1') return;
         let player = game.players[0];
-        // Если нет открытых карт — берём карту из колоды
-        if (player.cards.filter(c => c.faceUp).length === 0) {
-            if (game.deck.length > 0) {
-                let newCard = game.deck.pop();
-                newCard.faceUp = true;
-                showGameMessage('У вас не осталось открытых карт. Вы берёте карту из колоды.');
-                // Проверяем, можно ли положить эту карту на соперника
-                let canPlace = false;
-                let possibleTargets = [];
-                for (let i = 1; i < game.players.length; i++) {
-                    let opp = game.players[i];
-                    let oppOpen = opp.cards.filter(c => c.faceUp);
-                    if (oppOpen.length > 0) {
-                        let target = oppOpen[oppOpen.length - 1];
-                        if (canPlayCard(newCard, target)) {
-                            canPlace = true;
-                            possibleTargets.push({playerIndex: i, card: target});
-                        }
-                    }
-                }
-                player.cards.push(newCard);
-                updateDeckInfo();
-                renderPlayerHand();
-                // Если можно положить — активируем только кнопку "Положить" и drag&drop, иначе только "Оставить себе" (или "Пропустить ход")
-                if (canPlace) {
-                    showGameMessage(`Вы взяли карту из колоды: ${newCard.value}${newCard.suit}. Вы можете положить её на открытую карту соперника.`);
-                    // Включаем drag&drop и/или кнопку "Положить" только для этой карты
-                    // (Реализация: разрешить дропать только новую карту, остальные действия заблокировать)
-                    // Можно реализовать через флаг, что "ожидается ход новой картой"
-                    awaitingNewCardMove = true;
-                    awaitingNewCard = newCard;
-                    awaitingNewCardTargets = possibleTargets;
-                    enableNewCardMoveUI();
-                } else {
-                    showGameMessage(`Вы взяли карту из колоды: ${newCard.value}${newCard.suit}, но не можете её положить. Оставьте себе и передайте ход.`);
-                    // Включаем только кнопку "Оставить себе" (или "Пропустить ход")
-                    awaitingNewCardMove = false;
-                    awaitingNewCard = null;
-                    awaitingNewCardTargets = [];
-                    enableOnlyEndTurnUI();
-                }
-                return;
-            } else {
-                showGameMessage('Колода пуста, ждём 3-й стадии!');
-                setTimeout(() => {
-                    const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
-                    setCurrentPlayer(nextPlayerIndex);
-                    checkGameStageProgress();
-                }, 10000);
-                return;
-            }
+        // Найти верхнюю открытую карту
+        const openCards = player.cards.map((c, i) => c.faceUp ? i : -1).filter(i => i !== -1);
+        if (openCards.length === 0) {
+            showGameMessage('У вас нет открытых карт! Возьмите карту из колоды.');
+            awaitingDeckActionPlayerIndex = 0;
+            updateDeckInfo();
+            return;
         }
-        // Обычный ход, если есть открытые карты
-        let topCard = player.cards[player.cards.length - 1];
-        if (!topCard) return;
+        const topOpenIdx = openCards[openCards.length - 1];
+        const topCard = player.cards[topOpenIdx];
+        // Попробовать положить на любую открытую карту соперника
         for (let i = 1; i < game.players.length; i++) {
             let opp = game.players[i];
             let oppOpen = opp.cards.filter(c => c.faceUp);
             if (oppOpen.length > 0) {
                 let target = oppOpen[oppOpen.length - 1];
                 if (canPlayCard(topCard, target)) {
-                    player.cards.pop();
+                    // Кладём карту на соперника
+                    player.cards.splice(topOpenIdx, 1);
                     const idx = opp.cards.indexOf(target);
-                    if (idx !== -1) { opp.cards.splice(idx, 1); opp.cards.push(topCard); }
+                    if (idx !== -1) {
+                        opp.cards[idx].faceUp = false;
+                        opp.cards.push(opp.cards[idx]);
+                        opp.cards.splice(idx, 1);
+                        topCard.faceUp = true;
+                        opp.cards.push(topCard);
+                    }
                     showGameMessage(`Вы положили ${topCard.value}${topCard.suit} на карту игрока ${opp.name}`);
                     renderPlayers();
                     renderPlayerHand();
-                    // После успешного хода игрок должен сам взять карту вручную
+                    // После успешного хода — только разрешить клик по колоде
+                    awaitingDeckActionPlayerIndex = 0;
+                    updateDeckInfo();
                     return;
                 }
             }
         }
-        // Если некуда положить — игрок должен сам взять карту вручную
-        showGameMessage('Не удалось сыграть карту, возьмите карту из колоды');
-        return;
+        // Если некуда положить — разрешить только клик по колоде
+        showGameMessage('Не удалось сыграть карту, возьмите карту из колоды.');
+        awaitingDeckActionPlayerIndex = 0;
+        updateDeckInfo();
     }
-    // ... существующий код ...
-    // --- Кнопки для ручного управления ---
-    drawCardButton.onclick = function() {
-        if (isMyTurn && game.gameStage === 'stage1') playerStage1Turn();
-    };
-    playCardButton.onclick = function() {
-        if (!isMyTurn || game.gameStage !== 'stage1') return;
-        const player = game.players[0];
-        // Найти индекс верхней открытой карты
-        const openCards = player.cards.map((c, i) => c.faceUp ? i : -1).filter(i => i !== -1);
-        if (openCards.length === 0) return;
+
+    // --- Аналогично для ИИ ---
+    async function aiStage1Turn() {
+        let aiPlayer = game.players[currentPlayerIndex];
+        // Найти верхнюю открытую карту
+        const openCards = aiPlayer.cards.map((c, i) => c.faceUp ? i : -1).filter(i => i !== -1);
+        if (openCards.length === 0) {
+            // ИИ должен "кликнуть" по колоде
+            awaitingDeckActionPlayerIndex = currentPlayerIndex;
+            updateDeckInfo();
+            setTimeout(() => aiTakeOrPlayDeckCard(), 1200);
+            return;
+        }
         const topOpenIdx = openCards[openCards.length - 1];
-        // Найти возможные цели
-        for (let i = 1; i < game.players.length; i++) {
+        const topCard = aiPlayer.cards[topOpenIdx];
+        for (let i = 0; i < game.players.length; i++) {
+            if (i === currentPlayerIndex) continue;
             let opp = game.players[i];
             let oppOpen = opp.cards.filter(c => c.faceUp);
             if (oppOpen.length > 0) {
                 let target = oppOpen[oppOpen.length - 1];
-                if (canPlayCard(player.cards[topOpenIdx], target)) {
-                    handlePlayerCardDrop(topOpenIdx, i);
+                if (canPlayCard(topCard, target)) {
+                    aiPlayer.cards.splice(topOpenIdx, 1);
+                    const idx = opp.cards.indexOf(target);
+                    if (idx !== -1) {
+                        opp.cards[idx].faceUp = false;
+                        opp.cards.push(opp.cards[idx]);
+                        opp.cards.splice(idx, 1);
+                        topCard.faceUp = true;
+                        opp.cards.push(topCard);
+                    }
+                    showGameMessage(`${aiPlayer.name} кладёт ${topCard.value}${topCard.suit} на карту игрока ${opp.name}`);
+                    renderPlayers();
+                    // После успешного хода — только разрешить клик по колоде
+                    awaitingDeckActionPlayerIndex = currentPlayerIndex;
+                    updateDeckInfo();
+                    setTimeout(() => aiTakeOrPlayDeckCard(), 1200);
                     return;
                 }
             }
         }
-        showGameMessage('Нет подходящих целей для хода!');
-    };
-    selfCardButton.onclick = function() {
-        if (isMyTurn && game.gameStage === 'stage1') playerStage1Turn();
-    };
-    // ... существующий код ...
-    // --- Новая логика для бота ---
-    async function aiStage1Turn() {
-        let aiPlayer = game.players[currentPlayerIndex];
-        while (true) {
-            // Если нет открытых карт — берём карту из колоды
-            if (aiPlayer.cards.filter(c => c.faceUp).length === 0) {
-                if (game.deck.length > 0) {
-                    let newCard = game.deck.pop();
-                    newCard.faceUp = true;
-                    showGameMessage(`${aiPlayer.name} не может больше ходить (нет открытых карт). Берёт карту из колоды.`);
-                    // Пытаемся сразу положить эту карту на соперника
-                    let placed = false;
-                    for (let i = 0; i < game.players.length; i++) {
-                        if (i === currentPlayerIndex) continue;
-                        let opp = game.players[i];
-                        let oppOpen = opp.cards.filter(c => c.faceUp);
-                        if (oppOpen.length > 0) {
-                            let target = oppOpen[oppOpen.length - 1];
-                            if (canPlayCard(newCard, target)) {
-                                const idx = opp.cards.indexOf(target);
-                                if (idx !== -1) {
-                                    opp.cards[idx].faceUp = false;
-                                    opp.cards.push(opp.cards[idx]);
-                                    opp.cards.splice(idx, 1);
-                                    topCard.faceUp = true;
-                                    opp.cards.push(topCard);
-                                }
-                                showGameMessage(`${aiPlayer.name} положил ${newCard.value}${newCard.suit} на карту игрока ${opp.name}`);
-                                renderPlayers();
-                                await delay(600);
-                                placed = true;
-                                break;
-                            }
-                        }
-                    }
-                    if (placed) {
-                        // Если карту удалось положить — бот продолжает ходить
-                        continue;
-                    } else {
-                        // Если не смог положить — оставляет себе
-                        aiPlayer.cards.push(newCard);
-                        updateDeckInfo();
-                        renderPlayers();
-                        showGameMessage(`${aiPlayer.name} взял карту из колоды: ${newCard.value}${newCard.suit}, но не смог её положить. Ход переходит дальше.`);
-                        await delay(600);
-                        setTimeout(() => {
-                            const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
-                            setCurrentPlayer(nextPlayerIndex);
-                            checkGameStageProgress();
-                        }, 10000);
-                        return;
-                    }
-                } else {
-                    showGameMessage('Колода пуста, ждём 3-й стадии!');
-                    setTimeout(() => {
-                        const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
-                        setCurrentPlayer(nextPlayerIndex);
-                        checkGameStageProgress();
-                    }, 10000);
-                    return;
-                }
-            }
-            // Обычный ход, если есть открытые карты
-            let topCard = aiPlayer.cards[aiPlayer.cards.length - 1];
-            if (!topCard) return;
-            let moved = false;
-            for (let i = 0; i < game.players.length; i++) {
-                if (i === currentPlayerIndex) continue;
-                let opp = game.players[i];
-                let oppOpen = opp.cards.filter(c => c.faceUp);
-                if (oppOpen.length > 0) {
-                    let target = oppOpen[oppOpen.length - 1];
-                    if (canPlayCard(topCard, target)) {
-                        aiPlayer.cards.pop();
-                        const idx = opp.cards.indexOf(target);
-                        if (idx !== -1) {
-                            opp.cards[idx].faceUp = false;
-                            opp.cards.push(opp.cards[idx]);
-                            opp.cards.splice(idx, 1);
-                            topCard.faceUp = true;
-                            opp.cards.push(topCard);
-                        }
-                        showGameMessage(`${aiPlayer.name} кладёт ${topCard.value}${topCard.suit} на карту игрока ${opp.name}`);
-                        renderPlayers();
-                        await delay(600);
-                        // После успешного хода — берёт новую карту и продолжает ходить
-                        if (game.deck.length > 0) {
-                            let newCard = game.deck.pop();
-                            newCard.faceUp = true;
-                            aiPlayer.cards.push(newCard);
-                            updateDeckInfo();
-                            renderPlayers();
-                            showGameMessage(`${aiPlayer.name} взял карту из колоды: ${newCard.value}${newCard.suit}`);
-                            await delay(600);
-                            lastTookCardPlayerIndex = currentPlayerIndex;
-                        }
-                        moved = true;
-                        break;
-                    }
-                }
-            }
-            if (moved) {
-                // Если удалось сделать ход — бот продолжает цикл
-                continue;
-            }
-            // Если некуда положить — берёт карту из колоды (по правилам)
-            if (game.deck.length > 0) {
-                let newCard = game.deck.pop();
-                newCard.faceUp = true;
-                aiPlayer.cards.push(newCard);
-                updateDeckInfo();
-                renderPlayers();
-                showGameMessage(`${aiPlayer.name} взял карту из колоды: ${newCard.value}${newCard.suit}`);
-                await delay(600);
-                lastTookCardPlayerIndex = currentPlayerIndex;
-                // После взятия карты цикл повторится и бот попробует её положить
-                continue;
-            }
-            setTimeout(() => {
-                const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
-                setCurrentPlayer(nextPlayerIndex);
-                checkGameStageProgress();
-            }, 10000);
-            return;
-        }
+        // Если некуда положить — разрешить только клик по колоде
+        showGameMessage(`${aiPlayer.name} не может сходить, берёт карту из колоды.`);
+        awaitingDeckActionPlayerIndex = currentPlayerIndex;
+        updateDeckInfo();
+        setTimeout(() => aiTakeOrPlayDeckCard(), 1200);
     }
-    // --- Заменяю playAITurn на вызов aiStage1Turn ---
-    function playAITurn() {
-        if (game.gameStage === 'stage1') {
-            aiStage1Turn();
-        } else {
-            // старая логика для других стадий
-        }
-    }
-    // ... существующий код ...
 
     // --- ДОБАВЛЯЮ функцию для получения пути к картинке карты ---
     function getCardImageUrl(card) {
@@ -981,6 +835,63 @@ document.addEventListener('DOMContentLoaded', function() {
         setCurrentPlayer(nextPlayerIndex);
         checkGameStageProgress();
     };
+
+    // --- Для ИИ: функция, которая "кликает" по колоде и выбирает действие ---
+    function aiTakeOrPlayDeckCard() {
+        if (game.deck.length === 0 || awaitingDeckActionPlayerIndex !== currentPlayerIndex) return;
+        // ИИ "смотрит" карту
+        previewCard = game.deck[game.deck.length - 1];
+        updateDeckInfo();
+        setTimeout(() => {
+            // Может ли сыграть этой картой?
+            let canPlay = false;
+            for (let i = 0; i < game.players.length; i++) {
+                if (i === currentPlayerIndex) continue;
+                let opp = game.players[i];
+                let oppOpen = opp.cards.filter(c => c.faceUp);
+                if (oppOpen.length > 0) {
+                    let target = oppOpen[oppOpen.length - 1];
+                    if (canPlayCard(previewCard, target)) {
+                        // Сыграть этой картой
+                        game.deck.pop();
+                        const idx = opp.cards.indexOf(target);
+                        if (idx !== -1) {
+                            opp.cards[idx].faceUp = false;
+                            opp.cards.push(opp.cards[idx]);
+                            opp.cards.splice(idx, 1);
+                            previewCard.faceUp = true;
+                            opp.cards.push(previewCard);
+                        }
+                        showGameMessage(`${game.players[currentPlayerIndex].name} сыграл(а) ${previewCard.value}${previewCard.suit} на карту игрока ${opp.name}`);
+                        previewCard = null;
+                        awaitingDeckActionPlayerIndex = null;
+                        updateDeckInfo();
+                        renderPlayers();
+                        setTimeout(() => {
+                            const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
+                            setCurrentPlayer(nextPlayerIndex);
+                        }, 1000);
+                        canPlay = true;
+                        break;
+                    }
+                }
+            }
+            if (!canPlay) {
+                // Взять себе
+                let card = game.deck.pop();
+                card.faceUp = true;
+                game.players[currentPlayerIndex].cards.push(card);
+                previewCard = null;
+                awaitingDeckActionPlayerIndex = null;
+                updateDeckInfo();
+                renderPlayers();
+                setTimeout(() => {
+                    const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
+                    setCurrentPlayer(nextPlayerIndex);
+                }, 1000);
+            }
+        }, 1200);
+    }
 
     (async () => { await initGame(); })();
 }); 
