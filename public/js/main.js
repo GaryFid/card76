@@ -211,7 +211,7 @@ document.addEventListener('DOMContentLoaded', function() {
             closeBtn.style.color = 'var(--tg-theme-text-color)';
             
             const title = document.createElement('h2');
-            title.textContent = 'Правила игры "Разгильдяй"';
+            title.textContent = 'Правила игры "P.I.D.R. - Punishment Inevitable: Dumb Rules"';
             title.style.textAlign = 'center';
             title.style.marginBottom = '20px';
             

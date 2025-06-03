@@ -893,5 +893,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 1200);
     }
 
+    // --- Добавляю функцию playAITurn для вызова хода ИИ ---
+    function playAITurn() {
+        if (game.gameStage === 'stage1') {
+            aiStage1Turn();
+        } else {
+            // Здесь можно реализовать ход ИИ для других стадий
+            // Например: aiStage2Turn();
+        }
+    }
+
     (async () => { await initGame(); })();
 }); 
