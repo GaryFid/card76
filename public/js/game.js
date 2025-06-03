@@ -253,9 +253,9 @@ document.addEventListener('DOMContentLoaded', function() {
             cardCount.textContent = `Карт: ${player.cards.length}`;
             const cardsContainer = document.createElement('div');
             cardsContainer.className = 'player-table-cards';
-            // --- закрытые карты (рубашки) ---
+            // --- 2 закрытые слева ---
             let closed = player.cards.filter(c => !c.faceUp);
-            for (let i = 0; i < closed.length; i++) {
+            for (let i = 0; i < Math.min(2, closed.length); i++) {
                 const cardElem = document.createElement('div');
                 cardElem.className = 'card table-card card-back';
                 cardElem.style.zIndex = i;
@@ -268,13 +268,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 cardElem.appendChild(cardBackImg);
                 cardsContainer.appendChild(cardElem);
             }
-            // --- все открытые карты (faceUp) в ряд ---
+            // --- все открытые карты справа ---
             const openCards = player.cards.filter(card => card.faceUp);
             openCards.forEach((card, idx) => {
                 const cardElem = document.createElement('div');
                 cardElem.className = 'card table-card card-front drop-target';
                 cardElem.style.zIndex = 10 + idx;
-                cardElem.style.left = `${20 + idx * 18}px`;
+                cardElem.style.left = `${30 + idx * 18}px`;
                 cardElem.style.top = `0px`;
                 const cardImg = document.createElement('img');
                 cardImg.src = getCardImageUrl(card);
@@ -319,7 +319,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateDeckInfo() {
         const deckElement = document.querySelector('.card-pile.deck');
         deckElement.innerHTML = '';
-        // Показываем закрытую колоду (рубашка)
+        // Показываем закрытую колоду (рубашка) — всегда видимая и кликабельная
         const closedDeckElem = document.createElement('div');
         closedDeckElem.className = 'card mini-card card-back deck-closed';
         closedDeckElem.style.position = 'absolute';
@@ -327,7 +327,21 @@ document.addEventListener('DOMContentLoaded', function() {
         closedDeckElem.style.left = '0px';
         closedDeckElem.style.zIndex = 0;
         closedDeckElem.title = 'Показать верхнюю карту';
+        closedDeckElem.style.width = '80px';
+        closedDeckElem.style.height = '120px';
+        closedDeckElem.style.display = 'flex';
+        closedDeckElem.style.alignItems = 'center';
+        closedDeckElem.style.justifyContent = 'center';
+        closedDeckElem.style.boxShadow = '0 4px 18px rgba(30,80,220,0.18)';
         closedDeckElem.style.cursor = (awaitingDeckActionPlayerIndex === currentPlayerIndex) ? 'pointer' : 'not-allowed';
+        closedDeckElem.addEventListener('mouseenter', function() {
+            if (awaitingDeckActionPlayerIndex === currentPlayerIndex) {
+                closedDeckElem.style.boxShadow = '0 0 0 4px #3390ec55';
+            }
+        });
+        closedDeckElem.addEventListener('mouseleave', function() {
+            closedDeckElem.style.boxShadow = '0 4px 18px rgba(30,80,220,0.18)';
+        });
         closedDeckElem.addEventListener('click', function() {
             if (game.deck.length > 0 && awaitingDeckActionPlayerIndex === currentPlayerIndex) {
                 previewCard = game.deck[game.deck.length - 1];
@@ -339,6 +353,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const countElem = document.createElement('div');
         countElem.className = 'card-count';
         countElem.textContent = game.deck.length;
+        countElem.style.position = 'absolute';
+        countElem.style.left = '50%';
+        countElem.style.top = '100%';
+        countElem.style.transform = 'translate(-50%, 0)';
+        countElem.style.fontWeight = 'bold';
+        countElem.style.fontSize = '1.1em';
+        countElem.style.color = '#3390ec';
         deckElement.appendChild(countElem);
         // Если есть previewCard — показываем её справа и 2 кнопки
         if (previewCard && game.deck.length > 0 && previewCard === game.deck[game.deck.length - 1]) {
@@ -346,13 +367,21 @@ document.addEventListener('DOMContentLoaded', function() {
             previewElem.className = 'card mini-card deck-preview';
             previewElem.style.position = 'absolute';
             previewElem.style.top = '0px';
-            previewElem.style.left = '60px';
+            previewElem.style.left = '100px';
             previewElem.style.zIndex = 1;
+            previewElem.style.width = '80px';
+            previewElem.style.height = '120px';
+            previewElem.style.display = 'flex';
+            previewElem.style.alignItems = 'center';
+            previewElem.style.justifyContent = 'center';
+            previewElem.style.boxShadow = '0 4px 18px rgba(30,80,220,0.18)';
             if (game.settings.useCardImages) {
                 const cardImg = document.createElement('img');
                 cardImg.src = getCardImageUrl(previewCard);
                 cardImg.className = 'card-image';
                 cardImg.alt = `${previewCard.value}${previewCard.suit}`;
+                cardImg.style.width = '70px';
+                cardImg.style.height = '105px';
                 previewElem.appendChild(cardImg);
             }
             previewElem.title = 'Верхняя карта колоды';
@@ -361,7 +390,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (awaitingDeckActionPlayerIndex === currentPlayerIndex) {
                 const btnContainer = document.createElement('div');
                 btnContainer.style.position = 'absolute';
-                btnContainer.style.left = '130px';
+                btnContainer.style.left = '200px';
                 btnContainer.style.top = '10px';
                 btnContainer.style.display = 'flex';
                 btnContainer.style.flexDirection = 'column';
@@ -371,7 +400,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 takeBtn.textContent = 'Взять себе';
                 takeBtn.className = 'game-btn';
                 takeBtn.onclick = function() {
-                    // Удаляем карту из колоды и кладём в руку
                     let card = game.deck.pop();
                     card.faceUp = true;
                     game.players[currentPlayerIndex].cards.push(card);
@@ -390,7 +418,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 playBtn.textContent = 'Сыграть';
                 playBtn.className = 'game-btn';
                 playBtn.onclick = function() {
-                    // Попробовать сыграть этой картой на любую открытую карту соперника
                     let canPlay = false;
                     for (let i = 0; i < game.players.length; i++) {
                         if (i === currentPlayerIndex) continue;
@@ -399,9 +426,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         if (oppOpen.length > 0) {
                             let target = oppOpen[oppOpen.length - 1];
                             if (canPlayCard(previewCard, target)) {
-                                // Удаляем карту из колоды
                                 game.deck.pop();
-                                // Кладём карту на соперника
                                 const idx = opp.cards.indexOf(target);
                                 if (idx !== -1) {
                                     opp.cards[idx].faceUp = false;
@@ -439,7 +464,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // --- Не отображаем карту сброса на столе (если не требуется по правилам) ---
         const discardElement = document.querySelector('.card-pile.discard');
         discardElement.innerHTML = '';
-        // Если потребуется — можно добавить отображение discardPile только во 2-й стадии или по спец. кнопке
     }
 
     // --- Игрок и бот всегда ходят только верхней открытой картой ---
@@ -556,7 +580,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!playerHandElement) return;
         playerHandElement.innerHTML = '';
         const player = game.players[0];
-        // Сначала 2 закрытые (если есть)
+        // 2 закрытые слева
         const closed = player.cards.filter(c => !c.faceUp);
         for (let i = 0; i < Math.min(2, closed.length); i++) {
             const cardElem = document.createElement('div');
@@ -568,7 +592,7 @@ document.addEventListener('DOMContentLoaded', function() {
             cardElem.appendChild(cardBackImg);
             playerHandElement.appendChild(cardElem);
         }
-        // Затем все открытые карты (faceUp)
+        // все открытые справа
         const openCards = player.cards.filter(card => card.faceUp);
         openCards.forEach((card, idx) => {
             const cardElem = document.createElement('div');
@@ -596,7 +620,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             playerHandElement.appendChild(cardElem);
         });
-        // Drop-зона для колоды (чтобы можно было бросить верхнюю карту в колоду, если потребуется по правилам)
         playerHandElement.addEventListener('touchmove', handleTouchMove, {passive:false});
         playerHandElement.addEventListener('touchend', handleTouchEnd, {passive:false});
         highlightValidDropTargets();
