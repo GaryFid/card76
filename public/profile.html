@@ -125,24 +125,57 @@
   </div>
   <script>
     // Получаем пользователя из localStorage (или через API)
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    document.getElementById('profileNick').textContent = user.username || 'Неизвестно';
-    document.getElementById('profileRating').textContent = 'Рейтинг: ' + (user.rating ?? '—');
-    document.getElementById('profileCoins').textContent = 'Монеты: ' + (user.coins ?? 0);
-    document.getElementById('profileLevel').textContent = 'Уровень: ' + (user.level ?? 1);
-    document.getElementById('profileSchool').textContent = user.school ? ('Школа: ' + user.school) : '';
-    if (user.avatar) {
-      document.getElementById('profileAvatar').src = user.avatar;
+    let user = JSON.parse(localStorage.getItem('user') || '{}');
+    const profileNick = document.getElementById('profileNick');
+    const profileRating = document.getElementById('profileRating');
+    const profileCoins = document.getElementById('profileCoins');
+    const profileLevel = document.getElementById('profileLevel');
+    const profileSchool = document.getElementById('profileSchool');
+    const profileAvatar = document.getElementById('profileAvatar');
+    const refLinkBox = document.getElementById('refLinkBox');
+    const copyRefBtn = document.getElementById('copyRefBtn');
+    const profileBox = document.getElementById('profileBox');
+
+    async function loadProfile() {
+      if (!user || !user.id) {
+        // Пробуем получить через Telegram авторизацию
+        const res = await fetch('/auth/telegram/check', { credentials: 'include' });
+        const data = await res.json();
+        if (data.success && data.user) {
+          user = data.user;
+          localStorage.setItem('user', JSON.stringify(user));
+        } else {
+          profileBox.innerHTML = '<div style="padding:32px 0;font-size:1.2em;color:#e53935;">Войдите в аккаунт через <a href="/register.html" style="color:#2196f3;font-weight:700;">регистрацию</a> или Telegram</div>';
+          return;
+        }
+      }
+      // Получаем актуальные данные с сервера
+      try {
+        const res = await fetch(`/api/user/${user.id}`);
+        const data = await res.json();
+        if (data.success && data.user) {
+          user = data.user;
+          localStorage.setItem('user', JSON.stringify(user));
+        }
+      } catch {}
+      // Отображаем профиль
+      profileNick.textContent = user.username || 'Неизвестно';
+      profileRating.textContent = 'Рейтинг: ' + (user.rating ?? '—');
+      profileCoins.textContent = 'Монеты: ' + (user.coins ?? 0);
+      profileLevel.textContent = 'Уровень: ' + (user.level ?? 1);
+      profileSchool.textContent = user.school ? ('Школа: ' + user.school) : '';
+      profileAvatar.src = user.avatar || '/img/avatar-default.png';
+      // Формируем реферальную ссылку
+      const refCode = user.referralCode || '';
+      const refLink = window.location.origin + '/register?ref=' + refCode;
+      refLinkBox.textContent = refLink;
+      copyRefBtn.onclick = () => {
+        navigator.clipboard.writeText(refLink);
+        copyRefBtn.textContent = 'Скопировано!';
+        setTimeout(() => copyRefBtn.textContent = 'Скопировать ссылку', 1200);
+      };
     }
-    // Формируем реферальную ссылку
-    const refCode = user.referralCode || '';
-    const refLink = window.location.origin + '/register?ref=' + refCode;
-    document.getElementById('refLinkBox').textContent = refLink;
-    document.getElementById('copyRefBtn').onclick = () => {
-      navigator.clipboard.writeText(refLink);
-      document.getElementById('copyRefBtn').textContent = 'Скопировано!';
-      setTimeout(() => document.getElementById('copyRefBtn').textContent = 'Скопировать ссылку', 1200);
-    };
+    loadProfile();
   </script>
 </body>
 </html> 
