@@ -719,9 +719,7 @@ document.addEventListener('DOMContentLoaded', function() {
         renderPlayers();
         renderPlayerHand();
         if (isMyTurn) {
-            drawCardButton.disabled = false;
-            playCardButton.disabled = false;
-            endTurnButton.disabled = false;
+            updatePlayerActionButtons();
         } else {
             drawCardButton.disabled = true;
             playCardButton.disabled = true;
@@ -914,15 +912,16 @@ document.addEventListener('DOMContentLoaded', function() {
     drawCardButton.onclick = function() {
         if (!isMyTurn || game.gameStage !== 'stage1') return;
         takeCardFromDeck();
+        updatePlayerActionButtons();
     };
 
     playCardButton.onclick = function() {
         if (!isMyTurn || game.gameStage !== 'stage1') return;
-        // Попробовать сыграть верхней открытой картой на любого соперника
         const player = game.players[0];
         const openCards = player.cards.filter(c => c.faceUp);
         if (openCards.length === 0) {
             showGameMessage('Нет открытых карт для хода!');
+            updatePlayerActionButtons();
             return;
         }
         const topCard = openCards[openCards.length - 1];
@@ -933,7 +932,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (oppOpen.length > 0) {
                 let target = oppOpen[oppOpen.length - 1];
                 if (canPlayCard(topCard, target)) {
-                    // Кладём карту на соперника
                     const idx = player.cards.indexOf(topCard);
                     player.cards.splice(idx, 1);
                     const oppIdx = opp.cards.indexOf(target);
@@ -952,6 +950,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         let newCard = game.deck.pop();
                         newCard.faceUp = true;
                         player.cards.push(newCard);
+                        sortPlayerCards(player);
                         updateDeckInfo();
                         renderPlayerHand();
                         showGameMessage(`Вы взяли карту из колоды: ${newCard.value}${newCard.suit}`);
@@ -963,7 +962,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         if (!moved) {
             showGameMessage('Нет подходящих целей для хода этой картой!');
-        } else {
+        }
+        updatePlayerActionButtons();
+        if (moved) {
             setTimeout(() => {
                 const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
                 setCurrentPlayer(nextPlayerIndex);
@@ -981,6 +982,45 @@ document.addEventListener('DOMContentLoaded', function() {
             // Здесь можно реализовать ход ИИ для других стадий
             // Например: aiStage2Turn();
         }
+    }
+
+    // --- Функция для активации только разрешённых кнопок игрока ---
+    function updatePlayerActionButtons() {
+        if (!isMyTurn || game.gameStage !== 'stage1') {
+            drawCardButton.disabled = true;
+            playCardButton.disabled = true;
+            endTurnButton.disabled = true;
+            return;
+        }
+        const player = game.players[0];
+        sortPlayerCards(player);
+        const closed = player.cards.filter(c => !c.faceUp);
+        const openCards = player.cards.filter(c => c.faceUp);
+        let canPlay = false;
+        let canTake = false;
+        // Можно ли сыграть? (только если верхняя открытая подходит на 1 ранг выше хотя бы к одной цели)
+        if (openCards.length > 0) {
+            const topCard = openCards[openCards.length - 1];
+            for (let i = 1; i < game.players.length; i++) {
+                let opp = game.players[i];
+                let oppOpen = opp.cards.filter(c => c.faceUp);
+                if (oppOpen.length > 0) {
+                    let target = oppOpen[oppOpen.length - 1];
+                    if (canPlayCard(topCard, target)) {
+                        canPlay = true;
+                        break;
+                    }
+                }
+            }
+        }
+        // Можно ли взять карту? (только если ровно 2 закрытые и 1 открытая, и этой открытой нельзя сходить никуда)
+        if (!canPlay && closed.length === 2 && openCards.length === 1 && game.deck.length > 0) {
+            canTake = true;
+        }
+        // Кнопки
+        playCardButton.disabled = !canPlay;
+        drawCardButton.disabled = !canTake;
+        endTurnButton.disabled = canPlay || canTake;
     }
 
     (async () => { await initGame(); })();
