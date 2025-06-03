@@ -330,10 +330,11 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateDeckInfo() {
         const deckElement = document.querySelector('.card-pile.deck');
         deckElement.innerHTML = '';
-        // Показываем только одну верхнюю карту колоды (рубашка)
+        // Показываем верхнюю карту колоды лицом вверх (реальную)
         if (game.deck.length > 0) {
+            const topCard = game.deck[game.deck.length - 1];
             const cardElem = document.createElement('div');
-            cardElem.className = 'card mini-card card-back deck-draggable';
+            cardElem.className = 'card mini-card deck-draggable';
             cardElem.style.position = 'absolute';
             cardElem.style.top = '0px';
             cardElem.style.left = '0px';
@@ -341,11 +342,24 @@ document.addEventListener('DOMContentLoaded', function() {
             cardElem.setAttribute('draggable', 'true');
             cardElem.title = 'Взять карту из колоды';
             if (game.settings.useCardImages) {
-                const cardBackImg = document.createElement('img');
-                cardBackImg.src = 'img/cards/back.png';
-                cardBackImg.className = 'card-back-image';
-                cardBackImg.alt = 'Рубашка карты';
-                cardElem.appendChild(cardBackImg);
+                const cardImg = document.createElement('img');
+                cardImg.src = getCardImageUrl(topCard);
+                cardImg.className = 'card-image';
+                cardImg.alt = `${topCard.value}${topCard.suit}`;
+                cardElem.appendChild(cardImg);
+            } else {
+                const cardFront = document.createElement('div');
+                cardFront.className = 'card-front';
+                if (topCard.isRed) cardFront.classList.add('red');
+                const valueElem = document.createElement('div');
+                valueElem.className = 'card-value';
+                valueElem.textContent = topCard.value;
+                const suitElem = document.createElement('div');
+                suitElem.className = 'card-suit';
+                suitElem.textContent = topCard.suit;
+                cardFront.appendChild(valueElem);
+                cardFront.appendChild(suitElem);
+                cardElem.appendChild(cardFront);
             }
             // Drag&drop для взятия карты
             cardElem.addEventListener('dragstart', function(e) {
@@ -431,54 +445,16 @@ document.addEventListener('DOMContentLoaded', function() {
                         showGameMessage(`Вы положили ${topCard.value}${topCard.suit} на карту игрока ${opp.name}`);
                         renderPlayers();
                         renderPlayerHand();
-                        if (game.deck.length > 0) {
-                            let newCard = game.deck.pop();
-                            newCard.faceUp = true;
-                            player.cards.push(newCard);
-                            updateDeckInfo();
-                            renderPlayerHand();
-                            showGameMessage(`Вы взяли карту из колоды: ${newCard.value}${newCard.suit}`);
-                            lastTookCardPlayerIndex = 0;
-                            moveMade = true;
-                            break;
-                        } else {
-                            showGameMessage('Колода пуста, ход завершён');
-                            checkGameStageProgress();
-                            setTimeout(() => {
-                                const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
-                                setCurrentPlayer(nextPlayerIndex);
-                            }, 5000);
-                            return;
-                        }
+                        // После успешного хода игрок должен сам взять карту вручную
+                        return;
                     }
                 }
             }
-            if (moveMade) continue;
-            if (game.deck.length > 0) {
-                let newCard = game.deck.pop();
-                newCard.faceUp = true;
-                player.cards.push(newCard);
-                updateDeckInfo();
-                renderPlayerHand();
-                showGameMessage(`Вы взяли карту из колоды: ${newCard.value}${newCard.suit}`);
-                lastTookCardPlayerIndex = 0;
-                let canPlace = false;
-                for (let i = 1; i < game.players.length; i++) {
-                    let opp = game.players[i];
-                    let oppOpen = opp.cards.filter(c => c.faceUp);
-                    if (oppOpen.length > 0) {
-                        let target = oppOpen[oppOpen.length - 1];
-                        if (canPlayCard(newCard, target)) {
-                            canPlace = true;
-                            break;
-                        }
-                    }
-                }
-                if (canPlace) continue;
-            }
-            showGameMessage('Не удалось сыграть карту, ход переходит дальше');
-            break;
+            // Если некуда положить — игрок должен сам взять карту вручную
+            showGameMessage('Не удалось сыграть карту, возьмите карту из колоды');
+            return;
         }
+        // Если не осталось карт — передаём ход
         setTimeout(() => {
             const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
             setCurrentPlayer(nextPlayerIndex);
