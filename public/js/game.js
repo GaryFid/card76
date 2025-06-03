@@ -436,28 +436,10 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             previewCard = null;
         }
-        // Верхняя карта сброса
+        // --- Не отображаем карту сброса на столе (если не требуется по правилам) ---
         const discardElement = document.querySelector('.card-pile.discard');
         discardElement.innerHTML = '';
-        if (game.discardPile && game.discardPile.length > 0) {
-            const topCard = game.discardPile[game.discardPile.length - 1];
-            const cardElement = document.createElement('div');
-            cardElement.className = 'card mini-card';
-            cardElement.style.position = 'absolute';
-            cardElement.style.top = '0px';
-            cardElement.style.left = '0px';
-            cardElement.style.zIndex = 10;
-            if (game.settings.useCardImages) {
-                const cardImg = document.createElement('img');
-                cardImg.src = getCardImageUrl(topCard);
-                cardImg.className = 'card-image';
-                cardImg.alt = `${topCard.value}${topCard.suit}`;
-                cardElement.appendChild(cardImg);
-            }
-            cardElement.dataset.cardId = topCard.id;
-            cardElement.title = 'Верхняя карта сброса';
-            discardElement.appendChild(cardElement);
-        }
+        // Если потребуется — можно добавить отображение discardPile только во 2-й стадии или по спец. кнопке
     }
 
     // --- Игрок и бот всегда ходят только верхней открытой картой ---
@@ -574,42 +556,47 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!playerHandElement) return;
         playerHandElement.innerHTML = '';
         const player = game.players[0];
-        player.cards.forEach((card, idx) => {
+        // Сначала 2 закрытые (если есть)
+        const closed = player.cards.filter(c => !c.faceUp);
+        for (let i = 0; i < Math.min(2, closed.length); i++) {
+            const cardElem = document.createElement('div');
+            cardElem.className = 'hand-card card-back';
+            const cardBackImg = document.createElement('img');
+            cardBackImg.src = 'img/cards/back.png';
+            cardBackImg.className = 'card-back-image';
+            cardBackImg.alt = 'Рубашка карты';
+            cardElem.appendChild(cardBackImg);
+            playerHandElement.appendChild(cardElem);
+        }
+        // Затем все открытые карты (faceUp)
+        const openCards = player.cards.filter(card => card.faceUp);
+        openCards.forEach((card, idx) => {
             const cardElem = document.createElement('div');
             cardElem.className = 'hand-card';
-            if (card.faceUp) {
-                const cardImg = document.createElement('img');
-                cardImg.src = getCardImageUrl(card);
-                cardImg.className = 'card-image';
-                cardImg.alt = `${card.value}${card.suit}`;
-                cardElem.appendChild(cardImg);
-                // drag&drop только для верхней карты
-                if (idx === player.cards.length - 1) {
-                    cardElem.setAttribute('draggable', 'true');
-                    cardElem.addEventListener('dragstart', function(e) {
-                        e.dataTransfer.setData('card-index', idx);
-                    });
-                }
-                // Touch events (mobile)
-                cardElem.addEventListener('touchstart', function(e) {
-                    cardElem.classList.add('dragging');
-                    cardElem.dataset.touchStart = '1';
+            const cardImg = document.createElement('img');
+            cardImg.src = getCardImageUrl(card);
+            cardImg.className = 'card-image';
+            cardImg.alt = `${card.value}${card.suit}`;
+            cardElem.appendChild(cardImg);
+            // drag&drop только для верхней открытой карты
+            if (idx === openCards.length - 1) {
+                cardElem.setAttribute('draggable', 'true');
+                cardElem.addEventListener('dragstart', function(e) {
+                    e.dataTransfer.setData('card-index', player.cards.indexOf(card));
                 });
-                cardElem.addEventListener('touchend', function(e) {
-                    cardElem.classList.remove('dragging');
-                    delete cardElem.dataset.touchStart;
-                });
-            } else {
-                const cardBackImg = document.createElement('img');
-                cardBackImg.src = 'img/cards/back.png';
-                cardBackImg.className = 'card-back-image';
-                cardBackImg.alt = 'Рубашка карты';
-                cardElem.appendChild(cardBackImg);
             }
+            // Touch events (mobile)
+            cardElem.addEventListener('touchstart', function(e) {
+                cardElem.classList.add('dragging');
+                cardElem.dataset.touchStart = '1';
+            });
+            cardElem.addEventListener('touchend', function(e) {
+                cardElem.classList.remove('dragging');
+                delete cardElem.dataset.touchStart;
+            });
             playerHandElement.appendChild(cardElem);
         });
         // Drop-зона для колоды (чтобы можно было бросить верхнюю карту в колоду, если потребуется по правилам)
-        // --- Для мобильных: обработка touchmove/touchend на всём поле ---
         playerHandElement.addEventListener('touchmove', handleTouchMove, {passive:false});
         playerHandElement.addEventListener('touchend', handleTouchEnd, {passive:false});
         highlightValidDropTargets();
