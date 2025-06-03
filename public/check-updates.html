@@ -28,5 +28,42 @@
         </footer>
     </div>
     <script src="js/check-wait.js"></script>
+    <script>
+    window.addEventListener('DOMContentLoaded', () => {
+        let progress = 0;
+        const waitText = document.querySelector('.wait-text');
+        const params = new URLSearchParams(window.location.search);
+        const username = params.get('username');
+        function updateProgress() {
+            progress += Math.random() * 20;
+            if (progress > 100) progress = 100;
+            waitText.textContent = `Проверяем... ${Math.floor(progress)}%`;
+            if (progress >= 100) {
+                // Проверка Telegram-авторизации
+                fetch('/auth/telegram/check', { credentials: 'include' })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success && data.user) {
+                            localStorage.setItem('user', JSON.stringify(data.user));
+                            window.location.href = '/index.html';
+                        } else if (data.username) {
+                            waitText.innerHTML = `Пользователь <b>@${data.username}</b> не зарегистрирован.<br>Пожалуйста, войдите через Telegram.`;
+                            setTimeout(() => window.location.href = '/register.html', 2500);
+                        } else {
+                            waitText.textContent = 'Ошибка авторизации через Telegram!';
+                            setTimeout(() => window.location.href = '/register.html', 2000);
+                        }
+                    })
+                    .catch(() => {
+                        waitText.textContent = 'Ошибка соединения!';
+                        setTimeout(() => window.location.href = '/register.html', 2000);
+                    });
+            } else {
+                setTimeout(updateProgress, 400);
+            }
+        }
+        updateProgress();
+    });
+    </script>
 </body>
 </html> 

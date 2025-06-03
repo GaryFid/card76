@@ -166,4 +166,26 @@ router.get('/logout', (req, res) => {
   res.redirect('/auth/register');
 });
 
+// --- Проверка Telegram-авторизации для постоянного входа ---
+router.get('/auth/telegram/check', (req, res) => {
+    if (req.isAuthenticated && req.isAuthenticated() && req.user && req.user.authType === 'telegram') {
+        // Пользователь авторизован через Telegram
+        return res.json({ success: true, user: {
+            id: req.user.id,
+            username: req.user.username,
+            rating: req.user.rating,
+            coins: req.user.coins,
+            avatar: req.user.avatar,
+            level: req.user.level,
+            school: req.user.school,
+            referralCode: req.user.referralCode
+        }});
+    } else if (req.user && req.user.username) {
+        // Пользователь есть, но не Telegram
+        return res.json({ success: false, username: req.user.username });
+    } else {
+        return res.json({ success: false });
+    }
+});
+
 module.exports = router; 
