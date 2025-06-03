@@ -5,7 +5,7 @@ const passport = require('passport');
 const expressSession = require('express-session');
 const config = require('./config');
 const path = require('path');
-const { testConnection } = require('./config/database');
+const sequelize = require('./config/db');
 const { syncModels } = require('./models');
 const FileStore = require('session-file-store')(expressSession);
 
@@ -72,29 +72,14 @@ if (config.enableBot && !config.testMode) {
 // Асинхронная функция запуска приложения
 async function startApp() {
   try {
-    // Инициализация локального хранилища JSON
+    // Проверка подключения к PostgreSQL
     try {
-      // Проверка доступа к хранилищу
-      const connected = await testConnection();
-      if (connected) {
-        // Синхронизация моделей
-        await syncModels();
-      } else {
-        if (process.env.NODE_ENV === 'production' && !config.testMode) {
-          console.error('Невозможно продолжить без доступа к хранилищу в production режиме');
-          process.exit(1);
-        } else {
-          console.warn('Проблемы с доступом к хранилищу - данные могут НЕ сохраняться!');
-        }
-      }
+      await sequelize.authenticate();
+      await syncModels();
+      console.log('Подключение к PostgreSQL успешно!');
     } catch (err) {
-      console.error('Ошибка при работе с хранилищем:', err);
-      if (process.env.NODE_ENV === 'production' && !config.testMode) {
-        console.error('Невозможно продолжить без доступа к хранилищу в production режиме');
-        process.exit(1);
-      } else {
-        console.warn('Проблемы с доступом к хранилищу - данные могут НЕ сохраняться!');
-      }
+      console.error('Ошибка подключения к PostgreSQL:', err);
+      process.exit(1);
     }
 
     // Веб-сервер для авторизации через OAuth
@@ -181,9 +166,7 @@ async function startApp() {
         botStatus = bot.isPolling ? 'Запущен (polling)' : 'Запущен (webhook)';
       }
       
-      res.send(`Сервер карточной игры "Разгильдяй" запущен!
-      <br>Статус хранилища: Локальное JSON
-      <br>Статус бота: ${botStatus}`);
+      res.send(`Сервер карточной игры "P.I.D.R." запущен!<br>Статус хранилища: PostgreSQL<br>Статус бота: ${botStatus}`);
     });
 
     // Маршрут для мини-приложения
@@ -224,7 +207,6 @@ async function startApp() {
     // Метод остановки бота с проверками
     function safeStopBot(reason) {
       try {
-        // Останавливаем бота только если он существует и работает в режиме polling
         if (bot && bot.isPolling) {
           console.log(`Останавливаем бота (${reason})...`);
           bot.stop();
