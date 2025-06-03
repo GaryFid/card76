@@ -809,5 +809,18 @@ document.addEventListener('DOMContentLoaded', function() {
         return card.suit === topCard.suit || card.value === topCard.value;
     }
 
+    // === Функция для вывода сообщений о ходе ===
+    function showGameMessage(msg) {
+        console.log('[ХОД]', msg);
+        // Можно добавить вывод на экран, если нужно:
+        // let log = document.getElementById('game-log');
+        // if (log) {
+        //     const p = document.createElement('div');
+        //     p.textContent = msg;
+        //     log.appendChild(p);
+        //     log.scrollTop = log.scrollHeight;
+        // }
+    }
+
     (async () => { await initGame(); })();
 }); 
