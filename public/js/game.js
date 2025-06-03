@@ -259,65 +259,58 @@ document.addEventListener('DOMContentLoaded', function() {
             cardCount.textContent = `Карт: ${player.cards.length}`;
             const cardsContainer = document.createElement('div');
             cardsContainer.className = 'player-table-cards';
-            // Для всех игроков кроме игрока 0 (человека) — 2 закрытые и 1 открытая карта
-            if (playerIndex !== 0) {
-                // 2 закрытые карты (рубашкой вниз)
-                let closedCount = 0;
-                for (let i = 0; i < player.cards.length; i++) {
-                    if (!player.cards[i].faceUp && closedCount < 2) {
-                        const cardElem = document.createElement('div');
-                        cardElem.className = 'card table-card card-back';
-                        cardElem.style.zIndex = closedCount;
-                        cardElem.style.left = `${closedCount * 10}px`;
-                        cardElem.style.top = `${20 - closedCount * 2}px`;
-                        const cardBackImg = document.createElement('img');
-                        cardBackImg.src = 'img/cards/back.png';
-                        cardBackImg.className = 'card-back-image';
-                        cardBackImg.alt = 'Рубашка карты';
-                        cardElem.appendChild(cardBackImg);
-                        cardsContainer.appendChild(cardElem);
-                        closedCount++;
-                    }
-                    if (closedCount === 2) break;
-                }
-                // 1 открытая карта (верхняя)
-                const openCards = player.cards.filter(card => card.faceUp);
-                if (openCards.length > 0) {
-                    const card = openCards[openCards.length - 1];
-                    const cardElem = document.createElement('div');
-                    cardElem.className = 'card table-card card-front drop-target';
-                    cardElem.style.zIndex = 10;
-                    cardElem.style.left = `10px`;
-                    cardElem.style.top = `0px`;
-                    const cardImg = document.createElement('img');
-                    cardImg.src = getCardImageUrl(card);
-                    cardImg.className = 'card-image';
-                    cardImg.alt = `${card.value}${card.suit}`;
-                    cardElem.appendChild(cardImg);
-                    // --- drop events ---
-                    cardElem.addEventListener('dragover', function(e) {
-                        e.preventDefault();
-                        cardElem.classList.add('drag-over');
-                    });
-                    cardElem.addEventListener('dragleave', function(e) {
-                        cardElem.classList.remove('drag-over');
-                    });
-                    cardElem.addEventListener('drop', function(e) {
-                        e.preventDefault();
-                        cardElem.classList.remove('drag-over');
-                        const cardIdx = +e.dataTransfer.getData('card-index');
-                        handlePlayerCardDrop(cardIdx, playerIndex);
-                    });
-                    // Touch events (mobile)
-                    cardElem.addEventListener('touchmove', function(e) {
-                        e.preventDefault();
-                    });
-                    cardElem.addEventListener('touchend', function(e) {
-                        // Для мобильных: обработка в handleTouchEnd
-                    });
-                    cardsContainer.appendChild(cardElem);
-                }
+            // --- 2 закрытые карты у аватара ---
+            let closed = player.cards.filter(c => !c.faceUp);
+            for (let i = 0; i < Math.min(2, closed.length); i++) {
+                const cardElem = document.createElement('div');
+                cardElem.className = 'card table-card card-back';
+                cardElem.style.zIndex = i;
+                cardElem.style.left = `${i * 10}px`;
+                cardElem.style.top = `${20 - i * 2}px`;
+                const cardBackImg = document.createElement('img');
+                cardBackImg.src = 'img/cards/back.png';
+                cardBackImg.className = 'card-back-image';
+                cardBackImg.alt = 'Рубашка карты';
+                cardElem.appendChild(cardBackImg);
+                cardsContainer.appendChild(cardElem);
             }
+            // --- остальные закрытые карты не отображаем ---
+            // --- все открытые карты (faceUp) в ряд ---
+            const openCards = player.cards.filter(card => card.faceUp);
+            openCards.forEach((card, idx) => {
+                const cardElem = document.createElement('div');
+                cardElem.className = 'card table-card card-front drop-target';
+                cardElem.style.zIndex = 10 + idx;
+                cardElem.style.left = `${20 + idx * 18}px`;
+                cardElem.style.top = `0px`;
+                const cardImg = document.createElement('img');
+                cardImg.src = getCardImageUrl(card);
+                cardImg.className = 'card-image';
+                cardImg.alt = `${card.value}${card.suit}`;
+                cardElem.appendChild(cardImg);
+                // --- drop events ---
+                cardElem.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    cardElem.classList.add('drag-over');
+                });
+                cardElem.addEventListener('dragleave', function(e) {
+                    cardElem.classList.remove('drag-over');
+                });
+                cardElem.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    cardElem.classList.remove('drag-over');
+                    const cardIdx = +e.dataTransfer.getData('card-index');
+                    handlePlayerCardDrop(cardIdx, playerIndex);
+                });
+                // Touch events (mobile)
+                cardElem.addEventListener('touchmove', function(e) {
+                    e.preventDefault();
+                });
+                cardElem.addEventListener('touchend', function(e) {
+                    // Для мобильных: обработка в handleTouchEnd
+                });
+                cardsContainer.appendChild(cardElem);
+            });
             playerElement.appendChild(playerName);
             playerElement.appendChild(playerAvatar);
             playerElement.appendChild(activeIndicator);
@@ -328,68 +321,114 @@ document.addEventListener('DOMContentLoaded', function() {
         highlightValidDropTargets();
     }
     
-    // --- Исправленный updateDeckInfo: только одна верхняя карта колоды ---
+    // --- Колода: по центру всегда закрытая, при нажатии справа появляется открытая карта-предпросмотр и 2 кнопки ---
+    let previewCard = null;
     function updateDeckInfo() {
         const deckElement = document.querySelector('.card-pile.deck');
         deckElement.innerHTML = '';
-        // Показываем верхнюю карту колоды лицом вверх (реальную)
-        if (game.deck.length > 0) {
-            const topCard = game.deck[game.deck.length - 1];
-            const cardElem = document.createElement('div');
-            cardElem.className = 'card mini-card deck-draggable';
-            cardElem.style.position = 'absolute';
-            cardElem.style.top = '0px';
-            cardElem.style.left = '0px';
-            cardElem.style.zIndex = 0;
-            cardElem.setAttribute('draggable', 'true');
-            cardElem.title = 'Взять карту из колоды';
+        // Показываем закрытую колоду (рубашка)
+        const closedDeckElem = document.createElement('div');
+        closedDeckElem.className = 'card mini-card card-back deck-closed';
+        closedDeckElem.style.position = 'absolute';
+        closedDeckElem.style.top = '0px';
+        closedDeckElem.style.left = '0px';
+        closedDeckElem.style.zIndex = 0;
+        closedDeckElem.title = 'Показать верхнюю карту';
+        closedDeckElem.addEventListener('click', function() {
+            if (game.deck.length > 0) {
+                previewCard = game.deck[game.deck.length - 1];
+                updateDeckInfo();
+            }
+        });
+        deckElement.appendChild(closedDeckElem);
+        // Счётчик
+        const countElem = document.createElement('div');
+        countElem.className = 'card-count';
+        countElem.textContent = game.deck.length;
+        deckElement.appendChild(countElem);
+        // Если есть previewCard — показываем её справа и 2 кнопки
+        if (previewCard && game.deck.length > 0 && previewCard === game.deck[game.deck.length - 1]) {
+            const previewElem = document.createElement('div');
+            previewElem.className = 'card mini-card deck-preview';
+            previewElem.style.position = 'absolute';
+            previewElem.style.top = '0px';
+            previewElem.style.left = '60px';
+            previewElem.style.zIndex = 1;
             if (game.settings.useCardImages) {
                 const cardImg = document.createElement('img');
-                cardImg.src = getCardImageUrl(topCard);
+                cardImg.src = getCardImageUrl(previewCard);
                 cardImg.className = 'card-image';
-                cardImg.alt = `${topCard.value}${topCard.suit}`;
-                cardElem.appendChild(cardImg);
-            } else {
-                const cardFront = document.createElement('div');
-                cardFront.className = 'card-front';
-                if (topCard.isRed) cardFront.classList.add('red');
-                const valueElem = document.createElement('div');
-                valueElem.className = 'card-value';
-                valueElem.textContent = topCard.value;
-                const suitElem = document.createElement('div');
-                suitElem.className = 'card-suit';
-                suitElem.textContent = topCard.suit;
-                cardFront.appendChild(valueElem);
-                cardFront.appendChild(suitElem);
-                cardElem.appendChild(cardFront);
+                cardImg.alt = `${previewCard.value}${previewCard.suit}`;
+                previewElem.appendChild(cardImg);
             }
-            // Drag&drop для взятия карты
-            cardElem.addEventListener('dragstart', function(e) {
-                e.dataTransfer.setData('take-card', '1');
-            });
-            // Клик по колоде для взятия карты
-            cardElem.addEventListener('click', function(e) {
-                if (isMyTurn && game.gameStage === 'stage1') {
+            previewElem.title = 'Верхняя карта колоды';
+            deckElement.appendChild(previewElem);
+            // Кнопки "Взять себе" и "Сыграть"
+            if (isMyTurn && game.gameStage === 'stage1') {
+                const btnContainer = document.createElement('div');
+                btnContainer.style.position = 'absolute';
+                btnContainer.style.left = '130px';
+                btnContainer.style.top = '10px';
+                btnContainer.style.display = 'flex';
+                btnContainer.style.flexDirection = 'column';
+                btnContainer.style.gap = '8px';
+                // Взять себе
+                const takeBtn = document.createElement('button');
+                takeBtn.textContent = 'Взять себе';
+                takeBtn.className = 'game-btn';
+                takeBtn.onclick = function() {
                     takeCardFromDeck();
-                }
-            });
-            deckElement.appendChild(cardElem);
-            // Счётчик
-            const countElem = document.createElement('div');
-            countElem.className = 'card-count';
-            countElem.textContent = game.deck.length;
-            deckElement.appendChild(countElem);
+                    previewCard = null;
+                    updateDeckInfo();
+                };
+                // Сыграть (если можно)
+                const playBtn = document.createElement('button');
+                playBtn.textContent = 'Сыграть';
+                playBtn.className = 'game-btn';
+                playBtn.onclick = function() {
+                    // Попробовать сыграть этой картой на любую открытую карту соперника
+                    let canPlay = false;
+                    for (let i = 1; i < game.players.length; i++) {
+                        let opp = game.players[i];
+                        let oppOpen = opp.cards.filter(c => c.faceUp);
+                        if (oppOpen.length > 0) {
+                            let target = oppOpen[oppOpen.length - 1];
+                            if (canPlayCard(previewCard, target)) {
+                                // Удаляем карту из колоды
+                                game.deck.pop();
+                                // Кладём карту на соперника
+                                const idx = opp.cards.indexOf(target);
+                                if (idx !== -1) {
+                                    opp.cards[idx].faceUp = false;
+                                    opp.cards.push(opp.cards[idx]);
+                                    opp.cards.splice(idx, 1);
+                                    previewCard.faceUp = true;
+                                    opp.cards.push(previewCard);
+                                }
+                                showGameMessage(`Вы сыграли ${previewCard.value}${previewCard.suit} на карту игрока ${opp.name}`);
+                                previewCard = null;
+                                updateDeckInfo();
+                                renderPlayers();
+                                renderPlayerHand();
+                                setTimeout(() => {
+                                    const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
+                                    setCurrentPlayer(nextPlayerIndex);
+                                }, 10000);
+                                canPlay = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!canPlay) {
+                        showGameMessage('Нет подходящих целей для хода этой картой!');
+                    }
+                };
+                btnContainer.appendChild(takeBtn);
+                btnContainer.appendChild(playBtn);
+                deckElement.appendChild(btnContainer);
+            }
         } else {
-            const emptyDeck = document.createElement('div');
-            emptyDeck.className = 'card mini-card';
-            emptyDeck.style.border = '2px dashed #e0e0e0';
-            emptyDeck.style.backgroundColor = '#fff';
-            emptyDeck.title = 'Колода пуста';
-            deckElement.appendChild(emptyDeck);
-            const emptyText = document.createElement('div');
-            emptyText.className = 'card-count';
-            emptyText.textContent = '0';
-            deckElement.appendChild(emptyText);
+            previewCard = null;
         }
         // Верхняя карта сброса
         const discardElement = document.querySelector('.card-pile.discard');
@@ -408,23 +447,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 cardImg.className = 'card-image';
                 cardImg.alt = `${topCard.value}${topCard.suit}`;
                 cardElement.appendChild(cardImg);
-            } else {
-                const cardFront = document.createElement('div');
-                cardFront.className = 'card-front';
-                if (topCard.isRed) cardFront.classList.add('red');
-                const valueElem = document.createElement('div');
-                valueElem.className = 'card-value';
-                valueElem.textContent = topCard.value;
-                const suitElem = document.createElement('div');
-                suitElem.className = 'card-suit';
-                suitElem.textContent = topCard.suit;
-                cardFront.appendChild(valueElem);
-                cardFront.appendChild(suitElem);
-                cardElement.appendChild(cardFront);
             }
             cardElement.dataset.cardId = topCard.id;
             cardElement.title = 'Верхняя карта сброса';
-            deckElement.appendChild(cardElement);
+            discardElement.appendChild(cardElement);
         }
     }
     // ... существующий код ...
