@@ -257,9 +257,14 @@
         container.appendChild(btn);
         document.body.appendChild(container);
     }
-    // Проверка авторизации
-    if (!localStorage.getItem('user')) {
+    // Проверка авторизации (welcome только если нет user.id)
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      if (!user || !user.id) {
         showWelcomeMessage();
+      }
+    } catch {
+      showWelcomeMessage();
     }
     // --- Выпадающее меню профиля ---
     const profileBlock = document.querySelector('.profile-block');
@@ -291,7 +296,8 @@
         profileDropdown.classList.remove('active');
         dropdownOpen = false;
         localStorage.removeItem('user');
-        window.location.href = '/register.html';
+        fetch('/auth/logout', { credentials: 'include' })
+          .finally(() => window.location.href = '/register.html');
       });
     }
     </script>

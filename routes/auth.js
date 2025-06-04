@@ -167,7 +167,7 @@ router.get('/logout', (req, res) => {
 });
 
 // --- Проверка Telegram-авторизации для постоянного входа ---
-router.get('/auth/telegram/check', (req, res) => {
+router.get('/auth/telegram/check', async (req, res) => {
     if (req.isAuthenticated && req.isAuthenticated() && req.user && req.user.authType === 'telegram') {
         // Пользователь авторизован через Telegram
         return res.json({ success: true, user: {
@@ -183,7 +183,7 @@ router.get('/auth/telegram/check', (req, res) => {
     } else if (req.user && req.user.username) {
         // Пользователь есть, но не Telegram
         return res.json({ success: false, username: req.user.username });
-    } else if (req.user && req.user.telegramId) {
+    } else if (req.user && (req.user.telegramId || req.user.username)) {
         // Telegram авторизация есть, но пользователя нет в базе
         return res.json({ success: false, telegramAvailable: true });
     } else {
@@ -194,10 +194,16 @@ router.get('/auth/telegram/check', (req, res) => {
 // --- Форсированный вход/регистрация через Telegram ---
 router.post('/auth/telegram/force-login', async (req, res) => {
     try {
-        if (!req.user || !req.user.telegramId) {
+        if (!req.user || (!req.user.telegramId && !req.user.username)) {
             return res.status(400).json({ success: false, error: 'Нет Telegram авторизации', telegramAvailable: false });
         }
-        let user = await User.findOne({ where: { telegramId: req.user.telegramId } });
+        let user = null;
+        if (req.user.telegramId) {
+            user = await User.findOne({ where: { telegramId: req.user.telegramId } });
+        }
+        if (!user && req.user.username) {
+            user = await User.findOne({ where: { username: req.user.username } });
+        }
         if (!user) {
             let avatarUrl = '';
             if (req.user.username) {
