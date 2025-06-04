@@ -158,7 +158,29 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         document.getElementById('start-game').addEventListener('click', () => {
-            window.location.href = '/game-setup';
+            const user = localStorage.getItem('user');
+            if (!user) {
+                window.location.href = '/register';
+                return;
+            }
+            try {
+                const userData = JSON.parse(user);
+                if (!userData.id || !userData.username) {
+                    localStorage.removeItem('user');
+                    window.location.href = '/register';
+                    return;
+                }
+                // Сохраняем базовые настройки игры
+                localStorage.setItem('gameSettings', JSON.stringify({
+                    playerCount: 4,
+                    withAI: false
+                }));
+                window.location.href = '/game-setup';
+            } catch (error) {
+                console.error('Ошибка при обработке данных пользователя:', error);
+                localStorage.removeItem('user');
+                window.location.href = '/register';
+            }
         });
         document.getElementById('play-ai').addEventListener('click', () => {
             localStorage.setItem('gameSettings', JSON.stringify({

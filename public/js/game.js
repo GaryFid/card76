@@ -9,9 +9,47 @@ document.addEventListener('DOMContentLoaded', function() {
     document.documentElement.style.setProperty('--tg-theme-button-color', tgApp.themeParams.button_color || '#3390ec');
     document.documentElement.style.setProperty('--tg-theme-button-text-color', tgApp.themeParams.button_text_color || '#ffffff');
 
-    // Проверка авторизации
-    const user = localStorage.getItem('user');
-    if (!user) {
+    // Проверка авторизации и настроек игры
+    try {
+        const user = localStorage.getItem('user');
+        if (!user) {
+            window.location.href = '/register';
+            return;
+        }
+
+        const userData = JSON.parse(user);
+        if (!userData.id || !userData.username) {
+            localStorage.removeItem('user');
+            window.location.href = '/register';
+            return;
+        }
+
+        const gameSettingsStr = localStorage.getItem('gameSettings');
+        if (!gameSettingsStr) {
+            window.location.href = '/game-setup';
+            return;
+        }
+
+        const gameSettings = JSON.parse(gameSettingsStr);
+        if (!gameSettings.playerCount) {
+            localStorage.removeItem('gameSettings');
+            window.location.href = '/game-setup';
+            return;
+        }
+
+        // Инициализация игры с полученными настройками
+        initGame().then(() => {
+            console.log('Игра успешно инициализирована');
+        }).catch(error => {
+            console.error('Ошибка при инициализации игры:', error);
+            alert('Произошла ошибка при инициализации игры. Возвращаемся в меню настройки.');
+            window.location.href = '/game-setup';
+        });
+
+    } catch (error) {
+        console.error('Ошибка при проверке авторизации или настроек:', error);
+        localStorage.removeItem('user');
+        localStorage.removeItem('gameSettings');
         window.location.href = '/register';
         return;
     }

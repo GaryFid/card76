@@ -11,9 +11,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Проверка авторизации
     const user = localStorage.getItem('user');
-    
-    // Если пользователь не авторизован, перенаправляем на страницу регистрации
-    if (!user) {
+    try {
+        if (!user) {
+            window.location.href = '/register';
+            return;
+        }
+        
+        const userData = JSON.parse(user);
+        if (!userData.id || !userData.username) {
+            localStorage.removeItem('user');
+            window.location.href = '/register';
+            return;
+        }
+    } catch (error) {
+        console.error('Ошибка при проверке авторизации:', error);
+        localStorage.removeItem('user');
         window.location.href = '/register';
         return;
     }
@@ -89,26 +101,33 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Обработчик кнопки "Начать игру"
     startGameBtn.addEventListener('click', function() {
-        // Сохраняем настройки игры
-        const gameSettings = {
-            playerCount: selectedPlayerCount,
-            withAI: withAIToggle.checked,
-            aiTestMode: aiTestModeToggle.checked
-        };
-        localStorage.setItem('gameSettings', JSON.stringify(gameSettings));
-        console.log(`Сохранены настройки игры: ${JSON.stringify(gameSettings)}`);
-        // Переходим на страницу ожидания игроков
-        window.location.href = '/wait-players';
-        // Если используем Telegram WebApp, отправляем данные в бота
-        if (tgApp && tgApp.isExpanded) {
-            const userData = JSON.parse(user);
-            tgApp.sendData(JSON.stringify({
-                action: 'start_game',
-                userId: userData.id,
+        try {
+            // Сохраняем настройки игры
+            const gameSettings = {
                 playerCount: selectedPlayerCount,
                 withAI: withAIToggle.checked,
                 aiTestMode: aiTestModeToggle.checked
-            }));
+            };
+            localStorage.setItem('gameSettings', JSON.stringify(gameSettings));
+            console.log(`Сохранены настройки игры: ${JSON.stringify(gameSettings)}`);
+            
+            // Если используем Telegram WebApp, отправляем данные в бота
+            if (tgApp && tgApp.isExpanded) {
+                const userData = JSON.parse(user);
+                tgApp.sendData(JSON.stringify({
+                    action: 'start_game',
+                    userId: userData.id,
+                    playerCount: selectedPlayerCount,
+                    withAI: withAIToggle.checked,
+                    aiTestMode: aiTestModeToggle.checked
+                }));
+            }
+            
+            // Переходим на страницу игры
+            window.location.href = '/game';
+        } catch (error) {
+            console.error('Ошибка при начале игры:', error);
+            alert('Произошла ошибка при начале игры. Пожалуйста, попробуйте еще раз.');
         }
     });
 }); 
