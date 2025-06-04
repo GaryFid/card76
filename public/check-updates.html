@@ -34,6 +34,7 @@
         const waitText = document.querySelector('.wait-text');
         const params = new URLSearchParams(window.location.search);
         const username = params.get('username');
+        let tgLoginBtn = null;
         function updateProgress() {
             progress += Math.random() * 20;
             if (progress > 100) progress = 100;
@@ -49,6 +50,23 @@
                         } else if (data.username) {
                             waitText.innerHTML = `Пользователь <b>@${data.username}</b> не зарегистрирован.<br>Пожалуйста, войдите через Telegram.`;
                             setTimeout(() => window.location.href = '/register.html', 2500);
+                        } else if (data.telegramAvailable) {
+                            waitText.innerHTML = `Пользователь Telegram не найден в базе.<br><button id='tgCreateBtn' style='margin-top:18px;padding:12px 24px;font-size:1.1em;background:#2196f3;color:#fff;border:none;border-radius:8px;cursor:pointer;'>Войти с этого Telegram</button>`;
+                            tgLoginBtn = document.getElementById('tgCreateBtn');
+                            tgLoginBtn.onclick = async () => {
+                                tgLoginBtn.disabled = true;
+                                tgLoginBtn.textContent = 'Входим...';
+                                // Запрос на сервер для создания/авторизации
+                                const res = await fetch('/auth/telegram/force-login', { method: 'POST', credentials: 'include' });
+                                const json = await res.json();
+                                if (json.success && json.user) {
+                                    localStorage.setItem('user', JSON.stringify(json.user));
+                                    window.location.href = '/index.html';
+                                } else {
+                                    waitText.textContent = 'Ошибка авторизации через Telegram!';
+                                    setTimeout(() => window.location.href = '/register.html', 2000);
+                                }
+                            };
                         } else {
                             waitText.textContent = 'Ошибка авторизации через Telegram!';
                             setTimeout(() => window.location.href = '/register.html', 2000);

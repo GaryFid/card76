@@ -183,8 +183,48 @@ router.get('/auth/telegram/check', (req, res) => {
     } else if (req.user && req.user.username) {
         // Пользователь есть, но не Telegram
         return res.json({ success: false, username: req.user.username });
+    } else if (req.user && req.user.telegramId) {
+        // Telegram авторизация есть, но пользователя нет в базе
+        return res.json({ success: false, telegramAvailable: true });
     } else {
         return res.json({ success: false });
+    }
+});
+
+// --- Форсированный вход/регистрация через Telegram ---
+router.post('/auth/telegram/force-login', async (req, res) => {
+    try {
+        if (!req.user || !req.user.telegramId) {
+            return res.status(400).json({ success: false, error: 'Нет Telegram авторизации', telegramAvailable: false });
+        }
+        let user = await User.findOne({ where: { telegramId: req.user.telegramId } });
+        if (!user) {
+            let avatarUrl = '';
+            if (req.user.username) {
+                avatarUrl = `https://t.me/i/userpic/320/${req.user.username}.jpg`;
+            }
+            user = await User.create({
+                telegramId: req.user.telegramId,
+                username: req.user.username,
+                avatar: avatarUrl,
+                authType: 'telegram'
+            });
+        }
+        req.login(user, (err) => {
+            if (err) return res.status(500).json({ success: false, error: 'Ошибка авторизации' });
+            return res.json({ success: true, user: {
+                id: user.id,
+                username: user.username,
+                rating: user.rating,
+                coins: user.coins,
+                avatar: user.avatar,
+                level: user.level,
+                school: user.school,
+                referralCode: user.referralCode
+            }});
+        });
+    } catch (e) {
+        res.status(500).json({ success: false, error: 'Ошибка сервера' });
     }
 });
 
