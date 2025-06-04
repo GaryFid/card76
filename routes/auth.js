@@ -129,6 +129,22 @@ router.get('/telegram/callback',
   async (req, res) => {
     try {
       logAuth('TELEGRAM_CALLBACK', { user: req.user });
+
+      // Проверяем и обновляем сессию
+      if (req.session) {
+        req.session.touch();
+        req.session.save((err) => {
+          if (err) {
+            logAuth('SESSION_SAVE_ERROR', { error: err.message });
+          } else {
+            logAuth('SESSION_SAVED', { 
+              sessionId: req.sessionID,
+              user: req.user?.username
+            });
+          }
+        });
+      }
+
       res.redirect('/webapp');
     } catch (error) {
       console.error('Ошибка в telegram callback:', error);
@@ -150,64 +166,31 @@ router.get('/telegram/check', async (req, res) => {
       return res.json({ success: false, telegramAvailable: false });
     }
 
-    const { telegramId, username } = req.user;
-    
-    if (!telegramId && !username) {
-      logAuth('TELEGRAM_CHECK_NO_CREDENTIALS', { user: req.user });
-      return res.json({ success: false, telegramAvailable: false });
+    // Обновляем сессию
+    if (req.session) {
+      req.session.touch();
+      req.session.save((err) => {
+        if (err) logAuth('SESSION_TOUCH_ERROR', { error: err.message });
+      });
     }
 
-    // Ищем пользователя по telegramId или username
-    let user = await User.findOne({
-      where: {
-        [User.sequelize.Op.or]: [
-          telegramId ? { telegramId } : null,
-          username ? { username } : null
-        ].filter(Boolean)
-      }
+    logAuth('TELEGRAM_CHECK_SUCCESS', { 
+      userId: req.user.id,
+      username: req.user.username
     });
 
-    logAuth('TELEGRAM_CHECK_SEARCH_RESULT', { 
-      found: !!user,
-      searchCriteria: { telegramId, username }
-    });
-
-    if (!user) {
-      return res.json({ success: false, telegramAvailable: true });
-    }
-
-    // Обновляем telegramId если его нет
-    if (!user.telegramId && telegramId) {
-      user.telegramId = telegramId;
-      await user.save();
-      logAuth('TELEGRAM_CHECK_UPDATED_ID', { userId: user.id, telegramId });
-    }
-
-    // Авторизуем пользователя
-    req.login(user, (err) => {
-      if (err) {
-        logAuth('TELEGRAM_CHECK_LOGIN_ERROR', { error: err.message });
-        return res.json({ success: false });
+    return res.json({
+      success: true,
+      user: {
+        id: req.user.id,
+        username: req.user.username,
+        rating: req.user.rating,
+        coins: req.user.coins,
+        avatar: req.user.avatar,
+        level: req.user.level,
+        school: req.user.school,
+        referralCode: req.user.referralCode
       }
-
-      logAuth('TELEGRAM_CHECK_SUCCESS', { 
-        userId: user.id,
-        username: user.username
-      });
-
-      return res.json({
-        success: true,
-        user: {
-          id: user.id,
-          username: user.username,
-          rating: user.rating,
-          coins: user.coins,
-          avatar: user.avatar,
-          level: user.level,
-          school: user.school,
-          referralCode: user.referralCode
-        }
-      });
     });
   } catch (error) {
     console.error('Ошибка в telegram check:', error);
@@ -279,35 +262,67 @@ router.post('/telegram/force-login', async (req, res) => {
       });
     }
 
-    // Авторизуем пользователя
-    req.login(user, (err) => {
-      if (err) {
-        logAuth('FORCE_LOGIN_ERROR', { error: err.message });
-        return res.status(500).json({ 
-          success: false, 
-          error: 'Ошибка авторизации' 
-        });
-      }
-
-      logAuth('FORCE_LOGIN_SUCCESS', { 
-        userId: user.id,
-        username: user.username
-      });
-
-      return res.json({
-        success: true,
-        user: {
-          id: user.id,
-          username: user.username,
-          rating: user.rating,
-          coins: user.coins,
-          avatar: user.avatar,
-          level: user.level,
-          school: user.school,
-          referralCode: user.referralCode
+    // Обновляем сессию
+    if (req.session) {
+      req.session.regenerate((err) => {
+        if (err) {
+          logAuth('SESSION_REGENERATE_ERROR', { error: err.message });
+          return res.status(500).json({ 
+            success: false, 
+            error: 'Ошибка сессии' 
+          });
         }
+
+        req.login(user, (err) => {
+          if (err) {
+            logAuth('FORCE_LOGIN_ERROR', { error: err.message });
+            return res.status(500).json({ 
+              success: false, 
+              error: 'Ошибка авторизации' 
+            });
+          }
+
+          req.session.telegramId = telegramId;
+          req.session.username = username;
+          
+          req.session.save((err) => {
+            if (err) {
+              logAuth('SESSION_SAVE_ERROR', { error: err.message });
+              return res.status(500).json({ 
+                success: false, 
+                error: 'Ошибка сохранения сессии' 
+              });
+            }
+
+            logAuth('FORCE_LOGIN_SUCCESS', { 
+              userId: user.id,
+              username: user.username,
+              sessionId: req.sessionID
+            });
+
+            return res.json({
+              success: true,
+              user: {
+                id: user.id,
+                username: user.username,
+                rating: user.rating,
+                coins: user.coins,
+                avatar: user.avatar,
+                level: user.level,
+                school: user.school,
+                referralCode: user.referralCode
+              }
+            });
+          });
+        });
       });
-    });
+    } else {
+      logAuth('NO_SESSION_ERROR', {});
+      res.status(500).json({ 
+        success: false, 
+        error: 'Нет сессии' 
+      });
+    }
   } catch (error) {
     console.error('Ошибка в force-login:', error);
     res.status(500).json({ 
@@ -353,10 +368,20 @@ router.get('/failure', (req, res) => {
 
 // Выход из аккаунта
 router.get('/logout', (req, res) => {
-  logAuth('LOGOUT', { user: req.user });
-  req.logout(() => {
+  logAuth('LOGOUT_START', { user: req.user });
+
+  if (req.session) {
+    req.session.destroy((err) => {
+      if (err) {
+        logAuth('LOGOUT_SESSION_ERROR', { error: err.message });
+      } else {
+        logAuth('LOGOUT_SUCCESS', { sessionId: req.sessionID });
+      }
+      res.redirect('/auth/register');
+    });
+  } else {
     res.redirect('/auth/register');
-  });
+  }
 });
 
 module.exports = router; 

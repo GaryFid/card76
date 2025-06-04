@@ -22,4 +22,9 @@ services:
     disk:
       name: data
       mountPath: /opt/render/project/src/data
-      sizeGB: 1 
+      sizeGB: 1
+
+  - type: redis
+    name: pidr-sessions
+    ipAllowList: []
+    plan: free 

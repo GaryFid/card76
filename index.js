@@ -7,7 +7,8 @@ const config = require('./config');
 const path = require('path');
 const sequelize = require('./config/db');
 const { syncModels } = require('./models');
-const FileStore = require('session-file-store')(expressSession);
+const Redis = require('redis');
+const RedisStore = require('connect-redis').default;
 
 // Импорт сцен и обработчиков
 const { authScene } = require('./scenes/auth');
@@ -86,37 +87,48 @@ async function startApp() {
     const app = express();
     const PORT = config.port;
 
-    // Создаем директорию для сессий, если её нет
-    const sessionsDir = path.join(__dirname, 'data', 'sessions');
-    if (!require('fs').existsSync(sessionsDir)) {
-      require('fs').mkdirSync(sessionsDir, { recursive: true });
-      console.log('Создана директория для сессий:', sessionsDir);
-    }
+    // Инициализация Redis клиента
+    const redisClient = Redis.createClient({
+      url: process.env.REDIS_URL || 'redis://localhost:6379',
+      socket: {
+        connectTimeout: 10000,
+        reconnectStrategy: (retries) => {
+          console.log('Попытка переподключения к Redis:', retries);
+          return Math.min(retries * 100, 3000);
+        }
+      }
+    });
 
-    // Настройка для обслуживания статических файлов мини-приложения
+    // Обработка ошибок Redis
+    redisClient.on('error', (err) => {
+      console.error('Ошибка Redis:', err);
+    });
+
+    redisClient.on('connect', () => {
+      console.log('Подключение к Redis успешно!');
+    });
+
+    // Подключаемся к Redis
+    await redisClient.connect();
+
+    // Настройка для обслуживания статических файлов
     app.use(express.static(path.join(__dirname, 'public')));
     
-    // Добавляем middleware для парсинга JSON в теле запроса
+    // Добавляем middleware для парсинга JSON
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
     
-    // Настройка сессий с использованием файлового хранилища
-    const sessionStore = new FileStore({
-      path: path.join(__dirname, 'data', 'sessions'),
-      ttl: 604800, // 7 дней
-      retries: 5,
-      reapInterval: 3600, // Очистка старых сессий каждый час
-      logFn: function (message) {
-        console.log('[session-store]', message);
-      }
-    });
-    
+    // Настройка сессий с использованием Redis
     app.use(expressSession({
-      store: sessionStore,
+      store: new RedisStore({ 
+        client: redisClient,
+        prefix: 'pidr:sess:',
+        ttl: 604800 // 7 дней
+      }),
       secret: config.sessionSecret,
-      resave: true, // Изменено на true для поддержания сессии
+      resave: false,
       saveUninitialized: false,
-      rolling: true, // Обновляет время истечения при каждом запросе
+      rolling: true,
       cookie: { 
         maxAge: 604800000, // 7 дней
         secure: process.env.NODE_ENV === 'production',
@@ -139,7 +151,7 @@ async function startApp() {
     app.use(passport.initialize());
     app.use(passport.session());
 
-    // Middleware для проверки авторизации на защищенных маршрутах
+    // Middleware для проверки авторизации
     const checkAuth = (req, res, next) => {
       console.log('[auth-check]', {
         path: req.path,
@@ -155,7 +167,7 @@ async function startApp() {
       next();
     };
 
-    // Защищаем маршруты, требующие авторизации
+    // Защищаем маршруты
     app.use('/game-setup', checkAuth);
     app.use('/game', checkAuth);
     app.use('/wait-players', checkAuth);
@@ -252,29 +264,27 @@ async function startApp() {
       console.log(`Сервер запущен на порту ${PORT}`);
     });
 
-    // Метод остановки бота с проверками
-    function safeStopBot(reason) {
-      try {
-        if (bot && bot.isPolling) {
-          console.log(`Останавливаем бота (${reason})...`);
-          bot.stop();
-          console.log(`Бот успешно остановлен: ${reason}`);
-        } else {
-          console.log(`Бот не требует остановки (${reason})`);
-        }
-      } catch (error) {
-        console.error(`Ошибка при остановке бота (${reason}):`, error.message);
+    // Graceful shutdown
+    async function cleanup() {
+      console.log('Выполняется graceful shutdown...');
+      
+      // Закрываем Redis
+      await redisClient.quit();
+      console.log('Redis соединение закрыто');
+      
+      // Останавливаем бота если нужно
+      if (bot && bot.isPolling) {
+        console.log('Останавливаем бота...');
+        await bot.stop();
+        console.log('Бот остановлен');
       }
+      
+      process.exit(0);
     }
 
-    // Graceful shutdown
-    process.once('SIGINT', () => {
-      safeStopBot('SIGINT');
-    });
-    
-    process.once('SIGTERM', () => {
-      safeStopBot('SIGTERM');
-    });
+    process.on('SIGINT', cleanup);
+    process.on('SIGTERM', cleanup);
+
   } catch (error) {
     console.error('Ошибка запуска приложения:', error);
     process.exit(1);
