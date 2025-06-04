@@ -40,6 +40,70 @@
       background: #e3eafc;
       color: #2196f3;
     }
+    .profile-modal-bg {
+      display: none;
+      position: fixed;
+      left: 0; top: 0; width: 100vw; height: 100vh;
+      background: rgba(30,60,114,0.18);
+      z-index: 3000;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.3s;
+    }
+    .profile-modal-bg.active {
+      display: flex;
+      animation: fadeInBg 0.4s;
+    }
+    @keyframes fadeInBg {
+      from { background: rgba(30,60,114,0.01); }
+      to { background: rgba(30,60,114,0.18); }
+    }
+    .profile-modal-box {
+      background: #fff;
+      border-radius: 18px;
+      padding: 40px 32px 32px 32px;
+      max-width: 400px;
+      width: 95vw;
+      box-shadow: 0 12px 48px #1e3c72cc, 0 2px 8px #2196f355;
+      position: relative;
+      text-align: center;
+      animation: modalPopIn 0.45s cubic-bezier(.4,0,.2,1);
+      overflow: visible;
+    }
+    @keyframes modalPopIn {
+      from { opacity: 0; transform: scale(0.85) translateY(40px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .profile-modal-cards {
+      position: absolute;
+      left: -36px; top: 18px;
+      z-index: 1;
+      pointer-events: none;
+      opacity: 0.18;
+    }
+    .profile-modal-cards img {
+      width: 48px; margin: 0 2px; border-radius: 8px; box-shadow: 0 2px 8px #2196f355;
+      transform: rotate(-12deg);
+    }
+    .profile-modal-cards img:nth-child(2) { transform: rotate(8deg); }
+    .profile-modal-cards img:nth-child(3) { transform: rotate(-4deg); }
+    .profile-modal-cards img:nth-child(4) { transform: rotate(16deg); }
+    .profile-modal-cards img:nth-child(5) { transform: rotate(-18deg); }
+    .profile-modal-close {
+      position: absolute;
+      right: 18px;
+      top: 12px;
+      font-size: 2em;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #2196f3;
+      z-index: 10;
+      transition: color 0.2s;
+    }
+    .profile-modal-close:hover {
+      color: #e53935;
+    }
     </style>
 </head>
 <body>
@@ -129,12 +193,19 @@
         </footer>
     </div>
     
-    <!-- Модалка профиля -->
-    <div id="profileModal" style="display:none; position:fixed; left:0; top:0; width:100vw; height:100vh; background:rgba(30,60,114,0.18); z-index:3000; align-items:center; justify-content:center;">
-      <div style="background:#fff; border-radius:18px; padding:32px 24px; max-width:400px; width:95vw; box-shadow:0 8px 32px #1e3c72aa; position:relative;">
-        <button id="closeProfileModal" style="position:absolute; right:18px; top:12px; font-size:2em; background:none; border:none; cursor:pointer;">×</button>
+    <!-- Модалка профиля с анимацией -->
+    <div class="profile-modal-bg" id="profileModal">
+      <div class="profile-modal-box">
+        <div class="profile-modal-cards">
+          <img src="img/cards/ace_of_spades.png">
+          <img src="img/cards/king_of_hearts.png">
+          <img src="img/cards/queen_of_diamonds.png">
+          <img src="img/cards/jack_of_clubs.png">
+          <img src="img/cards/10_of_spades.png">
+        </div>
+        <button class="profile-modal-close" id="closeProfileModal">×</button>
         <h2 style="margin-bottom:18px;">Профиль</h2>
-        <img id="modalAvatar" src="img/player-avatar.svg" style="width:80px; height:80px; border-radius:50%; margin-bottom:12px; object-fit:cover;">
+        <img id="modalAvatar" src="img/player-avatar.svg" style="width:80px; height:80px; border-radius:50%; margin-bottom:12px; object-fit:cover; box-shadow:0 2px 12px #2196f3aa;">
         <form id="editProfileForm">
           <input type="text" id="modalNick" style="width:90%; margin-bottom:10px; font-size:1.1em;" placeholder="Никнейм"><br>
           <input type="file" id="modalAvatarInput" accept="image/*" style="margin-bottom:10px;"><br>
@@ -243,11 +314,12 @@
         e.stopPropagation();
         profileDropdown.classList.remove('active');
         dropdownOpen = false;
-        // Открыть модалку профиля
+        // Открыть модалку профиля красиво
         const user = JSON.parse(localStorage.getItem('user') || '{}');
         document.getElementById('modalNick').value = user.username || '';
         document.getElementById('modalAvatar').src = user.avatar || 'img/player-avatar.svg';
-        document.getElementById('profileModal').style.display = 'flex';
+        const modal = document.getElementById('profileModal');
+        modal.classList.add('active');
         document.getElementById('profileModalMsg').textContent = '';
       });
     }
@@ -316,9 +388,23 @@
           localStorage.setItem('user', JSON.stringify({ ...user, username: nick, avatar: avatarUrl }));
           document.getElementById('profile-name').textContent = nick;
           document.querySelector('.profile-avatar').src = avatarUrl || 'img/player-avatar.svg';
-          document.getElementById('profileModal').style.display = 'none';
+          document.getElementById('profileModal').classList.remove('active');
         } else {
           document.getElementById('profileModalMsg').textContent = data.error || 'Ошибка сохранения';
+        }
+      };
+    }
+    // --- Закрытие модалки по крестику и по клику вне окна ---
+    const closeProfileModal = document.getElementById('closeProfileModal');
+    const profileModalBg = document.getElementById('profileModal');
+    if (closeProfileModal && profileModalBg) {
+      closeProfileModal.onclick = function(e) {
+        e.stopPropagation();
+        profileModalBg.classList.remove('active');
+      };
+      profileModalBg.onclick = function(e) {
+        if (e.target === profileModalBg) {
+          profileModalBg.classList.remove('active');
         }
       };
     }
