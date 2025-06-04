@@ -86,6 +86,13 @@ async function startApp() {
     const app = express();
     const PORT = config.port;
 
+    // Создаем директорию для сессий, если её нет
+    const sessionsDir = path.join(__dirname, 'data', 'sessions');
+    if (!require('fs').existsSync(sessionsDir)) {
+      require('fs').mkdirSync(sessionsDir, { recursive: true });
+      console.log('Создана директория для сессий:', sessionsDir);
+    }
+
     // Настройка для обслуживания статических файлов мини-приложения
     app.use(express.static(path.join(__dirname, 'public')));
     
@@ -96,22 +103,63 @@ async function startApp() {
     // Настройка сессий с использованием файлового хранилища
     const sessionStore = new FileStore({
       path: path.join(__dirname, 'data', 'sessions'),
-      ttl: 86400 // 1 день
+      ttl: 604800, // 7 дней
+      retries: 5,
+      reapInterval: 3600, // Очистка старых сессий каждый час
+      logFn: function (message) {
+        console.log('[session-store]', message);
+      }
     });
     
     app.use(expressSession({
       store: sessionStore,
       secret: config.sessionSecret,
-      resave: false,
+      resave: true, // Изменено на true для поддержания сессии
       saveUninitialized: false,
+      rolling: true, // Обновляет время истечения при каждом запросе
       cookie: { 
-        maxAge: 86400000 // 1 день
+        maxAge: 604800000, // 7 дней
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true
       }
     }));
+
+    // Добавляем middleware для логирования сессий
+    app.use((req, res, next) => {
+      console.log('[session]', {
+        id: req.sessionID,
+        user: req.user?.username,
+        authenticated: req.isAuthenticated(),
+        path: req.path
+      });
+      next();
+    });
 
     // Инициализация Passport
     app.use(passport.initialize());
     app.use(passport.session());
+
+    // Middleware для проверки авторизации на защищенных маршрутах
+    const checkAuth = (req, res, next) => {
+      console.log('[auth-check]', {
+        path: req.path,
+        authenticated: req.isAuthenticated(),
+        user: req.user?.username,
+        sessionID: req.sessionID
+      });
+      
+      if (!req.isAuthenticated()) {
+        console.log('[auth-check] Пользователь не авторизован, редирект на /auth/register');
+        return res.redirect('/auth/register');
+      }
+      next();
+    };
+
+    // Защищаем маршруты, требующие авторизации
+    app.use('/game-setup', checkAuth);
+    app.use('/game', checkAuth);
+    app.use('/wait-players', checkAuth);
+    app.use('/api/game', checkAuth);
 
     // Запуск бота (если не в тестовом режиме)
     if (bot && config.enableBot && !config.testMode) {
