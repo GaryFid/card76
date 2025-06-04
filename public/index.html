@@ -220,19 +220,26 @@
     const logoutBtn = document.getElementById('logoutBtn');
     let dropdownOpen = false;
     if (profileBlock && profileDropdown) {
-      profileBlock.onclick = function(e) {
+      profileBlock.addEventListener('click', function(e) {
         e.stopPropagation();
         dropdownOpen = !dropdownOpen;
         profileDropdown.classList.toggle('active', dropdownOpen);
-      };
-      document.addEventListener('click', function() {
-        profileDropdown.classList.remove('active');
-        dropdownOpen = false;
+      });
+      // Клик вне меню — закрыть
+      document.addEventListener('click', function(e) {
+        if (!profileDropdown.contains(e.target) && !profileBlock.contains(e.target)) {
+          profileDropdown.classList.remove('active');
+          dropdownOpen = false;
+        }
+      });
+      // Клик внутри меню — не закрывать
+      profileDropdown.addEventListener('click', function(e) {
+        e.stopPropagation();
       });
     }
     // --- Открытие модалки профиля по кнопке в дропдауне ---
     if (editProfileBtn) {
-      editProfileBtn.onclick = function(e) {
+      editProfileBtn.addEventListener('click', function(e) {
         e.stopPropagation();
         profileDropdown.classList.remove('active');
         dropdownOpen = false;
@@ -242,17 +249,17 @@
         document.getElementById('modalAvatar').src = user.avatar || 'img/player-avatar.svg';
         document.getElementById('profileModal').style.display = 'flex';
         document.getElementById('profileModalMsg').textContent = '';
-      };
+      });
     }
     // --- Выход из аккаунта ---
     if (logoutBtn) {
-      logoutBtn.onclick = function(e) {
+      logoutBtn.addEventListener('click', function(e) {
         e.stopPropagation();
         profileDropdown.classList.remove('active');
         dropdownOpen = false;
         localStorage.removeItem('user');
         window.location.href = '/register.html';
-      };
+      });
     }
     // Предпросмотр аватара
     const modalAvatarInput = document.getElementById('modalAvatarInput');
