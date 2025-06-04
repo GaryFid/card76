@@ -21,6 +21,7 @@
     "mysql2": "^3.6.0",
     "passport": "^0.4.1",
     "passport-google-oauth20": "^2.0.0",
+    "passport-telegram-login": "^0.3.1",
     "passport-telegram-official": "^2.0.1",
     "passport-yandex": "^0.0.5",
     "pg": "^8.16.0",

@@ -2,7 +2,7 @@ const passport = require('passport');
 // Временно отключим стратегии OAuth
 // const GoogleStrategy = require('passport-google-oauth20').Strategy;
 // const YandexStrategy = require('passport-yandex').Strategy;
-const TelegramStrategy = require('passport-telegram-official').Strategy;
+const TelegramLoginStrategy = require('passport-telegram-login').Strategy;
 const config = require('../config');
 const User = require('../models/user');
 
@@ -90,37 +90,39 @@ passport.use(new YandexStrategy({
 */
 
 // Telegram стратегия
-passport.use(new TelegramStrategy({
+passport.use(new TelegramLoginStrategy({
   botToken: config.botToken,
-  passReqToCallback: true
-}, async (req, profile, done) => {
+  botUsername: config.botUsername || 'YourBot', // Имя вашего бота
+  passReqToCallback: true,
+  verifyExpiration: true // Проверять срок действия данных авторизации
+}, async (req, user, done) => {
   try {
-    logAuth('TELEGRAM_AUTH_START', { profile });
+    logAuth('TELEGRAM_AUTH_START', { user });
 
     // Ищем пользователя по telegramId или username
-    let user = await User.findOne({
+    let dbUser = await User.findOne({
       where: {
         [User.sequelize.Op.or]: [
-          { telegramId: profile.id.toString() },
-          { username: profile.username }
+          { telegramId: user.id.toString() },
+          { username: user.username }
         ]
       }
     });
 
     logAuth('USER_SEARCH', { 
-      found: !!user,
-      telegramId: profile.id,
-      username: profile.username
+      found: !!dbUser,
+      telegramId: user.id,
+      username: user.username
     });
 
-    if (!user) {
+    if (!dbUser) {
       // Создаём нового пользователя
-      user = await User.create({
-        telegramId: profile.id.toString(),
-        username: profile.username,
-        firstName: profile.first_name,
-        lastName: profile.last_name,
-        avatar: profile.photo_url,
+      dbUser = await User.create({
+        telegramId: user.id.toString(),
+        username: user.username,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        avatar: user.photo_url,
         authType: 'telegram',
         registrationDate: new Date(),
         rating: 0,
@@ -129,45 +131,45 @@ passport.use(new TelegramStrategy({
       });
 
       logAuth('USER_CREATED', { 
-        userId: user.id,
-        username: user.username
+        userId: dbUser.id,
+        username: dbUser.username
       });
     } else {
       // Обновляем существующего пользователя
       const updates = {
-        telegramId: profile.id.toString(),
-        firstName: profile.first_name,
-        lastName: profile.last_name,
+        telegramId: user.id.toString(),
+        firstName: user.first_name,
+        lastName: user.last_name,
         lastLoginDate: new Date()
       };
 
       // Обновляем аватар только если он есть
-      if (profile.photo_url) {
-        updates.avatar = profile.photo_url;
+      if (user.photo_url) {
+        updates.avatar = user.photo_url;
       }
 
-      await user.update(updates);
+      await dbUser.update(updates);
       
       logAuth('USER_UPDATED', { 
-        userId: user.id,
-        username: user.username,
+        userId: dbUser.id,
+        username: dbUser.username,
         updates
       });
     }
 
     // Сохраняем в сессию
     if (req.session) {
-      req.session.telegramId = profile.id;
-      req.session.username = profile.username;
+      req.session.telegramId = user.id;
+      req.session.username = user.username;
       
       logAuth('SESSION_SAVED', {
         sessionId: req.sessionID,
-        telegramId: profile.id,
-        username: profile.username
+        telegramId: user.id,
+        username: user.username
       });
     }
 
-    return done(null, user);
+    return done(null, dbUser);
   } catch (error) {
     logAuth('AUTH_ERROR', { error: error.message });
     return done(error, null);

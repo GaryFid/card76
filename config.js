@@ -1,10 +1,11 @@
 // Конфигурация приложения
 module.exports = {
   // Значения по умолчанию, если не указаны в .env
-  botToken: process.env.BOT_TOKEN || 'ВАШ_ТОКЕН_БОТА',
-  port: process.env.PORT || 3000,
-  sessionSecret: process.env.SESSION_SECRET || 'секретный_ключ_для_сессий',
-  baseUrl: process.env.BASE_URL || 'http://localhost:3000',
+  botToken: process.env.BOT_TOKEN,
+  botUsername: process.env.BOT_USERNAME,
+  port: process.env.PORT || 10000,
+  sessionSecret: process.env.SESSION_SECRET || 'your-session-secret',
+  baseUrl: process.env.BASE_URL || 'http://localhost:10000',
   appUrl: process.env.APP_URL || process.env.BASE_URL || 'http://localhost:3000',
   
   // Режимы работы
