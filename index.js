@@ -9,6 +9,7 @@ const sequelize = require('./config/db');
 const { syncModels } = require('./models');
 const Redis = require('redis');
 const RedisStore = require('connect-redis').default;
+const FileStore = require('session-file-store')(expressSession);
 
 // Импорт сцен и обработчиков
 const { authScene } = require('./scenes/auth');
@@ -87,29 +88,62 @@ async function startApp() {
     const app = express();
     const PORT = config.port;
 
-    // Инициализация Redis клиента
-    const redisClient = Redis.createClient({
-      url: process.env.REDIS_URL || 'redis://localhost:6379',
-      socket: {
-        connectTimeout: 10000,
-        reconnectStrategy: (retries) => {
-          console.log('Попытка переподключения к Redis:', retries);
-          return Math.min(retries * 100, 3000);
-        }
+    let sessionStore;
+    let redisClient;
+
+    // Пробуем подключиться к Redis только если не в режиме разработки
+    if (process.env.NODE_ENV === 'production') {
+      try {
+        // Инициализация Redis клиента
+        redisClient = Redis.createClient({
+          url: process.env.REDIS_URL || 'redis://localhost:6379',
+          socket: {
+            connectTimeout: 10000,
+            reconnectStrategy: (retries) => {
+              console.log('Попытка переподключения к Redis:', retries);
+              return Math.min(retries * 100, 3000);
+            }
+          }
+        });
+
+        // Обработка ошибок Redis
+        redisClient.on('error', (err) => {
+          console.error('Ошибка Redis:', err);
+        });
+
+        redisClient.on('connect', () => {
+          console.log('Подключение к Redis успешно!');
+        });
+
+        // Подключаемся к Redis
+        await redisClient.connect();
+        
+        // Используем Redis для сессий
+        sessionStore = new RedisStore({ 
+          client: redisClient,
+          prefix: 'pidr:sess:',
+          ttl: 604800 // 7 дней
+        });
+        
+        console.log('Redis Store успешно инициализирован');
+      } catch (error) {
+        console.error('Ошибка подключения к Redis:', error);
+        console.log('Переключаемся на FileStore...');
+        sessionStore = new FileStore({
+          path: './sessions',
+          ttl: 604800,
+          retries: 0
+        });
       }
-    });
-
-    // Обработка ошибок Redis
-    redisClient.on('error', (err) => {
-      console.error('Ошибка Redis:', err);
-    });
-
-    redisClient.on('connect', () => {
-      console.log('Подключение к Redis успешно!');
-    });
-
-    // Подключаемся к Redis
-    await redisClient.connect();
+    } else {
+      // В режиме разработки используем FileStore
+      console.log('Режим разработки: используем FileStore для сессий');
+      sessionStore = new FileStore({
+        path: './sessions',
+        ttl: 604800,
+        retries: 0
+      });
+    }
 
     // Настройка для обслуживания статических файлов
     app.use(express.static(path.join(__dirname, 'public')));
@@ -118,13 +152,9 @@ async function startApp() {
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
     
-    // Настройка сессий с использованием Redis
+    // Настройка сессий
     app.use(expressSession({
-      store: new RedisStore({ 
-        client: redisClient,
-        prefix: 'pidr:sess:',
-        ttl: 604800 // 7 дней
-      }),
+      store: sessionStore,
       secret: config.sessionSecret,
       resave: false,
       saveUninitialized: false,
@@ -268,9 +298,11 @@ async function startApp() {
     async function cleanup() {
       console.log('Выполняется graceful shutdown...');
       
-      // Закрываем Redis
-      await redisClient.quit();
-      console.log('Redis соединение закрыто');
+      // Закрываем Redis если он был подключен
+      if (redisClient && redisClient.isOpen) {
+        await redisClient.quit();
+        console.log('Redis соединение закрыто');
+      }
       
       // Останавливаем бота если нужно
       if (bot && bot.isPolling) {
