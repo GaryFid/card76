@@ -24,57 +24,91 @@ require('./config/passport');
 
 // Инициализация бота Telegram
 let bot;
-if (config.telegram.botToken) {
-  bot = new Telegraf(config.telegram.botToken);
+let botStartAttempts = 0;
+const MAX_BOT_START_ATTEMPTS = 3;
 
-  // Настройка сцен
-  const stage = new Scenes.Stage([
-    authScene,
-    menuScene,
-    gameSetupScene,
-    gameScene,
-    rulesScene,
-    ratingScene,
-    shopScene
-  ]);
+async function initBot() {
+  if (!config.telegram.botToken) {
+    console.log('Токен бота не найден, пропускаем инициализацию бота');
+    return;
+  }
 
-  // Middleware
-  bot.use(session());
-  bot.use(stage.middleware());
+  try {
+    bot = new Telegraf(config.telegram.botToken);
 
-  // Обработчик команды /start
-  bot.command('start', ctx => ctx.scene.enter('auth'));
-  
-  // Обработчик данных от мини-приложения
-  bot.on('web_app_data', async (ctx) => {
-    const data = ctx.webAppData.data;
+    // Настройка сцен
+    const stage = new Scenes.Stage([
+      authScene,
+      menuScene,
+      gameSetupScene,
+      gameScene,
+      rulesScene,
+      ratingScene,
+      shopScene
+    ]);
+
+    // Middleware
+    bot.use(session());
+    bot.use(stage.middleware());
+
+    // Обработчик команды /start
+    bot.command('start', ctx => ctx.scene.enter('auth'));
     
-    // Обработка данных в зависимости от значения
-    switch (data) {
-      case 'start_game':
-        await ctx.scene.enter('gameSetup');
-        break;
-      case 'play_ai':
-        ctx.session.withAI = true;
-        await ctx.scene.enter('gameSetup');
-        break;
-      case 'rating':
-        await ctx.scene.enter('rating');
-        break;
-      case 'rules':
-        await ctx.scene.enter('rules');
-        break;
-      default:
-        await ctx.reply('Получена неизвестная команда от мини-приложения.');
-    }
-  });
+    // Обработчик данных от мини-приложения
+    bot.on('web_app_data', async (ctx) => {
+      const data = ctx.webAppData.data;
+      
+      try {
+        switch (data) {
+          case 'start_game':
+            await ctx.scene.enter('gameSetup');
+            break;
+          case 'play_ai':
+            ctx.session.withAI = true;
+            await ctx.scene.enter('gameSetup');
+            break;
+          case 'rating':
+            await ctx.scene.enter('rating');
+            break;
+          case 'rules':
+            await ctx.scene.enter('rules');
+            break;
+          default:
+            await ctx.reply('Получена неизвестная команда от мини-приложения.');
+        }
+      } catch (error) {
+        console.error('Ошибка обработки web_app_data:', error);
+        await ctx.reply('Произошла ошибка при обработке команды.');
+      }
+    });
 
-  // Запускаем бота
-  bot.launch().then(() => {
-    console.log('Telegram бот запущен');
-  }).catch(err => {
-    console.error('Ошибка запуска бота:', err);
-  });
+    // Запускаем бота с обработкой конфликтов
+    while (botStartAttempts < MAX_BOT_START_ATTEMPTS) {
+      try {
+        await bot.launch({
+          dropPendingUpdates: true,
+          allowedUpdates: ['message', 'callback_query', 'web_app_data']
+        });
+        console.log('Telegram бот успешно запущен');
+        break;
+      } catch (error) {
+        botStartAttempts++;
+        if (error.response?.error_code === 409) {
+          console.log(`Попытка ${botStartAttempts}/${MAX_BOT_START_ATTEMPTS}: Обнаружен конфликт с другой инстанцией бота`);
+          await new Promise(resolve => setTimeout(resolve, 5000)); // Ждем 5 секунд перед следующей попыткой
+        } else {
+          console.error('Критическая ошибка запуска бота:', error);
+          break;
+        }
+      }
+    }
+
+    if (botStartAttempts >= MAX_BOT_START_ATTEMPTS) {
+      console.error('Не удалось запустить бота после нескольких попыток');
+    }
+  } catch (error) {
+    console.error('Ошибка инициализации бота:', error);
+  }
 }
 
 // Асинхронная функция запуска приложения
@@ -91,6 +125,9 @@ async function startApp() {
       console.error('Ошибка работы с базой данных:', err);
       process.exit(1);
     }
+
+    // Инициализация бота
+    await initBot();
 
     // Веб-сервер для авторизации через OAuth
     const app = express();
@@ -170,8 +207,20 @@ async function startApp() {
       // Останавливаем бота если нужно
       if (bot) {
         console.log('Останавливаем бота...');
-        await bot.stop();
-        console.log('Бот остановлен');
+        try {
+          await bot.stop();
+          console.log('Бот остановлен');
+        } catch (error) {
+          console.error('Ошибка при остановке бота:', error);
+        }
+      }
+      
+      // Закрываем соединение с базой данных
+      try {
+        await sequelize.close();
+        console.log('Соединение с базой данных закрыто');
+      } catch (error) {
+        console.error('Ошибка при закрытии соединения с базой данных:', error);
       }
       
       process.exit(0);
