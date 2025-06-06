@@ -3,245 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>P.I.D.R. - Регистрация</title>
-    <link rel="stylesheet" href="/css/register.css">
-    <link rel="stylesheet" href="/css/modal.css">
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        body {
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Montserrat', Arial, sans-serif;
-            margin: 0;
-        }
-        .auth-container {
-            background: rgba(255,255,255,0.95);
-            border-radius: 24px;
-            box-shadow: 0 8px 32px rgba(30,60,114,0.25), 0 2px 8px rgba(34,34,34,0.13);
-            padding: 40px 32px 32px 32px;
-            max-width: 400px;
-            width: 100%;
-            text-align: center;
-            position: relative;
-            animation: fadeIn 1.2s cubic-bezier(.4,0,.2,1);
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(40px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .game-logo {
-            font-size: 2.5em;
-            font-weight: 900;
-            letter-spacing: 2px;
-            color: #2196f3;
-            text-shadow: 0 2px 12px #1e3c72, 0 1px 0 #fff;
-            margin-bottom: 8px;
-            user-select: none;
-        }
-        .game-slogan {
-            font-size: 1.1em;
-            color: #2a5298;
-            margin-bottom: 24px;
-            font-style: italic;
-            letter-spacing: 1px;
-        }
-        .input {
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid #b0c4de;
-            font-size: 1.1em;
-            outline: none;
-            transition: border 0.2s;
-            width: 100%;
-            margin-bottom: 14px;
-            background: rgba(255, 255, 255, 0.9);
-        }
-        .input:focus {
-            border: 1.5px solid #2196f3;
-            box-shadow: 0 0 8px rgba(33, 150, 243, 0.3);
-        }
-        .auth-btn, .register-btn {
-            padding: 12px;
-            border-radius: 8px;
-            border: none;
-            font-size: 1.1em;
-            font-weight: 700;
-            background: linear-gradient(90deg, #2196f3 60%, #21cbf3 100%);
-            color: #fff;
-            cursor: pointer;
-            box-shadow: 0 2px 8px #2196f3aa;
-            transition: all 0.3s ease;
-            width: 100%;
-            margin-bottom: 12px;
-        }
-        .auth-btn:hover, .register-btn:hover {
-            background: linear-gradient(90deg, #21cbf3 0%, #2196f3 100%);
-            transform: translateY(-2px) scale(1.03);
-        }
-        .register-btn {
-            background: linear-gradient(90deg, #ff9800 60%, #ffb300 100%);
-        }
-        .modal {
-            display: none;
-            position: fixed;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(30, 60, 114, 0.8);
-            backdrop-filter: blur(5px);
-            z-index: 1000;
-            animation: modalFadeIn 0.3s ease;
-        }
-        @keyframes modalFadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        .modal.active {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .modal-content {
-            background: linear-gradient(135deg, #ffffff 0%, #f5f7fa 100%);
-            border-radius: 24px;
-            padding: 32px;
-            width: 90%;
-            max-width: 480px;
-            position: relative;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            animation: modalSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        @keyframes modalSlideIn {
-            from { transform: translateY(20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        .modal-close {
-            position: absolute;
-            right: 20px;
-            top: 20px;
-            font-size: 24px;
-            color: #1e3c72;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .modal-close:hover {
-            color: #e53935;
-            transform: rotate(90deg);
-        }
-        .modal-title {
-            font-size: 1.8em;
-            color: #1e3c72;
-            margin-bottom: 24px;
-            text-align: center;
-            font-weight: 700;
-        }
-        .date-picker {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 14px;
-        }
-        .date-picker select {
-            flex: 1;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid #b0c4de;
-            font-size: 1.1em;
-            outline: none;
-            transition: all 0.3s ease;
-            background: rgba(255, 255, 255, 0.9);
-            cursor: pointer;
-        }
-        .date-picker select:focus {
-            border-color: #2196f3;
-            box-shadow: 0 0 8px rgba(33, 150, 243, 0.3);
-        }
-        .telegram-btn {
-            background: linear-gradient(90deg, #2AABEE 60%, #229ED9 100%);
-            color: white;
-            padding: 12px;
-            border-radius: 8px;
-            border: none;
-            font-size: 1.1em;
-            font-weight: 700;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            transition: all 0.3s ease;
-        }
-        .telegram-btn:hover {
-            background: linear-gradient(90deg, #229ED9 0%, #2AABEE 100%);
-            transform: translateY(-2px);
-        }
-        .telegram-btn img {
-            width: 24px;
-            height: 24px;
-        }
-        .error-message {
-            color: #e53935;
-            margin-top: 8px;
-            font-weight: 500;
-            text-align: center;
-        }
-    </style>
+    <title>Регистрация - P.I.D.R.</title>
+    <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-    <div class="auth-container">
-        <div class="game-logo">P.I.D.R.</div>
-        <div class="game-slogan">Punishment Inevitable: Dumb Rules<br>Карточная битва без пощады!</div>
+    <div class="container">
+        <h1>Регистрация в игре P.I.D.R.</h1>
         
-        <form id="auth-form" class="auth-form">
-            <input type="text" class="input" id="username" placeholder="Логин" required>
-            <input type="password" class="input" id="password" placeholder="Пароль" required>
+        <form id="register-form" class="auth-form">
+            <div class="form-group">
+                <label for="username">Логин:</label>
+                <input type="text" id="username" name="username" required>
+            </div>
             
-            <button type="submit" class="auth-btn" id="loginBtn">Войти</button>
-            <button type="button" class="register-btn" id="showRegisterBtn">Зарегистрироваться</button>
-        </form>
-
-        <div id="error-message" class="error-message" style="display: none;"></div>
-    </div>
-
-    <!-- Модальное окно регистрации -->
-    <div id="registerModal" class="modal">
-        <div class="modal-content">
-            <span class="modal-close" id="closeRegisterModal">&times;</span>
-            <div class="modal-title">Регистрация</div>
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" required>
+            </div>
             
-            <form id="register-form">
-                <input type="text" class="input" id="reg-username" placeholder="Придумайте логин" required>
-                <input type="email" class="input" id="reg-email" placeholder="Введите email" required>
-                
-                <div class="date-picker">
+            <div class="form-group">
+                <label>Дата рождения:</label>
+                <div class="date-select">
                     <select id="birth-day" required>
-                        <option value="" disabled selected>День</option>
+                        <option value="">День</option>
                     </select>
                     <select id="birth-month" required>
-                        <option value="" disabled selected>Месяц</option>
+                        <option value="">Месяц</option>
                     </select>
                     <select id="birth-year" required>
-                        <option value="" disabled selected>Год</option>
+                        <option value="">Год</option>
                     </select>
                 </div>
-
-                <input type="password" class="input" id="reg-password" placeholder="Придумайте пароль" required>
-                <input type="password" class="input" id="reg-password-confirm" placeholder="Подтвердите пароль" required>
-
-                <button type="submit" class="register-btn">Создать аккаунт</button>
-                <button type="button" class="telegram-btn" id="tgLoginBtn">
-                    <img src="img/telegram-icon.svg" alt="Telegram">
-                    Войти через Telegram
-                </button>
-            </form>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Пароль:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="confirm-password">Подтвердите пароль:</label>
+                <input type="password" id="confirm-password" name="confirm-password" required>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Зарегистрироваться</button>
+        </form>
+        
+        <div class="auth-alternatives">
+            <p>или</p>
+            <button id="telegram-login" class="btn btn-telegram">
+                Войти через Telegram
+            </button>
+        </div>
+        
+        <div class="auth-links">
+            <p>Уже есть аккаунт? <a href="/login">Войти</a></p>
         </div>
     </div>
 
+    <!-- Сначала подключаем утилиты -->
+    <script src="/js/utils.js"></script>
+    <!-- Затем основной скрипт регистрации -->
     <script src="/js/register.js"></script>
 </body>
 </html> 

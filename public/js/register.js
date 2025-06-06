@@ -132,118 +132,63 @@ document.addEventListener('DOMContentLoaded', () => {
         monthSelect.appendChild(option);
     });
 
-    // Заполняем годы (от текущего года - 100 до текущего года)
+    // Заполняем годы (от текущего года - 100 до текущего года - 5)
     const currentYear = new Date().getFullYear();
-    for (let i = currentYear; i >= currentYear - 100; i--) {
+    for (let year = currentYear - 5; year >= currentYear - 100; year--) {
         const option = document.createElement('option');
-        option.value = i;
-        option.textContent = i;
+        option.value = year;
+        option.textContent = year;
         yearSelect.appendChild(option);
     }
 
     // Обработчик формы регистрации
-    const registerForm = document.getElementById('register-form');
-    registerForm.addEventListener('submit', async (e) => {
+    const form = document.getElementById('register-form');
+    form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        const username = document.getElementById('reg-username').value;
-        const email = document.getElementById('reg-email').value;
-        const password = document.getElementById('reg-password').value;
-        const confirmPassword = document.getElementById('reg-password-confirm').value;
-        const birthDate = `${yearSelect.value}-${monthSelect.value.padStart(2, '0')}-${daySelect.value.padStart(2, '0')}`;
+        const username = document.getElementById('username').value;
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirm-password').value;
+        
+        // Собираем дату рождения
+        const day = daySelect.value;
+        const month = monthSelect.value;
+        const year = yearSelect.value;
+        const birthDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
 
         // Валидация
         if (password !== confirmPassword) {
-            showError('Пароли не совпадают');
+            window.showToast('Пароли не совпадают', 'error');
             return;
         }
 
         try {
-            const response = await fetch('/auth/register', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    username,
-                    email,
-                    password,
-                    birthDate
-                })
+            const response = await window.apiRequest('/auth/register', 'POST', {
+                username,
+                email,
+                password,
+                birthDate
             });
 
-            const data = await response.json();
-
-            if (data.success) {
-                // Успешная регистрация
-                window.location.href = '/check-updates.html';
+            if (response.success) {
+                window.showToast('Регистрация успешна!', 'success');
+                window.goToPage('/');
             } else {
-                showError(data.message);
+                window.showToast(response.message || 'Ошибка регистрации', 'error');
             }
         } catch (error) {
-            showError('Ошибка при регистрации. Попробуйте позже.');
+            window.showToast('Ошибка при регистрации', 'error');
+            console.error('Ошибка:', error);
         }
     });
 
-    // Обработчик формы входа
-    const loginForm = document.getElementById('auth-form');
-    loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
-
-        try {
-            const response = await fetch('/auth/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    username,
-                    password
-                })
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                window.location.href = '/check-updates.html';
-            } else {
-                showError(data.message);
-            }
-        } catch (error) {
-            showError('Ошибка при входе. Попробуйте позже.');
-        }
-    });
-
-    // Показать/скрыть модальное окно регистрации
-    const showRegisterBtn = document.getElementById('showRegisterBtn');
-    const registerModal = document.getElementById('registerModal');
-    const closeRegisterModal = document.getElementById('closeRegisterModal');
-
-    showRegisterBtn.addEventListener('click', () => {
-        registerModal.classList.add('active');
-    });
-
-    closeRegisterModal.addEventListener('click', () => {
-        registerModal.classList.remove('active');
-    });
-
-    // Telegram авторизация
-    const tgLoginBtn = document.getElementById('tgLoginBtn');
-    tgLoginBtn.addEventListener('click', () => {
-        window.location.href = '/auth/telegram';
-    });
-
-    // Вспомогательная функция для отображения ошибок
-    function showError(message) {
-        const errorDiv = document.getElementById('error-message');
-        errorDiv.textContent = message;
-        errorDiv.style.display = 'block';
-        setTimeout(() => {
-            errorDiv.style.display = 'none';
-        }, 5000);
+    // Кнопка входа через Telegram
+    const telegramButton = document.getElementById('telegram-login');
+    if (telegramButton) {
+        telegramButton.addEventListener('click', () => {
+            window.location.href = '/auth/telegram';
+        });
     }
 });
 

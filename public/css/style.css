@@ -13,38 +13,203 @@
 }
 
 body {
-    background: linear-gradient(135deg, #1a4a7a 0%, #3390ec 100%);
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
     color: var(--tg-theme-text-color);
     min-height: 100vh;
     overflow-x: hidden;
     transition: background 0.7s;
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .container {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
+    background: white;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 500px;
+    margin: 1rem;
 }
 
-header {
+h1 {
     text-align: center;
-    margin-bottom: 30px;
-    padding: 20px 0;
+    color: #1e3c72;
+    margin-bottom: 2rem;
 }
 
-header h1 {
-    font-size: 2.5rem;
-    margin-bottom: 5px;
-}
-
-main {
-    flex: 1;
+/* Стили формы */
+.auth-form {
     display: flex;
     flex-direction: column;
+    gap: 1rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+label {
+    font-weight: bold;
+    color: #333;
+}
+
+input, select {
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 1rem;
+}
+
+input:focus, select:focus {
+    outline: none;
+    border-color: #2a5298;
+    box-shadow: 0 0 5px rgba(42, 82, 152, 0.2);
+}
+
+.date-select {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.date-select select {
+    flex: 1;
+}
+
+/* Кнопки */
+.btn {
+    padding: 0.75rem;
+    border: none;
+    border-radius: 5px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background: #2a5298;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #1e3c72;
+}
+
+.btn-telegram {
+    background: #0088cc;
+    color: white;
+    display: flex;
+    align-items: center;
     justify-content: center;
+    gap: 0.5rem;
+}
+
+.btn-telegram:hover {
+    background: #006699;
+}
+
+/* Альтернативные методы входа */
+.auth-alternatives {
+    margin-top: 2rem;
+    text-align: center;
+}
+
+.auth-alternatives p {
+    color: #666;
+    margin-bottom: 1rem;
+}
+
+/* Ссылки */
+.auth-links {
+    margin-top: 1.5rem;
+    text-align: center;
+}
+
+.auth-links a {
+    color: #2a5298;
+    text-decoration: none;
+}
+
+.auth-links a:hover {
+    text-decoration: underline;
+}
+
+/* Уведомления */
+.toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 1rem 2rem;
+    border-radius: 5px;
+    color: white;
+    font-weight: bold;
+    z-index: 1000;
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.toast-success {
+    background: #4caf50;
+}
+
+.toast-error {
+    background: #f44336;
+}
+
+.toast-info {
+    background: #2196f3;
+}
+
+/* Модальные окна */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    padding: 2rem;
+    border-radius: 10px;
+    max-width: 500px;
+    width: 100%;
+    margin: 1rem;
+}
+
+/* Адаптивность */
+@media (max-width: 480px) {
+    .container {
+        margin: 0.5rem;
+        padding: 1rem;
+    }
+
+    .date-select {
+        flex-direction: column;
+    }
 }
 
 .header-cards {
