@@ -260,7 +260,13 @@
     };
     // Соцсети
     document.getElementById('tgLoginBtn').onclick = () => {
-        window.location.href = '/check-updates.html?from=register&type=login';
+        // Показываем индикатор загрузки
+        const btn = document.getElementById('tgLoginBtn');
+        btn.style.opacity = '0.7';
+        btn.style.pointerEvents = 'none';
+        
+        // Перенаправляем на эндпоинт авторизации через Telegram
+        window.location.href = '/auth/telegram';
     };
     document.getElementById('vkLoginBtn').onclick = () => {
         alert('Вход через VK появится скоро!');
@@ -274,6 +280,36 @@
     document.getElementById('okLoginBtn').onclick = () => {
         alert('Вход через Одноклассники появится скоро!');
     };
+
+    // Обработка ошибок авторизации
+    function handleAuthError() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const error = urlParams.get('error');
+        
+        if (error) {
+            let errorMessage = '';
+            switch(error) {
+                case 'invalid_auth':
+                    errorMessage = 'Ошибка авторизации через Telegram. Попробуйте еще раз.';
+                    break;
+                case 'expired_auth':
+                    errorMessage = 'Время авторизации истекло. Попробуйте еще раз.';
+                    break;
+                case 'login_failed':
+                    errorMessage = 'Не удалось войти. Попробуйте еще раз.';
+                    break;
+                case 'server_error':
+                    errorMessage = 'Произошла ошибка сервера. Попробуйте позже.';
+                    break;
+                default:
+                    errorMessage = 'Произошла неизвестная ошибка. Попробуйте еще раз.';
+            }
+            showMessage(document.getElementById('loginForm'), errorMessage, true);
+        }
+    }
+
+    // Вызываем обработку ошибок при загрузке страницы
+    window.onload = handleAuthError;
     </script>
 </body>
 </html> 

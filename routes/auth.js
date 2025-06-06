@@ -3,6 +3,7 @@ const passport = require('passport');
 const router = express.Router();
 const { User } = require('../models');
 const logger = require('../utils/logger');
+const crypto = require('crypto');
 
 // Вспомогательная функция для логирования
 const logAuth = (step, data) => {
@@ -121,38 +122,112 @@ router.post('/api/auth/register', async (req, res) => {
   }
 });
 
-// Telegram OAuth
-router.get('/telegram', passport.authenticate('telegram'));
+// Telegram авторизация
+router.get('/telegram', (req, res) => {
+    const botUsername = process.env.BOT_USERNAME;
+    // Генерируем случайную строку для защиты от подделки данных
+    const nonce = crypto.randomBytes(16).toString('hex');
+    // Сохраняем nonce в сессии
+    req.session.telegramNonce = nonce;
+    
+    // Формируем URL для Telegram Login Widget
+    const authUrl = `https://oauth.telegram.org/auth?bot_id=${process.env.BOT_TOKEN.split(':')[0]}&origin=${encodeURIComponent(process.env.APP_URL)}&request_access=write&return_to=${encodeURIComponent(process.env.APP_URL + '/auth/telegram/callback')}&auth_date=${Math.floor(Date.now() / 1000)}&hash=${nonce}`;
+    
+    res.redirect(authUrl);
+});
 
-// Telegram callback
-router.get('/telegram/callback', 
-  passport.authenticate('telegram', { failureRedirect: '/auth/register' }),
-  async (req, res) => {
+// Обработчик callback от Telegram
+router.get('/telegram/callback', async (req, res) => {
     try {
-      logAuth('TELEGRAM_CALLBACK', { user: req.user });
-
-      // Проверяем и обновляем сессию
-      if (req.session) {
-        req.session.touch();
-        req.session.save((err) => {
-          if (err) {
-            logAuth('SESSION_SAVE_ERROR', { error: err.message });
-          } else {
-            logAuth('SESSION_SAVED', { 
-              sessionId: req.sessionID,
-              user: req.user?.username
+        const { id, first_name, username, photo_url, auth_date, hash } = req.query;
+        
+        // Проверяем валидность данных от Telegram
+        const checkString = Object.keys(req.query)
+            .filter(key => key !== 'hash')
+            .sort()
+            .map(key => `${key}=${req.query[key]}`)
+            .join('\n');
+        
+        const secretKey = crypto.createHash('sha256')
+            .update(process.env.BOT_TOKEN)
+            .digest();
+        
+        const hmac = crypto.createHmac('sha256', secretKey)
+            .update(checkString)
+            .digest('hex');
+        
+        if (hmac !== hash) {
+            logger.auth({
+                event: 'telegram_auth_failed',
+                error: 'Invalid hash',
+                telegramId: id
             });
-          }
-        });
-      }
+            return res.redirect('/register.html?error=invalid_auth');
+        }
 
-      res.redirect('/webapp');
+        // Проверяем, не устарели ли данные (не старше 1 часа)
+        if (Math.abs(Date.now() / 1000 - auth_date) > 3600) {
+            return res.redirect('/register.html?error=expired_auth');
+        }
+
+        // Ищем пользователя по telegram_id
+        let user = await User.findOne({ where: { telegram_id: id } });
+
+        if (!user) {
+            // Создаем нового пользователя
+            user = await User.create({
+                username: username || `user_${id}`,
+                telegram_id: id,
+                telegram_username: username,
+                display_name: first_name,
+                avatar_url: photo_url,
+                rating: 0,
+                gamesWon: 0
+            });
+
+            logger.auth({
+                event: 'telegram_user_created',
+                userId: user.id,
+                telegramId: id
+            });
+        } else {
+            // Обновляем существующего пользователя
+            await user.update({
+                telegram_username: username,
+                display_name: first_name,
+                avatar_url: photo_url
+            });
+        }
+
+        // Авторизуем пользователя
+        req.login(user, (err) => {
+            if (err) {
+                logger.error({
+                    event: 'telegram_login_error',
+                    error: err.message,
+                    userId: user.id
+                });
+                return res.redirect('/register.html?error=login_failed');
+            }
+
+            logger.auth({
+                event: 'telegram_login_success',
+                userId: user.id,
+                telegramId: id
+            });
+
+            // Перенаправляем на главную страницу
+            res.redirect('/webapp');
+        });
+
     } catch (error) {
-      console.error('Ошибка в telegram callback:', error);
-      res.redirect('/auth/register');
+        logger.error({
+            event: 'telegram_auth_error',
+            error: error.message
+        });
+        res.redirect('/register.html?error=server_error');
     }
-  }
-);
+});
 
 // Проверка статуса авторизации
 router.post('/telegram/check', async (req, res) => {

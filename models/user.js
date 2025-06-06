@@ -1,14 +1,52 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcrypt');
 
 const User = sequelize.define('User', {
-  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-  telegramId: { type: DataTypes.STRING, unique: true },
-  username: { type: DataTypes.STRING },
-  rating: { type: DataTypes.INTEGER, defaultValue: 1000 },
-  email: { type: DataTypes.STRING, unique: true, allowNull: true },
-  password: { type: DataTypes.STRING, allowNull: true },
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  username: {
+    type: DataTypes.STRING,
+    unique: true,
+    allowNull: false
+  },
+  email: {
+    type: DataTypes.STRING,
+    unique: true,
+    allowNull: true
+  },
+  password: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  telegram_id: {
+    type: DataTypes.STRING,
+    unique: true,
+    allowNull: true
+  },
+  telegram_username: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  display_name: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  avatar_url: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  rating: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
+  },
+  gamesWon: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
+  },
   coins: { type: DataTypes.INTEGER, defaultValue: 0 },
   avatar: { type: DataTypes.STRING, allowNull: true },
   level: { type: DataTypes.INTEGER, defaultValue: 1 },
@@ -42,7 +80,7 @@ const User = sequelize.define('User', {
 
 User.prototype.checkPassword = async function(password) {
   if (!this.password) return false;
-  return bcrypt.compare(password, this.password);
+  return await bcrypt.compare(password, this.password);
 };
 
 function generateReferralCode() {
