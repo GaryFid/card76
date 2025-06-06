@@ -1,6 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
 const bcrypt = require('bcrypt');
+const Friendship = require('./friendship');
 
 const User = sequelize.define('User', {
   id: {
@@ -52,6 +53,10 @@ const User = sequelize.define('User', {
   level: { type: DataTypes.INTEGER, defaultValue: 1 },
   school: { type: DataTypes.STRING, allowNull: true },
   referralCode: { type: DataTypes.STRING, unique: true, allowNull: true },
+  last_active: {
+    type: DataTypes.DATE,
+    allowNull: true
+  }
 }, {
   tableName: 'users',
   timestamps: true,
@@ -91,5 +96,120 @@ function generateReferralCode() {
   }
   return code;
 }
+
+// Определяем связи между пользователями (друзья)
+User.belongsToMany(User, {
+  as: 'friends',
+  through: Friendship,
+  foreignKey: 'userId',
+  otherKey: 'friendId'
+});
+
+// Методы для работы с друзьями
+User.prototype.addFriend = async function(friend) {
+  const friendship = await Friendship.findOne({
+    where: {
+      userId: this.id,
+      friendId: friend.id
+    }
+  });
+
+  if (!friendship) {
+    await Friendship.create({
+      userId: this.id,
+      friendId: friend.id,
+      status: 'pending'
+    });
+
+    // Создаем обратную связь
+    await Friendship.create({
+      userId: friend.id,
+      friendId: this.id,
+      status: 'pending'
+    });
+  }
+};
+
+User.prototype.acceptFriend = async function(friendId) {
+  await Friendship.update(
+    { status: 'accepted' },
+    {
+      where: {
+        userId: this.id,
+        friendId: friendId
+      }
+    }
+  );
+
+  // Обновляем статус обратной связи
+  await Friendship.update(
+    { status: 'accepted' },
+    {
+      where: {
+        userId: friendId,
+        friendId: this.id
+      }
+    }
+  );
+};
+
+User.prototype.removeFriend = async function(friendId) {
+  await Friendship.destroy({
+    where: {
+      userId: this.id,
+      friendId: friendId
+    }
+  });
+
+  // Удаляем обратную связь
+  await Friendship.destroy({
+    where: {
+      userId: friendId,
+      friendId: this.id
+    }
+  });
+};
+
+User.prototype.blockFriend = async function(friendId) {
+  await Friendship.update(
+    { status: 'blocked' },
+    {
+      where: {
+        userId: this.id,
+        friendId: friendId
+      }
+    }
+  );
+};
+
+User.prototype.getFriends = async function() {
+  const friendships = await Friendship.findAll({
+    where: {
+      userId: this.id,
+      status: 'accepted'
+    },
+    include: [{
+      model: User,
+      as: 'friend'
+    }]
+  });
+
+  return friendships.map(f => f.friend);
+};
+
+User.prototype.getPendingFriends = async function() {
+  const friendships = await Friendship.findAll({
+    where: {
+      userId: this.id,
+      status: 'pending'
+    },
+    include: [{
+      model: User,
+      as: 'friend'
+    }]
+  });
+
+  return friendships.map(f => f.friend);
+};
 
 module.exports = User; 

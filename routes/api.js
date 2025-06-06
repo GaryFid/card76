@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const logger = require('../utils/logger');
+const { Op } = require('sequelize');
 
 // Добавим парсер JSON для обработки тела запроса
 router.use(express.json());
@@ -360,6 +361,138 @@ router.get('/games/stats', async (req, res) => {
             success: false,
             error: 'Ошибка при получении статистики'
         });
+    }
+});
+
+// Поиск пользователей
+router.get('/users/search', async (req, res) => {
+    try {
+        const query = req.query.q;
+        if (!query) {
+            return res.json({ users: [] });
+        }
+
+        const users = await User.findAll({
+            where: {
+                [Op.or]: [
+                    { username: { [Op.iLike]: `%${query}%` } },
+                    { telegram_username: { [Op.iLike]: `%${query}%` } },
+                    { display_name: { [Op.iLike]: `%${query}%` } }
+                ],
+                id: { [Op.ne]: req.user.id } // Исключаем текущего пользователя
+            },
+            limit: 10
+        });
+
+        res.json({
+            users: users.map(user => ({
+                id: user.id,
+                username: user.username,
+                display_name: user.display_name,
+                telegram_username: user.telegram_username,
+                avatar_url: user.avatar_url
+            }))
+        });
+    } catch (error) {
+        logger.error({
+            event: 'user_search_error',
+            error: error.message,
+            query: req.query.q
+        });
+        res.status(500).json({ error: 'Ошибка поиска пользователей' });
+    }
+});
+
+// Получение списка друзей
+router.get('/friends', async (req, res) => {
+    try {
+        const user = await User.findByPk(req.user.id, {
+            include: [{
+                model: User,
+                as: 'friends',
+                through: { attributes: [] }
+            }]
+        });
+
+        const friends = user.friends.map(friend => ({
+            id: friend.id,
+            username: friend.username,
+            display_name: friend.display_name,
+            avatar_url: friend.avatar_url,
+            online: friend.last_active && 
+                    (new Date() - new Date(friend.last_active)) < 5 * 60 * 1000 // 5 минут
+        }));
+
+        res.json({ friends });
+    } catch (error) {
+        logger.error({
+            event: 'friends_list_error',
+            error: error.message,
+            userId: req.user.id
+        });
+        res.status(500).json({ error: 'Ошибка получения списка друзей' });
+    }
+});
+
+// Добавление друга
+router.post('/friends/add', async (req, res) => {
+    try {
+        const { userId } = req.body;
+        const user = await User.findByPk(req.user.id);
+        const friend = await User.findByPk(userId);
+
+        if (!friend) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+
+        await user.addFriend(friend);
+        
+        logger.info({
+            event: 'friend_added',
+            userId: req.user.id,
+            friendId: userId
+        });
+
+        res.json({ success: true });
+    } catch (error) {
+        logger.error({
+            event: 'add_friend_error',
+            error: error.message,
+            userId: req.user.id,
+            friendId: req.body.userId
+        });
+        res.status(500).json({ error: 'Ошибка добавления друга' });
+    }
+});
+
+// Отправка приглашения другу
+router.post('/friends/invite', async (req, res) => {
+    try {
+        const { userId } = req.body;
+        const friend = await User.findByPk(userId);
+
+        if (!friend) {
+            return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+
+        // Здесь можно добавить логику отправки уведомления через бота
+        // или веб-сокеты, если они реализованы
+
+        logger.info({
+            event: 'friend_invited',
+            userId: req.user.id,
+            friendId: userId
+        });
+
+        res.json({ success: true });
+    } catch (error) {
+        logger.error({
+            event: 'invite_friend_error',
+            error: error.message,
+            userId: req.user.id,
+            friendId: req.body.userId
+        });
+        res.status(500).json({ error: 'Ошибка отправки приглашения' });
     }
 });
 
