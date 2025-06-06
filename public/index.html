@@ -254,14 +254,47 @@
     <script src="js/main.js"></script>
     <script>
     // Проверка авторизации при запуске приложения
-    try {
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-      if (!user || !user.id) {
-        window.location.href = '/register.html';
-      }
-    } catch {
-      window.location.href = '/register.html';
+    async function checkAuth() {
+        try {
+            const response = await fetch('/auth/check', {
+                credentials: 'include'
+            });
+            const data = await response.json();
+            
+            if (!data.authenticated) {
+                window.location.href = '/register.html';
+                return;
+            }
+            
+            // Обновляем информацию о пользователе на странице
+            if (data.user) {
+                document.getElementById('profile-name').textContent = data.user.username;
+                if (data.user.avatar) {
+                    document.querySelector('.profile-avatar').src = data.user.avatar;
+                }
+            }
+        } catch (error) {
+            console.error('Ошибка проверки авторизации:', error);
+            window.location.href = '/register.html';
+        }
     }
+
+    // Выполняем проверку при загрузке страницы
+    checkAuth();
+
+    // Обработчик выхода
+    async function logout() {
+        try {
+            await fetch('/auth/logout', { 
+                method: 'POST',
+                credentials: 'include' 
+            });
+            window.location.href = '/register.html';
+        } catch (error) {
+            console.error('Ошибка при выходе:', error);
+        }
+    }
+
     document.getElementById('shop').onclick = () => {
         window.location.href = 'shop.html';
     };
@@ -354,9 +387,7 @@
         e.stopPropagation();
         profileDropdown.classList.remove('active');
         dropdownOpen = false;
-        localStorage.removeItem('user');
-        fetch('/auth/logout', { credentials: 'include' })
-          .finally(() => window.location.href = '/register.html');
+        logout();
       });
     }
     </script>
@@ -434,9 +465,7 @@
       });
     };
     window.logoutProfile = function() {
-      localStorage.removeItem('user');
-      fetch('/auth/logout', { credentials: 'include' })
-        .finally(() => window.location.href = '/register.html');
+      logout();
     };
 
     // --- Модалка правил ---

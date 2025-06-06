@@ -7,8 +7,8 @@ const config = require('./config/config');
 const path = require('path');
 const sequelize = require('./config/db');
 const { initDatabase } = require('./models');
-const FileStore = require('session-file-store')(expressSession);
 const logger = require('./utils/logger');
+const pgSession = require('connect-pg-simple')(expressSession);
 
 // Импорт сцен и обработчиков
 const { authScene } = require('./scenes/auth');
@@ -121,6 +121,18 @@ async function startApp() {
       
       await initDatabase();
       console.log('База данных успешно инициализирована');
+
+      // Создаем таблицу для сессий если её нет
+      await sequelize.query(`
+        CREATE TABLE IF NOT EXISTS "session" (
+          "sid" varchar NOT NULL COLLATE "default",
+          "sess" json NOT NULL,
+          "expire" timestamp(6) NOT NULL,
+          CONSTRAINT "session_pkey" PRIMARY KEY ("sid")
+        );
+        CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire");
+      `);
+      
     } catch (err) {
       console.error('Ошибка работы с базой данных:', err);
       process.exit(1);
@@ -133,23 +145,26 @@ async function startApp() {
     const app = express();
     const PORT = process.env.PORT || 3000;
 
-    // Настройка сессий с использованием FileStore
-    const sessionStore = new FileStore({
-      path: './sessions',
-      ttl: 604800, // 7 дней
-      retries: 0,
-      secret: config.session.secret
-    });
-
     // Настройка middleware
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
+
+    // Настройка сессий с использованием PostgreSQL
     app.use(expressSession({
-      store: sessionStore,
+      store: new pgSession({
+        pool: sequelize, 
+        tableName: 'session',
+        createTableIfMissing: true,
+        pruneSessionInterval: 60
+      }),
       secret: config.session.secret,
       resave: false,
       saveUninitialized: false,
-      cookie: config.session.cookie
+      cookie: {
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 дней
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+      }
     }));
 
     // Инициализация passport

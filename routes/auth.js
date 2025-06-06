@@ -343,20 +343,27 @@ router.get('/failure', (req, res) => {
 
 // Выход из аккаунта
 router.post('/logout', (req, res) => {
-  const userId = req.user?.id;
-  req.logout(() => {
-    logAuth('LOGOUT', { userId });
-    res.json({ message: 'Выход выполнен успешно' });
+  req.logout((err) => {
+    if (err) {
+      console.error('Ошибка при выходе:', err);
+      return res.status(500).json({ error: 'Ошибка при выходе' });
+    }
+    res.json({ success: true });
   });
 });
 
-// Проверка аутентификации
+// Проверка авторизации
 router.get('/check', (req, res) => {
-  if (req.isAuthenticated()) {
-    res.json(req.user.toPublicJSON());
-  } else {
-    res.status(401).json({ error: 'Не аутентифицирован' });
-  }
+    if (req.isAuthenticated()) {
+        res.json({
+            authenticated: true,
+            user: req.user.toPublicJSON()
+        });
+    } else {
+        res.json({
+            authenticated: false
+        });
+    }
 });
 
 module.exports = router; 

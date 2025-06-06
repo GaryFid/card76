@@ -333,10 +333,7 @@
                     throw new Error(data.error || 'Ошибка регистрации');
                 }
                 
-                if (data.success && data.user) {
-                    // Сохраняем данные пользователя
-                    localStorage.setItem('user', JSON.stringify(data.user));
-                    
+                if (data.success) {
                     // Закрываем Telegram Web App если он есть
                     if (tg.MainButton) {
                         tg.MainButton.hide();
