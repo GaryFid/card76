@@ -503,23 +503,31 @@ router.post('/debug/clear-database', async (req, res) => {
         // Получаем все модели
         const models = sequelize.models;
         
-        // Отключаем внешние ключи для всех таблиц
-        await sequelize.query('SET session_replication_role = replica;');
+        // Отключаем проверку внешних ключей
+        await sequelize.query('SET CONSTRAINTS ALL DEFERRED;');
         
         // Очищаем каждую таблицу
         for (const model of Object.values(models)) {
             if (model.tableName) {
-                await sequelize.query(`TRUNCATE TABLE "${model.tableName}" CASCADE;`);
+                try {
+                    await sequelize.query(`TRUNCATE TABLE "${model.tableName}" CASCADE;`);
+                } catch (err) {
+                    console.error(`Ошибка при очистке таблицы ${model.tableName}:`, err);
+                }
             }
         }
         
-        // Включаем обратно внешние ключи
-        await sequelize.query('SET session_replication_role = default;');
+        // Включаем обратно проверку внешних ключей
+        await sequelize.query('SET CONSTRAINTS ALL IMMEDIATE;');
 
         // Сбрасываем автоинкремент для всех таблиц
         for (const model of Object.values(models)) {
             if (model.tableName) {
-                await sequelize.query(`ALTER SEQUENCE "${model.tableName}_id_seq" RESTART WITH 1;`);
+                try {
+                    await sequelize.query(`ALTER SEQUENCE IF EXISTS "${model.tableName}_id_seq" RESTART WITH 1;`);
+                } catch (err) {
+                    console.error(`Ошибка при сбросе sequence для ${model.tableName}:`, err);
+                }
             }
         }
 
