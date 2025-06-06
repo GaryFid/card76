@@ -54,8 +54,8 @@ router.post('/register', async (req, res) => {
     const existingUser = await User.findOne({ 
       where: { 
         [Op.or]: [
-          { username },
-          { email }
+          { username: username },
+          { email: email }
         ]
       } 
     });
