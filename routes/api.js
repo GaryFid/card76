@@ -6,6 +6,7 @@ const fs = require('fs');
 const multer = require('multer');
 const logger = require('../utils/logger');
 const { Op } = require('sequelize');
+const sequelize = require('../config/db');
 
 // Добавим парсер JSON для обработки тела запроса
 router.use(express.json());
@@ -493,6 +494,58 @@ router.post('/friends/invite', async (req, res) => {
             friendId: req.body.userId
         });
         res.status(500).json({ error: 'Ошибка отправки приглашения' });
+    }
+});
+
+// Тестовый маршрут для проверки пользователей (только для разработки)
+router.get('/debug/users', async (req, res) => {
+    try {
+        const users = await User.findAll({
+            attributes: ['id', 'username', 'email', 'telegram_id', 'rating', 'createdAt'],
+            raw: true
+        });
+        res.json({ success: true, users });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Очистка базы данных (только для разработки)
+router.post('/debug/clear-database', async (req, res) => {
+    try {
+        // Получаем все модели
+        const models = sequelize.models;
+        
+        // Отключаем внешние ключи для всех таблиц
+        await sequelize.query('SET session_replication_role = replica;');
+        
+        // Очищаем каждую таблицу
+        for (const model of Object.values(models)) {
+            if (model.tableName) {
+                await sequelize.query(`TRUNCATE TABLE "${model.tableName}" CASCADE;`);
+            }
+        }
+        
+        // Включаем обратно внешние ключи
+        await sequelize.query('SET session_replication_role = default;');
+
+        // Сбрасываем автоинкремент для всех таблиц
+        for (const model of Object.values(models)) {
+            if (model.tableName) {
+                await sequelize.query(`ALTER SEQUENCE "${model.tableName}_id_seq" RESTART WITH 1;`);
+            }
+        }
+
+        res.json({ 
+            success: true, 
+            message: 'База данных успешно очищена' 
+        });
+    } catch (error) {
+        console.error('Ошибка при очистке базы данных:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
     }
 });
 
