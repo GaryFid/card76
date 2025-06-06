@@ -1,36 +1,46 @@
 const { Sequelize } = require('sequelize');
-require('dotenv').config();
+const config = require('./config');
 
-const isProduction = process.env.NODE_ENV === 'production';
+let sequelize;
 
-const sequelize = new Sequelize(process.env.DATABASE_URL || {
-    database: process.env.DB_NAME || 'pidr_game',
-    username: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || '',
-    host: process.env.DB_HOST || 'localhost',
-    port: process.env.DB_PORT || 5432,
-    dialect: 'postgres',
-    dialectOptions: {
-        ssl: isProduction ? {
-            require: true,
-            rejectUnauthorized: false
-        } : false
-    },
-    logging: false
-});
-
-// Тестирование соединения
-sequelize.authenticate()
-    .then(() => {
-        console.log('Соединение с базой данных установлено успешно.');
-        // Синхронизация моделей с базой данных
-        return sequelize.sync();
-    })
-    .then(() => {
-        console.log('Модели успешно синхронизированы с базой данных');
-    })
-    .catch(err => {
-        console.error('Ошибка при подключении к базе данных:', err);
+try {
+    // Создаем экземпляр Sequelize с настройками из конфига
+    sequelize = new Sequelize(config.database.url, {
+        dialect: 'postgres',
+        dialectOptions: {
+            ssl: {
+                require: true,
+                rejectUnauthorized: false
+            }
+        },
+        logging: false,
+        pool: {
+            max: 5,
+            min: 0,
+            acquire: 30000,
+            idle: 10000
+        }
     });
+} catch (error) {
+    console.error('Ошибка инициализации Sequelize:', error);
+    process.exit(1);
+}
+
+// Функция для проверки подключения
+async function testConnection() {
+    try {
+        await sequelize.authenticate();
+        console.log('Успешное подключение к базе данных');
+    } catch (error) {
+        console.error('Ошибка подключения к базе данных:', error);
+        throw error;
+    }
+}
+
+// Выполняем проверку подключения при запуске
+testConnection().catch(() => {
+    console.log('Повторная попытка подключения через 5 секунд...');
+    setTimeout(testConnection, 5000);
+});
 
 module.exports = sequelize; 
