@@ -497,19 +497,6 @@ router.post('/friends/invite', async (req, res) => {
     }
 });
 
-// Тестовый маршрут для проверки пользователей (только для разработки)
-router.get('/debug/users', async (req, res) => {
-    try {
-        const users = await User.findAll({
-            attributes: ['id', 'username', 'email', 'telegram_id', 'rating', 'createdAt'],
-            raw: true
-        });
-        res.json({ success: true, users });
-    } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
-
 // Очистка базы данных (только для разработки)
 router.post('/debug/clear-database', async (req, res) => {
     try {
@@ -546,6 +533,19 @@ router.post('/debug/clear-database', async (req, res) => {
             success: false, 
             error: error.message 
         });
+    }
+});
+
+// Тестовый маршрут для проверки пользователей (только для разработки)
+router.get('/debug/users', async (req, res) => {
+    try {
+        const users = await User.findAll({
+            attributes: ['id', 'username', 'email', 'telegram_id', 'rating', 'createdAt'],
+            raw: true
+        });
+        res.json({ success: true, users });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 
