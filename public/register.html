@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>P.I.D.R. — Вход и регистрация</title>
-    <link rel="stylesheet" href="/css/game.css">
+    <title>P.I.D.R. - Регистрация</title>
+    <link rel="stylesheet" href="/css/register.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body {
             background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
@@ -158,158 +159,19 @@
     <div class="auth-container">
         <div class="game-logo">P.I.D.R.</div>
         <div class="game-slogan">Punishment Inevitable: Dumb Rules<br>Карточная битва без пощады!</div>
-        <form id="loginForm" autocomplete="on">
-            <input class="input" type="text" name="username" placeholder="Имя пользователя" required>
-            <input class="input" type="password" name="password" placeholder="Пароль" required>
-            <button class="auth-btn" type="submit">Войти</button>
+        
+        <form id="register-form" class="auth-form">
+            <div class="form-group">
+                <button type="button" id="tgLoginBtn" class="btn btn-telegram">
+                    <img src="https://telegram.org/img/t_logo.svg" alt="Telegram" style="width: 24px; height: 24px; margin-right: 8px;">
+                    Войти через Telegram
+                </button>
+            </div>
         </form>
-        <button class="register-btn" id="openRegisterModal" type="button">Зарегистрироваться</button>
-        <div class="socials">
-            <button class="social-btn active" id="tgLoginBtn" title="Войти через Telegram"><img src="https://telegram.org/img/t_logo.svg" alt="tg"></button>
-            <button class="social-btn" id="vkLoginBtn" title="Войти через VK"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/vk.svg" alt="vk"></button>
-            <button class="social-btn" id="googleLoginBtn" title="Войти через Google"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/google.svg" alt="google"></button>
-            <button class="social-btn" id="yaLoginBtn" title="Войти через Яндекс"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/yandex.svg" alt="ya"></button>
-            <button class="social-btn" id="okLoginBtn" title="Войти через Одноклассники"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/odnoklassniki.svg" alt="ok"></button>
-        </div>
+
+        <div id="error-message" class="error-message" style="display: none;"></div>
     </div>
-    <!-- Модальное окно регистрации -->
-    <div class="modal" id="registerModal">
-        <div class="modal-box">
-            <button class="modal-close" id="closeRegisterModal">×</button>
-            <div class="modal-title">Регистрация</div>
-            <form id="registerForm" autocomplete="on">
-                <input class="input" type="text" name="username" placeholder="Имя пользователя" required>
-                <input class="input" type="email" name="email" placeholder="Email" required>
-                <input class="input" type="password" name="password" placeholder="Пароль" required>
-                <input class="input" type="password" name="password2" placeholder="Повторите пароль" required>
-                <button class="register-btn" type="submit">Зарегистрироваться</button>
-                <div class="form-message" id="registerMsg"></div>
-            </form>
-        </div>
-    </div>
-    <script>
-    // Открытие/закрытие модального окна регистрации
-    const openRegisterModal = document.getElementById('openRegisterModal');
-    const closeRegisterModal = document.getElementById('closeRegisterModal');
-    const registerModal = document.getElementById('registerModal');
-    openRegisterModal.onclick = () => registerModal.classList.add('active');
-    closeRegisterModal.onclick = () => registerModal.classList.remove('active');
-    window.onclick = (e) => { if (e.target === registerModal) registerModal.classList.remove('active'); };
 
-    // Вход
-    document.getElementById('loginForm').onsubmit = async (e) => {
-        e.preventDefault();
-        const data = Object.fromEntries(new FormData(e.target));
-        const btn = e.target.querySelector('button[type="submit"]');
-        btn.disabled = true;
-        btn.textContent = 'Вход...';
-        try {
-            const res = await fetch('/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-            const json = await res.json();
-            if (json.success) {
-                localStorage.setItem('user', JSON.stringify(json.user));
-                window.location.href = '/index.html';
-            } else {
-                showMessage(e.target, json.error || 'Ошибка входа', true);
-            }
-        } catch (err) {
-            showMessage(e.target, 'Ошибка сервера', true);
-        }
-        btn.disabled = false;
-        btn.textContent = 'Войти';
-    };
-    function showMessage(form, msg, isError = false) {
-        let el = form.querySelector('.form-message');
-        if (!el) {
-            el = document.createElement('div');
-            el.className = 'form-message';
-            form.appendChild(el);
-        }
-        el.textContent = msg;
-        el.style.color = isError ? '#e53935' : '#2196f3';
-    }
-    // Регистрация
-    document.getElementById('registerForm').onsubmit = async (e) => {
-        e.preventDefault();
-        const data = Object.fromEntries(new FormData(e.target));
-        if (data.password !== data.password2) {
-            showMessage(e.target, 'Пароли не совпадают', true);
-            return;
-        }
-        showMessage(e.target, 'Регистрация...');
-        try {
-            const res = await fetch('/auth/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: data.username, email: data.email, password: data.password })
-            });
-            const json = await res.json();
-            if (json.success) {
-                showMessage(e.target, 'Успешная регистрация! Перенаправление...');
-                setTimeout(() => window.location.href = '/index.html', 800);
-            } else {
-                showMessage(e.target, json.error || 'Ошибка регистрации', true);
-            }
-        } catch (err) {
-            showMessage(e.target, 'Ошибка сервера', true);
-        }
-    };
-    // Соцсети
-    document.getElementById('tgLoginBtn').onclick = () => {
-        // Показываем индикатор загрузки
-        const btn = document.getElementById('tgLoginBtn');
-        btn.style.opacity = '0.7';
-        btn.style.pointerEvents = 'none';
-        
-        // Перенаправляем на эндпоинт авторизации через Telegram
-        window.location.href = '/auth/telegram';
-    };
-    document.getElementById('vkLoginBtn').onclick = () => {
-        alert('Вход через VK появится скоро!');
-    };
-    document.getElementById('googleLoginBtn').onclick = () => {
-        alert('Вход через Google появится скоро!');
-    };
-    document.getElementById('yaLoginBtn').onclick = () => {
-        alert('Вход через Яндекс появится скоро!');
-    };
-    document.getElementById('okLoginBtn').onclick = () => {
-        alert('Вход через Одноклассники появится скоро!');
-    };
-
-    // Обработка ошибок авторизации
-    function handleAuthError() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const error = urlParams.get('error');
-        
-        if (error) {
-            let errorMessage = '';
-            switch(error) {
-                case 'invalid_auth':
-                    errorMessage = 'Ошибка авторизации через Telegram. Попробуйте еще раз.';
-                    break;
-                case 'expired_auth':
-                    errorMessage = 'Время авторизации истекло. Попробуйте еще раз.';
-                    break;
-                case 'login_failed':
-                    errorMessage = 'Не удалось войти. Попробуйте еще раз.';
-                    break;
-                case 'server_error':
-                    errorMessage = 'Произошла ошибка сервера. Попробуйте позже.';
-                    break;
-                default:
-                    errorMessage = 'Произошла неизвестная ошибка. Попробуйте еще раз.';
-            }
-            showMessage(document.getElementById('loginForm'), errorMessage, true);
-        }
-    }
-
-    // Вызываем обработку ошибок при загрузке страницы
-    window.onload = handleAuthError;
-    </script>
+    <script src="/js/register.js"></script>
 </body>
 </html> 

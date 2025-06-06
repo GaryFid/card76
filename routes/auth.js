@@ -298,136 +298,103 @@ router.post('/telegram/check', async (req, res) => {
 
 // Форсированный вход через Telegram
 router.post('/telegram/force-login', async (req, res) => {
-  try {
-    logAuth('FORCE_LOGIN_START', { user: req.user });
+    try {
+        const { user } = req.body;
 
-    if (!req.user || (!req.user.telegramId && !req.user.username)) {
-      logAuth('FORCE_LOGIN_NO_CREDENTIALS', { user: req.user });
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Нет данных Telegram', 
-        telegramAvailable: false 
-      });
-    }
-
-    const { telegramId, username, photoUrl } = req.user;
-
-    // Ищем существующего пользователя
-    let user = await User.findOne({
-      where: {
-        [User.sequelize.Op.or]: [
-          telegramId ? { telegramId } : null,
-          username ? { username } : null
-        ].filter(Boolean)
-      }
-    });
-
-    logAuth('FORCE_LOGIN_SEARCH_RESULT', { 
-      found: !!user,
-      searchCriteria: { telegramId, username }
-    });
-
-    // Если пользователя нет - создаём
-    if (!user) {
-      const avatarUrl = photoUrl || (username ? `https://t.me/i/userpic/320/${username}.jpg` : '');
-      
-      user = await User.create({
-        telegramId,
-        username,
-        avatar: avatarUrl,
-        authType: 'telegram',
-        registrationDate: new Date(),
-        rating: 0,
-        coins: 0,
-        level: 1
-      });
-
-      logAuth('FORCE_LOGIN_USER_CREATED', { 
-        userId: user.id,
-        username: user.username
-      });
-    }
-    // Если есть пользователь но нет telegramId - обновляем
-    else if (!user.telegramId && telegramId) {
-      user.telegramId = telegramId;
-      if (photoUrl && !user.avatar) {
-        user.avatar = photoUrl;
-      }
-      await user.save();
-      logAuth('FORCE_LOGIN_USER_UPDATED', { 
-        userId: user.id,
-        telegramId
-      });
-    }
-
-    // Обновляем сессию
-    if (req.session) {
-      req.session.regenerate((err) => {
-        if (err) {
-          logAuth('SESSION_REGENERATE_ERROR', { error: err.message });
-          return res.status(500).json({ 
-            success: false, 
-            error: 'Ошибка сессии' 
-          });
+        if (!user || !user.id) {
+            logger.error({
+                event: 'force_login_error',
+                error: 'No user data provided'
+            });
+            return res.status(400).json({
+                success: false,
+                error: 'Не предоставлены данные пользователя'
+            });
         }
 
-        req.login(user, (err) => {
-          if (err) {
-            logAuth('FORCE_LOGIN_ERROR', { error: err.message });
-            return res.status(500).json({ 
-              success: false, 
-              error: 'Ошибка авторизации' 
-            });
-          }
+        // Ищем существующего пользователя
+        let dbUser = await User.findOne({
+            where: {
+                telegram_id: user.id.toString()
+            }
+        });
 
-          req.session.telegramId = telegramId;
-          req.session.username = username;
-          
-          req.session.save((err) => {
-            if (err) {
-              logAuth('SESSION_SAVE_ERROR', { error: err.message });
-              return res.status(500).json({ 
-                success: false, 
-                error: 'Ошибка сохранения сессии' 
-              });
+        if (!dbUser) {
+            // Создаём нового пользователя
+            const username = user.username || `user_${user.id}`;
+            const avatarUrl = user.photo_url || `https://t.me/i/userpic/320/${username}.jpg`;
+
+            dbUser = await User.create({
+                username: username,
+                telegram_id: user.id.toString(),
+                telegram_username: user.username,
+                display_name: user.first_name,
+                avatar_url: avatarUrl,
+                rating: 1000,
+                coins: 0,
+                level: 1,
+                authType: 'telegram'
+            });
+
+            logger.info({
+                event: 'new_user_created',
+                userId: dbUser.id,
+                telegramId: user.id,
+                username: username
+            });
+        } else {
+            // Обновляем существующего пользователя
+            const updates = {
+                telegram_username: user.username,
+                display_name: user.first_name,
+                last_active: new Date()
+            };
+
+            // Обновляем аватар только если он предоставлен
+            if (user.photo_url) {
+                updates.avatar_url = user.photo_url;
             }
 
-            logAuth('FORCE_LOGIN_SUCCESS', { 
-              userId: user.id,
-              username: user.username,
-              sessionId: req.sessionID
-            });
+            await dbUser.update(updates);
 
-            return res.json({
-              success: true,
-              user: {
-                id: user.id,
-                username: user.username,
-                rating: user.rating,
-                coins: user.coins,
-                avatar: user.avatar,
-                level: user.level,
-                school: user.school,
-                referralCode: user.referralCode
-              }
+            logger.info({
+                event: 'user_updated',
+                userId: dbUser.id,
+                telegramId: user.id,
+                updates
             });
-          });
+        }
+
+        // Создаем сессию
+        if (req.session) {
+            req.session.userId = dbUser.id;
+            req.session.telegramId = user.id;
+            req.session.username = dbUser.username;
+        }
+
+        res.json({
+            success: true,
+            user: {
+                id: dbUser.id,
+                username: dbUser.username,
+                telegram_id: dbUser.telegram_id,
+                display_name: dbUser.display_name,
+                avatar_url: dbUser.avatar_url,
+                rating: dbUser.rating,
+                coins: dbUser.coins,
+                level: dbUser.level
+            }
         });
-      });
-    } else {
-      logAuth('NO_SESSION_ERROR', {});
-      res.status(500).json({ 
-        success: false, 
-        error: 'Нет сессии' 
-      });
+    } catch (error) {
+        logger.error({
+            event: 'force_login_error',
+            error: error.message
+        });
+        res.status(500).json({
+            success: false,
+            error: 'Ошибка при авторизации'
+        });
     }
-  } catch (error) {
-    console.error('Ошибка в force-login:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Ошибка сервера' 
-    });
-  }
 });
 
 // Google OAuth

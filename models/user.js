@@ -11,8 +11,8 @@ const User = sequelize.define('User', {
   },
   username: {
     type: DataTypes.STRING,
-    unique: true,
-    allowNull: false
+    allowNull: false,
+    unique: true
   },
   email: {
     type: DataTypes.STRING,
@@ -25,37 +25,43 @@ const User = sequelize.define('User', {
   },
   telegram_id: {
     type: DataTypes.STRING,
-    unique: true,
-    allowNull: true
+    unique: true
   },
   telegram_username: {
-    type: DataTypes.STRING,
-    allowNull: true
+    type: DataTypes.STRING
   },
   display_name: {
-    type: DataTypes.STRING,
-    allowNull: true
+    type: DataTypes.STRING
   },
   avatar_url: {
-    type: DataTypes.STRING,
-    allowNull: true
+    type: DataTypes.STRING
   },
   rating: {
     type: DataTypes.INTEGER,
-    defaultValue: 0
+    defaultValue: 1000
   },
   gamesWon: {
     type: DataTypes.INTEGER,
     defaultValue: 0
   },
-  coins: { type: DataTypes.INTEGER, defaultValue: 0 },
+  coins: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
+  },
   avatar: { type: DataTypes.STRING, allowNull: true },
-  level: { type: DataTypes.INTEGER, defaultValue: 1 },
+  level: {
+    type: DataTypes.INTEGER,
+    defaultValue: 1
+  },
   school: { type: DataTypes.STRING, allowNull: true },
   referralCode: { type: DataTypes.STRING, unique: true, allowNull: true },
+  authType: {
+    type: DataTypes.ENUM('basic', 'telegram', 'guest'),
+    defaultValue: 'basic'
+  },
   last_active: {
     type: DataTypes.DATE,
-    allowNull: true
+    defaultValue: DataTypes.NOW
   }
 }, {
   tableName: 'users',

@@ -11,14 +11,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Получаем элементы формы
     const registerForm = document.getElementById('register-form');
-    const guestAuthBtn = document.getElementById('guest-auth');
-    const usernameInput = document.getElementById('username');
+    const tgLoginBtn = document.getElementById('tgLoginBtn');
     const errorMessage = document.createElement('div');
     errorMessage.className = 'error-message';
     errorMessage.style.color = 'red';
     errorMessage.style.marginTop = '10px';
     errorMessage.style.fontSize = '14px';
-    usernameInput.parentNode.appendChild(errorMessage);
+    registerForm.appendChild(errorMessage);
 
     // Проверяем наличие сохраненного пользователя
     const savedUser = localStorage.getItem('user');
@@ -26,6 +25,71 @@ document.addEventListener('DOMContentLoaded', function() {
         // Перенаправляем на главную, если пользователь уже авторизован
         window.location.href = '/webapp';
         return;
+    }
+
+    // Обработчик клика по кнопке Telegram
+    tgLoginBtn.addEventListener('click', async function() {
+        try {
+            // Получаем данные пользователя из Telegram WebApp
+            const initData = tgApp.initData;
+            const user = tgApp.initDataUnsafe.user;
+
+            if (!user) {
+                showError('Не удалось получить данные пользователя Telegram');
+                return;
+            }
+
+            // Отправляем запрос на сервер для регистрации/авторизации
+            const response = await fetch('/auth/telegram/force-login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    initData,
+                    user: {
+                        id: user.id,
+                        first_name: user.first_name,
+                        last_name: user.last_name,
+                        username: user.username,
+                        language_code: user.language_code,
+                        photo_url: user.photo_url
+                    }
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Сохраняем данные пользователя
+                localStorage.setItem('user', JSON.stringify(data.user));
+                // Показываем сообщение об успехе
+                showSuccess('Успешная авторизация! Перенаправление...');
+                // Перенаправляем на главную страницу
+                setTimeout(() => {
+                    window.location.href = '/webapp';
+                }, 1000);
+            } else {
+                showError(data.error || 'Ошибка авторизации');
+            }
+        } catch (error) {
+            console.error('Ошибка при авторизации через Telegram:', error);
+            showError('Произошла ошибка при авторизации');
+        }
+    });
+
+    // Функция отображения ошибки
+    function showError(message) {
+        errorMessage.style.color = 'red';
+        errorMessage.textContent = message;
+        errorMessage.style.display = 'block';
+    }
+
+    // Функция отображения успеха
+    function showSuccess(message) {
+        errorMessage.style.color = 'green';
+        errorMessage.textContent = message;
+        errorMessage.style.display = 'block';
     }
 
     // Валидация имени пользователя
@@ -37,87 +101,6 @@ document.addEventListener('DOMContentLoaded', function() {
             return 'Имя должно содержать не менее 4 символов';
         }
         return null; // Нет ошибок
-    }
-
-    // Обработка обычной регистрации
-    registerForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const username = usernameInput.value.trim();
-        const error = validateUsername(username);
-        
-        if (error) {
-            errorMessage.textContent = error;
-            return;
-        } else {
-            errorMessage.textContent = '';
-        }
-        
-        // Показываем индикатор загрузки
-        tgApp.MainButton.setText('Регистрация...');
-        tgApp.MainButton.show();
-        
-        // Отправляем данные на сервер для регистрации
-        registerUser({
-            username: username,
-            type: 'basic'
-        });
-    });
-
-    // Обработка входа как гость
-    guestAuthBtn.addEventListener('click', function() {
-        // Генерируем случайное имя гостя
-        const guestName = 'Гость_' + Math.floor(Math.random() * 10000);
-        
-        // Показываем индикатор загрузки
-        tgApp.MainButton.setText('Входим как гость...');
-        tgApp.MainButton.show();
-        
-        // Регистрируем гостя
-        registerUser({
-            username: guestName,
-            type: 'guest'
-        });
-    });
-
-    // Функция для отправки данных регистрации на сервер
-    function registerUser(userData) {
-        fetch('/api/auth/register', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(userData)
-        })
-        .then(response => {
-            if (!response.ok) {
-                return response.json().then(data => {
-                    throw new Error(data.error || 'Ошибка при регистрации');
-                });
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                // Успешная регистрация
-                tgApp.MainButton.setText('Успешно!');
-                
-                // Сохраняем данные пользователя
-                localStorage.setItem('user', JSON.stringify(data.user));
-                
-                // Перенаправляем на главную страницу
-                setTimeout(() => {
-                    window.location.href = '/webapp';
-                }, 1000);
-            } else {
-                throw new Error(data.error || 'Ошибка при регистрации');
-            }
-        })
-        .catch(error => {
-            console.error('Ошибка:', error);
-            errorMessage.textContent = error.message || 'Произошла ошибка при регистрации. Пожалуйста, попробуйте снова.';
-            tgApp.MainButton.hide();
-        });
     }
 });
 
