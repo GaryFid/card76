@@ -109,74 +109,183 @@ document.addEventListener('DOMContentLoaded', function() {
 // JS для форм входа и регистрации P.I.D.R.
 
 document.addEventListener('DOMContentLoaded', () => {
-  const loginForm = document.getElementById('loginForm');
-  const registerForm = document.getElementById('registerForm');
+    // Элементы форм
+    const authForm = document.getElementById('auth-form');
+    const registerForm = document.getElementById('register-form');
+    const registerModal = document.getElementById('registerModal');
+    const showRegisterBtn = document.getElementById('showRegisterBtn');
+    const closeRegisterBtn = document.getElementById('closeRegisterModal');
+    const errorMessage = document.getElementById('error-message');
 
-  function showMessage(form, msg, isError = false) {
-    let el = form.querySelector('.form-message');
-    if (!el) {
-      el = document.createElement('div');
-      el.className = 'form-message';
-      form.appendChild(el);
-    }
-    el.textContent = msg;
-    el.style.color = isError ? '#e53935' : '#2196f3';
-    el.style.marginTop = '8px';
-    el.style.fontWeight = 'bold';
-    el.style.fontSize = '1em';
-  }
+    // Элементы выбора даты
+    const daySelect = document.getElementById('birth-day');
+    const monthSelect = document.getElementById('birth-month');
+    const yearSelect = document.getElementById('birth-year');
 
-  if (loginForm) {
-    loginForm.onsubmit = async (e) => {
-      e.preventDefault();
-      const data = Object.fromEntries(new FormData(loginForm));
-      showMessage(loginForm, 'Вход...');
-      try {
-        const res = await fetch('/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
-        const json = await res.json();
-        if (json.success) {
-          showMessage(loginForm, 'Успешный вход! Перенаправление...');
-          setTimeout(() => window.location.href = '/game-setup', 800);
-        } else {
-          showMessage(loginForm, json.error || 'Ошибка входа', true);
+    // Инициализация селектов даты рождения
+    const initDatePickers = () => {
+        // Дни
+        for (let i = 1; i <= 31; i++) {
+            const option = document.createElement('option');
+            option.value = i;
+            option.textContent = i.toString().padStart(2, '0');
+            daySelect.appendChild(option);
         }
-      } catch (err) {
-        showMessage(loginForm, 'Ошибка сервера', true);
-      }
-    };
-  }
 
-  if (registerForm) {
-    registerForm.onsubmit = async (e) => {
-      e.preventDefault();
-      const data = Object.fromEntries(new FormData(registerForm));
-      if (data.password !== data.password2) {
-        showMessage(registerForm, 'Пароли не совпадают', true);
-        return;
-      }
-      showMessage(registerForm, 'Регистрация...');
-      try {
-        const res = await fetch('/auth/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username: data.username, password: data.password })
+        // Месяцы
+        const months = [
+            'Январь', 'Февраль', 'Март', 'Апрель',
+            'Май', 'Июнь', 'Июль', 'Август',
+            'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+        ];
+        months.forEach((month, index) => {
+            const option = document.createElement('option');
+            option.value = index + 1;
+            option.textContent = month;
+            monthSelect.appendChild(option);
         });
-        const json = await res.json();
-        if (json.success) {
-          showMessage(registerForm, 'Успешная регистрация! Перенаправление...');
-          setTimeout(() => window.location.href = '/game-setup', 800);
-        } else {
-          showMessage(registerForm, json.error || 'Ошибка регистрации', true);
+
+        // Годы (от текущего года - 100 до текущего года - 10)
+        const currentYear = new Date().getFullYear();
+        for (let i = currentYear - 10; i >= currentYear - 100; i--) {
+            const option = document.createElement('option');
+            option.value = i;
+            option.textContent = i;
+            yearSelect.appendChild(option);
         }
-      } catch (err) {
-        showMessage(registerForm, 'Ошибка сервера', true);
-      }
     };
-  }
+
+    // Функция показа ошибки
+    const showError = (message, element = errorMessage) => {
+        element.textContent = message;
+        element.style.display = 'block';
+        setTimeout(() => {
+            element.style.display = 'none';
+        }, 3000);
+    };
+
+    // Открытие модального окна
+    showRegisterBtn.addEventListener('click', () => {
+        registerModal.classList.add('active');
+    });
+
+    // Закрытие модального окна
+    closeRegisterBtn.addEventListener('click', () => {
+        registerModal.classList.remove('active');
+    });
+
+    // Закрытие по клику вне модального окна
+    registerModal.addEventListener('click', (e) => {
+        if (e.target === registerModal) {
+            registerModal.classList.remove('active');
+        }
+    });
+
+    // Обработка входа
+    authForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+
+        try {
+            const response = await fetch('/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username, password })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                window.location.href = '/';
+            } else {
+                showError(data.message);
+            }
+        } catch (error) {
+            showError('Ошибка при входе. Попробуйте позже.');
+        }
+    });
+
+    // Обработка регистрации
+    registerForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const username = document.getElementById('reg-username').value;
+        const email = document.getElementById('reg-email').value;
+        const password = document.getElementById('reg-password').value;
+        const passwordConfirm = document.getElementById('reg-password-confirm').value;
+        const birthDate = `${yearSelect.value}-${monthSelect.value.toString().padStart(2, '0')}-${daySelect.value.toString().padStart(2, '0')}`;
+
+        // Валидация
+        if (password !== passwordConfirm) {
+            showError('Пароли не совпадают');
+            return;
+        }
+
+        if (password.length < 6) {
+            showError('Пароль должен содержать минимум 6 символов');
+            return;
+        }
+
+        try {
+            const response = await fetch('/auth/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username,
+                    email,
+                    password,
+                    birthDate
+                })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                registerModal.classList.remove('active');
+                showError('Регистрация успешна! Теперь вы можете войти.', errorMessage);
+                registerForm.reset();
+            } else {
+                showError(data.message);
+            }
+        } catch (error) {
+            showError('Ошибка при регистрации. Попробуйте позже.');
+        }
+    });
+
+    // Telegram авторизация
+    const tgLoginBtn = document.getElementById('tgLoginBtn');
+    tgLoginBtn.addEventListener('click', async () => {
+        try {
+            const tg = window.Telegram.WebApp;
+            if (tg.initDataUnsafe.user) {
+                const response = await fetch('/auth/telegram', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        telegramData: tg.initDataUnsafe
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    window.location.href = '/';
+                } else {
+                    showError(data.message);
+                }
+            } else {
+                showError('Ошибка авторизации через Telegram');
+            }
+        } catch (error) {
+            showError('Ошибка при входе через Telegram');
+        }
+    });
+
+    // Инициализация селектов даты
+    initDatePickers();
 });
 
 // --- Кнопка и модалка для админа ---

@@ -12,23 +12,106 @@ const User = sequelize.define('User', {
   username: {
     type: DataTypes.STRING,
     allowNull: false,
-    unique: true
+    unique: true,
+    validate: {
+      len: [3, 30],
+      notEmpty: true
+    }
   },
   email: {
     type: DataTypes.STRING,
+    allowNull: false,
     unique: true,
-    allowNull: true
+    validate: {
+      isEmail: true
+    }
   },
   password: {
     type: DataTypes.STRING,
-    allowNull: true
+    allowNull: true // Может быть null для пользователей, авторизованных через соц. сети
   },
-  telegram_id: {
+  birthDate: {
+    type: DataTypes.DATEONLY,
+    allowNull: false,
+    validate: {
+      isDate: true,
+      isBefore: new Date(new Date().setFullYear(new Date().getFullYear() - 10)).toISOString() // Минимум 10 лет
+    }
+  },
+  registrationDate: {
+    type: DataTypes.DATE,
+    allowNull: false,
+    defaultValue: DataTypes.NOW
+  },
+  telegramId: {
     type: DataTypes.STRING,
+    allowNull: true,
     unique: true
   },
-  telegram_username: {
-    type: DataTypes.STRING
+  googleId: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    unique: true
+  },
+  yandexId: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    unique: true
+  },
+  firstName: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  lastName: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  displayName: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  avatar: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  rating: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 1000
+  },
+  coins: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 0
+  },
+  level: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 1
+  },
+  experience: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
+  },
+  gamesPlayed: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
+  },
+  gamesWon: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
+  },
+  authType: {
+    type: DataTypes.ENUM('local', 'telegram', 'google', 'yandex'),
+    defaultValue: 'local'
+  },
+  lastLoginDate: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  isActive: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
   },
   display_name: {
     type: DataTypes.STRING
@@ -36,28 +119,10 @@ const User = sequelize.define('User', {
   avatar_url: {
     type: DataTypes.STRING
   },
-  rating: {
-    type: DataTypes.INTEGER,
-    defaultValue: 1000
-  },
-  gamesWon: {
-    type: DataTypes.INTEGER,
-    defaultValue: 0
-  },
-  coins: {
-    type: DataTypes.INTEGER,
-    defaultValue: 0
-  },
-  avatar: { type: DataTypes.STRING, allowNull: true },
-  level: {
-    type: DataTypes.INTEGER,
-    defaultValue: 1
-  },
   school: { type: DataTypes.STRING, allowNull: true },
   referralCode: { type: DataTypes.STRING, unique: true, allowNull: true },
-  authType: {
-    type: DataTypes.ENUM('basic', 'telegram', 'guest'),
-    defaultValue: 'basic'
+  telegram_username: {
+    type: DataTypes.STRING
   },
   last_active: {
     type: DataTypes.DATE,
@@ -69,7 +134,8 @@ const User = sequelize.define('User', {
   hooks: {
     beforeCreate: async (user) => {
       if (user.password) {
-        user.password = await bcrypt.hash(user.password, 10);
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(user.password, salt);
       }
       if (!user.referralCode) {
         let code;
@@ -82,16 +148,33 @@ const User = sequelize.define('User', {
       }
     },
     beforeUpdate: async (user) => {
-      if (user.changed('password')) {
-        user.password = await bcrypt.hash(user.password, 10);
+      if (user.changed('password') && user.password) {
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(user.password, salt);
       }
+    }
+  },
+  methods: {
+    validatePassword: async function(password) {
+      return await bcrypt.compare(password, this.password);
     }
   }
 });
 
-User.prototype.checkPassword = async function(password) {
-  if (!this.password) return false;
-  return await bcrypt.compare(password, this.password);
+User.prototype.toPublicJSON = function() {
+  return {
+    id: this.id,
+    username: this.username,
+    displayName: this.displayName || this.username,
+    avatar: this.avatar,
+    rating: this.rating,
+    level: this.level,
+    coins: this.coins,
+    gamesPlayed: this.gamesPlayed,
+    gamesWon: this.gamesWon,
+    authType: this.authType,
+    registrationDate: this.registrationDate
+  };
 };
 
 function generateReferralCode() {
