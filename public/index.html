@@ -316,30 +316,14 @@
         </div>
     </div>
 
-    <!-- Боковое меню -->
-    <div class="side-menu">
-        <div class="friends-list">
-            <div class="friends-header">
-                <div class="friends-title">Друзья</div>
-                <button class="add-friend-btn" id="addFriendBtn">
-                    <i class="fas fa-user-plus"></i>
-                </button>
-            </div>
-            <div id="friendsList">
-                <!-- Список друзей будет добавлен динамически -->
-            </div>
-        </div>
-    </div>
-
-    <!-- Модальное окно добавления друга -->
-    <div class="add-friend-modal" id="addFriendModal">
+    <!-- Модальное окно друзей -->
+    <div class="universal-modal" id="universal-modal">
         <div class="modal-content">
             <div class="modal-header">
-                <div class="modal-title">Добавить друга</div>
+                <div class="modal-title">Друзья</div>
                 <button class="close-modal">&times;</button>
             </div>
-            <input type="text" class="friend-search" placeholder="Поиск по нику или @username" id="friendSearch">
-            <div class="search-results" id="searchResults">
+            <div id="friendsListModal">
                 <!-- Результаты поиска будут добавлены динамически -->
             </div>
         </div>
@@ -400,9 +384,14 @@
 
         try {
             const response = await fetch(`/api/users/search?q=${encodeURIComponent(query)}`);
+            if (!response.ok) {
+                showToast('Ошибка поиска: ' + response.status, 'error');
+                document.getElementById('searchResults').innerHTML = '<div class="no-results">Ошибка поиска. Попробуйте позже.</div>';
+                return;
+            }
             const data = await response.json();
 
-            const resultsHtml = data.users.length ? 
+            const resultsHtml = data.users && data.users.length ? 
                 data.users.map(user => `
                     <div class="friend-item">
                         <img src="${user.avatar_url || '/images/default-avatar.png'}" class="friend-avatar" alt="${user.username}">
@@ -419,7 +408,7 @@
 
             document.getElementById('searchResults').innerHTML = resultsHtml;
         } catch (error) {
-            console.error('Ошибка поиска:', error);
+            showToast('Ошибка поиска', 'error');
             document.getElementById('searchResults').innerHTML = 
                 '<div class="no-results">Ошибка поиска. Попробуйте позже.</div>';
         }
@@ -429,9 +418,15 @@
     async function loadFriends() {
         try {
             const response = await fetch('/api/friends');
+            if (!response.ok) {
+                showToast('Ошибка загрузки друзей: ' + response.status, 'error');
+                document.getElementById('friendsList').innerHTML = 
+                    '<div class="no-results">Ошибка загрузки. Попробуйте позже.</div>';
+                return;
+            }
             const data = await response.json();
 
-            const friendsHtml = data.friends.length ?
+            const friendsHtml = data.friends && data.friends.length ?
                 data.friends.map(friend => `
                     <div class="friend-item">
                         <img src="${friend.avatar_url || '/images/default-avatar.png'}" class="friend-avatar" alt="${friend.username}">
@@ -455,7 +450,7 @@
 
             document.getElementById('friendsList').innerHTML = friendsHtml;
         } catch (error) {
-            console.error('Ошибка загрузки друзей:', error);
+            showToast('Ошибка загрузки друзей', 'error');
             document.getElementById('friendsList').innerHTML = 
                 '<div class="no-results">Ошибка загрузки. Попробуйте позже.</div>';
         }
@@ -471,17 +466,19 @@
                 },
                 body: JSON.stringify({ userId })
             });
+            if (!response.ok) {
+                showToast('Ошибка добавления друга: ' + response.status, 'error');
+                return;
+            }
             const data = await response.json();
-            
             if (data.success) {
                 addFriendModal.classList.remove('active');
                 loadFriends();
             } else {
-                alert(data.error || 'Ошибка добавления друга');
+                showToast(data.error || 'Ошибка добавления друга', 'error');
             }
         } catch (error) {
-            console.error('Ошибка добавления друга:', error);
-            alert('Произошла ошибка. Попробуйте позже.');
+            showToast('Произошла ошибка. Попробуйте позже.', 'error');
         }
     }
 
@@ -494,16 +491,18 @@
                 },
                 body: JSON.stringify({ userId })
             });
+            if (!response.ok) {
+                showToast('Ошибка отправки приглашения: ' + response.status, 'error');
+                return;
+            }
             const data = await response.json();
-            
             if (data.success) {
-                alert('Приглашение отправлено!');
+                showToast('Приглашение отправлено!', 'success');
             } else {
-                alert(data.error || 'Ошибка отправки приглашения');
+                showToast(data.error || 'Ошибка отправки приглашения', 'error');
             }
         } catch (error) {
-            console.error('Ошибка отправки приглашения:', error);
-            alert('Произошла ошибка. Попробуйте позже.');
+            showToast('Произошла ошибка. Попробуйте позже.', 'error');
         }
     }
 
@@ -519,21 +518,115 @@
                     friendId: userId 
                 })
             });
+            if (!response.ok) {
+                showToast('Ошибка создания игры: ' + response.status, 'error');
+                return;
+            }
             const data = await response.json();
-            
             if (data.success) {
                 window.location.href = `/game.html?id=${data.gameId}`;
             } else {
-                alert(data.error || 'Ошибка создания игры');
+                showToast(data.error || 'Ошибка создания игры', 'error');
             }
         } catch (error) {
-            console.error('Ошибка создания игры:', error);
-            alert('Произошла ошибка. Попробуйте позже.');
+            showToast('Произошла ошибка. Попробуйте позже.', 'error');
         }
     }
 
     // Загружаем список друзей при загрузке страницы
     document.addEventListener('DOMContentLoaded', loadFriends);
+    </script>
+
+    <!-- Модальное окно профиля -->
+    <div class="universal-modal" id="universal-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Профиль</div>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div id="profileModalContent">
+                <!-- Содержимое модального окна профиля будет добавлено динамически -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно правил -->
+    <div class="universal-modal" id="universal-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Правила</div>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div id="rulesModalContent">
+                <!-- Содержимое модального окна правил будет добавлено динамически -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // --- Модалка профиля ---
+    window.showProfileModal = function() {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      safeShowModal(`
+        <div style="display:flex;flex-direction:column;align-items:center;">
+          <img src="${user.avatar || 'img/player-avatar.svg'}" alt="Аватар" style="width:80px;height:80px;border-radius:50%;box-shadow:0 2px 8px #2196f355;margin-bottom:12px;">
+          <div style="font-size:1.2em;font-weight:700;color:var(--tg-theme-text-color,#1e3c72);margin-bottom:6px;">${user.display_name || user.username || 'Гость'}</div>
+          <div style="color:#2196f3;font-size:1em;margin-bottom:8px;">@${user.telegram_username || ''}</div>
+          <div style="color:#444;font-size:1em;margin-bottom:8px;">Рейтинг: <b>${user.rating || 1000}</b></div>
+          <div style="color:#444;font-size:1em;margin-bottom:8px;">ID: <b>${user.id || '-'}</b></div>
+          <button class="game-btn" style="margin-top:10px;" onclick="logoutProfile()">Выйти</button>
+        </div>
+      `, {
+        title: 'Профиль',
+        onClose: () => {},
+      });
+    };
+    window.logoutProfile = function() {
+      localStorage.removeItem('user');
+      fetch('/auth/logout', { credentials: 'include' })
+        .finally(() => window.location.href = '/register.html');
+    };
+
+    // --- Модалка правил ---
+    window.showRulesModal = function() {
+      safeShowModal(`
+        <div class="rules-content" style="color:var(--tg-theme-text-color,#1e3c72);text-align:left;max-height:60vh;overflow-y:auto;">
+          <h3 style="color:#2196f3;">Правила игры "P.I.D.R. - Punishment Inevitable: Dumb Rules"</h3>
+          <h4>Цель игры</h4>
+          <p>Избавиться от всех карт на руке раньше других игроков.</p>
+          <h4>Колода и подготовка</h4>
+          <p>Игра ведется стандартной колодой из 52 карт (от 2 до туза).</p>
+          <p>Каждому игроку раздаются 3 карты: 2 закрытые и 1 открытая.</p>
+          <h4>Ход игры</h4>
+          <p><strong>Стадия 1:</strong> Выкладка карт</p>
+          <ul>
+            <li>Игроки ходят по очереди. Начинает игрок с самой старшей открытой картой.</li>
+            <li>В свой ход игрок может положить свою карту на открытую карту любого оппонента, если она на 1 ранг выше (например, 7 на 6).</li>
+            <li>Туз считается самым старшим, можно положить только 2 на туза.</li>
+            <li>После каждого хода игрок берёт новую карту из колоды и может продолжать ходить, пока у него есть возможность сделать ход.</li>
+            <li>Если игрок не может сделать ход картами из руки (положить на карты других игроков), он может положить карту на свою открытую карту по тем же правилам.</li>
+            <li>Если и это невозможно, игрок берёт карту из колоды и его ход завершается.</li>
+            <li>Стадия заканчивается, когда колода заканчивается.</li>
+          </ul>
+          <p><strong>Стадия 2:</strong> Сброс карт</p>
+          <ul>
+            <li>Все закрытые карты открываются.</li>
+            <li>Игроки по очереди скидывают карты в центр по правилу: одинаковый ранг или одинаковая масть.</li>
+            <li>Если игрок не может сходить, он берёт карту из колоды.</li>
+            <li>Если колода закончилась, сброс перемешивается и становится новой колодой.</li>
+          </ul>
+          <h4>Победа</h4>
+          <p>Побеждает игрок, который первым избавится от всех своих карт.</p>
+        </div>
+      `, {
+        title: 'Правила',
+        onClose: () => {},
+      });
+    };
+
+    // --- Навешиваем обработчики на кнопки ---
+    document.getElementById('profile-page-btn').onclick = showProfileModal;
+    document.getElementById('rules').onclick = showRulesModal;
     </script>
 </body>
 </html> 

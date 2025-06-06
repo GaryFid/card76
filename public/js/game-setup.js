@@ -60,10 +60,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Кнопка "Правила игры"
   document.getElementById('rules-btn').addEventListener('click', () => {
-    document.getElementById('rules-modal').style.display = 'block';
-  });
-  document.querySelector('.close-modal').addEventListener('click', () => {
-    document.getElementById('rules-modal').style.display = 'none';
+    window.safeShowModal(`
+      <div class="rules-content" style="color:var(--tg-theme-text-color,#1e3c72);text-align:left;max-height:60vh;overflow-y:auto;">
+        <h3 style="color:#2196f3;">Правила игры "P.I.D.R. - Punishment Inevitable: Dumb Rules"</h3>
+        <h4>Общие правила:</h4>
+        <ul>
+          <li>В игре используется колода из 36 карт (от 6 до туза)</li>
+          <li>Игра поддерживает от 4 до 9 игроков</li>
+          <li>В начале игры каждому игроку раздаётся по 4 карты</li>
+        </ul>
+        <h4>Стадия 1:</h4>
+        <ul>
+          <li>Игроки кладут карты на 1 ранг выше на карты других игроков или свои карты</li>
+          <li>Туз считается старшей картой, на него можно положить только 2</li>
+          <li>Игрок продолжает ходить, пока у него есть возможность сделать ход</li>
+          <li>После каждого хода игрок берет новую карту из колоды</li>
+        </ul>
+        <h4>Кнопки в игре:</h4>
+        <ul>
+          <li><strong>Взять из колоды</strong> - взять карту из колоды</li>
+          <li><strong>Сыграть</strong> - положить карту на карту другого игрока</li>
+          <li><strong>Положить себе</strong> - положить карту на свою карту</li>
+        </ul>
+        <h4>Победа:</h4>
+        <p>Побеждает игрок, который первым избавится от всех своих карт.</p>
+      </div>
+    `, {
+      title: 'Правила',
+      onClose: () => {},
+    });
   });
 });
 
@@ -166,4 +191,11 @@ startGameBtn.addEventListener('click', function() {
         console.error('Ошибка при начале игры:', error);
         showToast('Произошла ошибка при начале игры. Пожалуйста, попробуйте еще раз.', 'error');
     }
-}); 
+});
+
+// Универсальная функция для открытия модалки (не более одной одновременно)
+window.safeShowModal = function(html, opts = {}) {
+  const old = document.getElementById('universal-modal');
+  if (old) old.remove();
+  showModal(html, opts);
+}; 

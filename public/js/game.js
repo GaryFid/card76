@@ -1046,5 +1046,76 @@ document.addEventListener('DOMContentLoaded', async () => {
         endTurnButton.disabled = canPlay || canTake;
     }
 
+    // Универсальная функция для открытия модалки (не более одной одновременно)
+    window.safeShowModal = function(html, opts = {}) {
+        const old = document.getElementById('universal-modal');
+        if (old) old.remove();
+        showModal(html, opts);
+    };
+
+    // --- Открытие модалки настроек ---
+    settingsButton.onclick = function() {
+        window.safeShowModal(`
+            <div class="modal-body" style="color:var(--tg-theme-text-color,#1e3c72);">
+                <div class="setting-item">
+                    <div>Звуки</div>
+                    <input type="checkbox" id="sound-toggle-modal">
+                </div>
+                <div class="setting-item">
+                    <div>Вибрация</div>
+                    <input type="checkbox" id="vibration-toggle-modal">
+                </div>
+                <button id="show-rules-modal" class="game-btn">Правила игры</button>
+                <button id="leave-game-modal" class="game-btn warning">Покинуть игру</button>
+            </div>
+        `, {
+            title: 'Настройки',
+            onClose: () => {},
+        });
+        setTimeout(() => {
+            document.getElementById('show-rules-modal').onclick = window.showRulesModal;
+            document.getElementById('leave-game-modal').onclick = function() {
+                goToPage('/index.html');
+            };
+        }, 50);
+    };
+
+    // --- Открытие модалки правил ---
+    window.showRulesModal = function() {
+        window.safeShowModal(`
+            <div class="rules-content" style="color:var(--tg-theme-text-color,#1e3c72);text-align:left;max-height:60vh;overflow-y:auto;">
+                <h3 style="color:#2196f3;">Правила игры "P.I.D.R. - Punishment Inevitable: Dumb Rules"</h3>
+                <h4>Цель игры</h4>
+                <p>Избавиться от всех карт на руке раньше других игроков.</p>
+                <h4>Колода и подготовка</h4>
+                <p>Игра ведется стандартной колодой из 52 карт (от 2 до туза).</p>
+                <p>Каждому игроку раздаются 3 карты: 2 закрытые и 1 открытая.</p>
+                <h4>Ход игры</h4>
+                <p><strong>Стадия 1:</strong> Выкладка карт</p>
+                <ul>
+                    <li>Игроки ходят по очереди. Начинает игрок с самой старшей открытой картой.</li>
+                    <li>В свой ход игрок может положить свою карту на открытую карту любого оппонента, если она на 1 ранг выше (например, 7 на 6).</li>
+                    <li>Туз считается самым старшим, можно положить только 2 на туза.</li>
+                    <li>После каждого хода игрок берёт новую карту из колоды и может продолжать ходить, пока у него есть возможность сделать ход.</li>
+                    <li>Если игрок не может сделать ход картами из руки (положить на карты других игроков), он может положить карту на свою открытую карту по тем же правилам.</li>
+                    <li>Если и это невозможно, игрок берёт карту из колоды и его ход завершается.</li>
+                    <li>Стадия заканчивается, когда колода заканчивается.</li>
+                </ul>
+                <p><strong>Стадия 2:</strong> Сброс карт</p>
+                <ul>
+                    <li>Все закрытые карты открываются.</li>
+                    <li>Игроки по очереди скидывают карты в центр по правилу: одинаковый ранг или одинаковая масть.</li>
+                    <li>Если игрок не может сходить, он берёт карту из колоды.</li>
+                    <li>Если колода закончилась, сброс перемешивается и становится новой колодой.</li>
+                </ul>
+                <h4>Победа</h4>
+                <p>Побеждает игрок, который первым избавится от всех своих карт.</p>
+            </div>
+        `, {
+            title: 'Правила',
+            onClose: () => {},
+        });
+    };
+
     (async () => { await initGame(); })();
 }); 
