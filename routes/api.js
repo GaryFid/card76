@@ -4,6 +4,7 @@ const { User, Game } = require('../models');
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
+const logger = require('../utils/logger');
 
 // Добавим парсер JSON для обработки тела запроса
 router.use(express.json());
@@ -269,6 +270,97 @@ router.post('/admin/delete-guests', async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: 'Ошибка сервера' });
   }
+});
+
+// Создание новой игры
+router.post('/games/create', async (req, res) => {
+    try {
+        const { userId, username, playerCount, withAI } = req.body;
+
+        if (!userId || !username) {
+            return res.status(400).json({
+                success: false,
+                error: 'Не указан пользователь'
+            });
+        }
+
+        // Проверяем существование пользователя
+        const user = await User.findByPk(userId);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                error: 'Пользователь не найден'
+            });
+        }
+
+        // Создаем новую игру
+        const game = await Game.create({
+            status: 'waiting',
+            players: [{
+                userId,
+                username,
+                isHost: true,
+                isReady: true,
+                isBot: false
+            }],
+            playerCount: playerCount || 4,
+            withAI: withAI || false,
+            gameStage: 'waiting'
+        });
+
+        logger.game({
+            event: 'game_created',
+            gameId: game.id,
+            creator: {
+                userId,
+                username
+            },
+            settings: {
+                playerCount,
+                withAI
+            }
+        });
+
+        res.json({
+            success: true,
+            game: {
+                id: game.id,
+                players: game.players,
+                status: game.status,
+                playerCount: game.playerCount,
+                withAI: game.withAI
+            }
+        });
+    } catch (error) {
+        logger.error({
+            event: 'game_creation_error',
+            error: error.message
+        });
+        res.status(500).json({
+            success: false,
+            error: 'Ошибка при создании игры'
+        });
+    }
+});
+
+// Получение статистики игр
+router.get('/games/stats', async (req, res) => {
+    try {
+        const stats = await Game.getStats();
+        res.json({
+            success: true,
+            stats
+        });
+    } catch (error) {
+        logger.error({
+            event: 'stats_error',
+            error: error.message
+        });
+        res.status(500).json({
+            success: false,
+            error: 'Ошибка при получении статистики'
+        });
+    }
 });
 
 module.exports = router; 

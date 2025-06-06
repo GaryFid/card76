@@ -7,9 +7,8 @@ const config = require('./config');
 const path = require('path');
 const sequelize = require('./config/db');
 const { syncModels } = require('./models');
-const Redis = require('redis');
-const RedisStore = require('connect-redis').default;
 const FileStore = require('session-file-store')(expressSession);
+const logger = require('./utils/logger');
 
 // Импорт сцен и обработчиков
 const { authScene } = require('./scenes/auth');
@@ -88,221 +87,73 @@ async function startApp() {
     const app = express();
     const PORT = config.port;
 
-    let sessionStore;
-    let redisClient;
+    // Настройка сессий с использованием FileStore
+    const sessionStore = new FileStore({
+      path: './sessions',
+      ttl: 604800, // 7 дней
+      retries: 0,
+      secret: config.sessionSecret
+    });
 
-    // Пробуем подключиться к Redis только если не в режиме разработки
-    if (process.env.NODE_ENV === 'production') {
-      try {
-        // Инициализация Redis клиента
-        redisClient = Redis.createClient({
-          url: process.env.REDIS_URL || 'redis://localhost:6379',
-          socket: {
-            connectTimeout: 10000,
-            reconnectStrategy: (retries) => {
-              console.log('Попытка переподключения к Redis:', retries);
-              return Math.min(retries * 100, 3000);
-            }
-          }
-        });
-
-        // Обработка ошибок Redis
-        redisClient.on('error', (err) => {
-          console.error('Ошибка Redis:', err);
-        });
-
-        redisClient.on('connect', () => {
-          console.log('Подключение к Redis успешно!');
-        });
-
-        // Подключаемся к Redis
-        await redisClient.connect();
-        
-        // Используем Redis для сессий
-        sessionStore = new RedisStore({ 
-          client: redisClient,
-          prefix: 'pidr:sess:',
-          ttl: 604800 // 7 дней
-        });
-        
-        console.log('Redis Store успешно инициализирован');
-      } catch (error) {
-        console.error('Ошибка подключения к Redis:', error);
-        console.log('Переключаемся на FileStore...');
-        sessionStore = new FileStore({
-          path: './sessions',
-          ttl: 604800,
-          retries: 0
-        });
-      }
-    } else {
-      // В режиме разработки используем FileStore
-      console.log('Режим разработки: используем FileStore для сессий');
-      sessionStore = new FileStore({
-        path: './sessions',
-        ttl: 604800,
-        retries: 0
-      });
-    }
-
-    // Настройка для обслуживания статических файлов
-    app.use(express.static(path.join(__dirname, 'public')));
-    
-    // Добавляем middleware для парсинга JSON
+    // Настройка middleware
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
-    
-    // Настройка сессий
     app.use(expressSession({
       store: sessionStore,
       secret: config.sessionSecret,
       resave: false,
       saveUninitialized: false,
-      rolling: true,
-      cookie: { 
-        maxAge: 604800000, // 7 дней
+      cookie: {
         secure: process.env.NODE_ENV === 'production',
-        httpOnly: true
+        maxAge: 604800000 // 7 дней в миллисекундах
       }
     }));
 
-    // Добавляем middleware для логирования сессий
-    app.use((req, res, next) => {
-      console.log('[session]', {
-        id: req.sessionID,
-        user: req.user?.username,
-        authenticated: req.isAuthenticated(),
-        path: req.path
-      });
-      next();
-    });
-
-    // Инициализация Passport
+    // Инициализация passport
     app.use(passport.initialize());
     app.use(passport.session());
 
-    // Middleware для проверки авторизации
-    const checkAuth = (req, res, next) => {
-      console.log('[auth-check]', {
-        path: req.path,
-        authenticated: req.isAuthenticated(),
-        user: req.user?.username,
-        sessionID: req.sessionID
-      });
-      
-      if (!req.isAuthenticated()) {
-        console.log('[auth-check] Пользователь не авторизован, редирект на /auth/register');
-        return res.redirect('/auth/register');
-      }
-      next();
-    };
+    // Настройка для обслуживания статических файлов
+    app.use(express.static(path.join(__dirname, 'public')));
 
-    // Защищаем маршруты
-    app.use('/game-setup', checkAuth);
-    app.use('/game', checkAuth);
-    app.use('/wait-players', checkAuth);
-    app.use('/api/game', checkAuth);
-
-    // Запуск бота (если не в тестовом режиме)
-    if (bot && config.enableBot && !config.testMode) {
-      try {
-        // В продакшен-режиме используем webhook вместо long polling
-        if (process.env.NODE_ENV === 'production') {
-          const webhookUrl = `${config.baseUrl}/telegram-webhook`;
-          await bot.telegram.setWebhook(webhookUrl);
-          console.log(`Бот настроен на использование webhook: ${webhookUrl}`);
-          
-          // Добавляем обработчик webhook в Express
-          app.use(bot.webhookCallback('/telegram-webhook'));
-          
-          // В режиме webhook бот не нужно останавливать специально
-          bot.isPolling = false;
-        } else {
-          // В режиме разработки используем long polling
-          await bot.launch();
-          console.log('Бот запущен в режиме long polling');
-          
-          // Отмечаем, что бот запущен в режиме polling
-          bot.isPolling = true;
-        }
-      } catch (error) {
-        console.error('Ошибка запуска бота:', error);
-        bot = null; // Полностью убираем ссылку на бота
-        if (process.env.NODE_ENV === 'production') {
-          console.error('Невозможно продолжить без работающего бота в production режиме');
-          process.exit(1);
-        } else {
-          console.warn('Продолжаем без Telegram бота - веб-интерфейс будет доступен');
-        }
-      }
-    } else if (config.testMode) {
-      console.log('Бот работает в тестовом режиме (без подключения к Telegram API)');
-    } else {
-      console.log('Бот отключен в настройках');
-    }
-
-    // Маршруты для авторизации
+    // Маршруты
     app.use('/auth', require('./routes/auth'));
-
-    // Маршрут для API
     app.use('/api', require('./routes/api'));
 
-    // Базовый маршрут
+    // Основные маршруты для веб-приложения
     app.get('/', (req, res) => {
-      let botStatus = 'Отключен';
-      if (config.testMode) {
-        botStatus = 'Тестовый режим';
-      } else if (bot) {
-        botStatus = bot.isPolling ? 'Запущен (polling)' : 'Запущен (webhook)';
-      }
-      
-      res.send(`Сервер карточной игры "P.I.D.R." запущен!<br>Статус хранилища: PostgreSQL<br>Статус бота: ${botStatus}`);
+      res.redirect('/webapp');
     });
 
-    // Маршрут для мини-приложения
     app.get('/webapp', (req, res) => {
       res.sendFile(path.join(__dirname, 'public', 'index.html'));
     });
 
-    // Маршрут для страницы регистрации
     app.get('/register', (req, res) => {
       res.sendFile(path.join(__dirname, 'public', 'register.html'));
     });
-    
-    // Маршрут для страницы настройки игры
+
     app.get('/game-setup', (req, res) => {
       res.sendFile(path.join(__dirname, 'public', 'game-setup.html'));
     });
-    
-    // Маршрут для игровой страницы
+
     app.get('/game', (req, res) => {
       res.sendFile(path.join(__dirname, 'public', 'game.html'));
     });
 
-    // Маршрут для страницы проверки обновлений
-    app.get('/check-updates', (req, res) => {
-      res.sendFile(path.join(__dirname, 'public', 'check-updates.html'));
-    });
-
-    // Маршрут для страницы ожидания игроков
-    app.get('/wait-players', (req, res) => {
-      res.sendFile(path.join(__dirname, 'public', 'wait-players.html'));
-    });
-
-    // Запуск веб-сервера
+    // Запуск сервера
     app.listen(PORT, () => {
       console.log(`Сервер запущен на порту ${PORT}`);
+      logger.session({
+        event: 'server_started',
+        port: PORT,
+        mode: process.env.NODE_ENV || 'development'
+      });
     });
 
     // Graceful shutdown
     async function cleanup() {
       console.log('Выполняется graceful shutdown...');
-      
-      // Закрываем Redis если он был подключен
-      if (redisClient && redisClient.isOpen) {
-        await redisClient.quit();
-        console.log('Redis соединение закрыто');
-      }
       
       // Останавливаем бота если нужно
       if (bot && bot.isPolling) {

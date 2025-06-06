@@ -1,5 +1,111 @@
 const { GAMES_FILE, readFromFile, writeToFile } = require('../config/database');
 const User = require('./user');
+const logger = require('../utils/logger');
+const { DataTypes } = require('sequelize');
+const sequelize = require('../config/db');
+
+const Game = sequelize.define('Game', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  status: {
+    type: DataTypes.STRING,
+    defaultValue: 'waiting'
+  },
+  players: {
+    type: DataTypes.JSONB,
+    defaultValue: []
+  },
+  deck: {
+    type: DataTypes.JSONB,
+    defaultValue: []
+  },
+  discardPile: {
+    type: DataTypes.JSONB,
+    defaultValue: []
+  },
+  currentPlayer: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
+  },
+  winnerId: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  },
+  withAI: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
+  aiTestMode: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
+  gameStage: {
+    type: DataTypes.STRING,
+    defaultValue: 'init'
+  }
+}, {
+  tableName: 'games',
+  timestamps: true,
+  hooks: {
+    afterCreate: (game) => {
+      logger.game({
+        event: 'game_created',
+        gameId: game.id,
+        players: game.players,
+        withAI: game.withAI
+      });
+    },
+    afterUpdate: (game) => {
+      logger.game({
+        event: 'game_updated',
+        gameId: game.id,
+        status: game.status,
+        currentPlayer: game.currentPlayer,
+        gameStage: game.gameStage
+      });
+    }
+  }
+});
+
+// Добавляем метод для подсчета активных игр
+Game.countActivePlayers = async function() {
+  const activeGames = await this.findAll({
+    where: {
+      status: 'active'
+    }
+  });
+  
+  const players = new Set();
+  activeGames.forEach(game => {
+    game.players.forEach(player => {
+      if (!player.isBot) {
+        players.add(player.userId);
+      }
+    });
+  });
+  
+  return players.size;
+};
+
+// Метод для получения статистики игр
+Game.getStats = async function() {
+  const stats = {
+    totalGames: await this.count(),
+    activePlayers: await this.countActivePlayers(),
+    activeGames: await this.count({ where: { status: 'active' } }),
+    completedGames: await this.count({ where: { status: 'completed' } })
+  };
+  
+  logger.game({
+    event: 'stats_requested',
+    stats
+  });
+  
+  return stats;
+};
 
 class Game {
   constructor(data = {}) {

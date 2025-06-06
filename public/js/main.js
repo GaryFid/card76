@@ -1,3 +1,108 @@
+// Инициализация Telegram WebApp
+const tgApp = window.Telegram.WebApp;
+tgApp.expand();
+
+// Настройка основного цвета из Telegram
+document.documentElement.style.setProperty('--tg-theme-bg-color', tgApp.themeParams.bg_color || '#ffffff');
+document.documentElement.style.setProperty('--tg-theme-text-color', tgApp.themeParams.text_color || '#000000');
+document.documentElement.style.setProperty('--tg-theme-button-color', tgApp.themeParams.button_color || '#3390ec');
+document.documentElement.style.setProperty('--tg-theme-button-text-color', tgApp.themeParams.button_text_color || '#ffffff');
+
+// Проверка авторизации при загрузке страницы
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        // Получаем данные пользователя из Telegram WebApp
+        const initData = tgApp.initData || '';
+        const initDataUnsafe = tgApp.initDataUnsafe || {};
+        
+        if (!initData) {
+            console.error('Нет данных инициализации Telegram WebApp');
+            return;
+        }
+
+        // Отправляем запрос на сервер для проверки/создания пользователя
+        const response = await fetch('/auth/telegram/check', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                initData,
+                user: initDataUnsafe.user
+            })
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+            // Сохраняем данные пользователя
+            localStorage.setItem('user', JSON.stringify(data.user));
+            console.log('Пользователь авторизован:', data.user);
+        } else {
+            console.error('Ошибка авторизации:', data.error);
+            if (data.redirect) {
+                window.location.href = data.redirect;
+            }
+        }
+    } catch (error) {
+        console.error('Ошибка при проверке авторизации:', error);
+    }
+});
+
+// Обработчик кнопки "Начать игру"
+document.getElementById('start-game').addEventListener('click', async () => {
+    try {
+        const user = localStorage.getItem('user');
+        if (!user) {
+            console.error('Пользователь не авторизован');
+            // Пробуем получить данные из Telegram WebApp
+            const initDataUnsafe = tgApp.initDataUnsafe || {};
+            if (initDataUnsafe.user) {
+                // Отправляем запрос на автоматическую авторизацию
+                const response = await fetch('/auth/telegram/force-login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        user: initDataUnsafe.user
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    window.location.href = '/game-setup';
+                    return;
+                }
+            }
+            window.location.href = '/register';
+            return;
+        }
+
+        // Проверяем валидность данных пользователя
+        const userData = JSON.parse(user);
+        if (!userData.id || !userData.username) {
+            console.error('Некорректные данные пользователя');
+            localStorage.removeItem('user');
+            window.location.href = '/register';
+            return;
+        }
+
+        // Сохраняем базовые настройки игры
+        localStorage.setItem('gameSettings', JSON.stringify({
+            playerCount: 4,
+            withAI: false
+        }));
+
+        // Переходим к настройке игры
+        window.location.href = '/game-setup';
+    } catch (error) {
+        console.error('Ошибка при начале игры:', error);
+        alert('Произошла ошибка при начале игры. Попробуйте перезагрузить страницу.');
+    }
+});
+
 document.addEventListener('DOMContentLoaded', function() {
     // --- Анимация карт в header ---
     const cardNames = [
@@ -157,31 +262,6 @@ document.addEventListener('DOMContentLoaded', function() {
             window.location.href = '/register';
             return;
         }
-        document.getElementById('start-game').addEventListener('click', () => {
-            const user = localStorage.getItem('user');
-            if (!user) {
-                window.location.href = '/register';
-                return;
-            }
-            try {
-                const userData = JSON.parse(user);
-                if (!userData.id || !userData.username) {
-                    localStorage.removeItem('user');
-                    window.location.href = '/register';
-                    return;
-                }
-                // Сохраняем базовые настройки игры
-                localStorage.setItem('gameSettings', JSON.stringify({
-                    playerCount: 4,
-                    withAI: false
-                }));
-                window.location.href = '/game-setup';
-            } catch (error) {
-                console.error('Ошибка при обработке данных пользователя:', error);
-                localStorage.removeItem('user');
-                window.location.href = '/register';
-            }
-        });
         document.getElementById('play-ai').addEventListener('click', () => {
             localStorage.setItem('gameSettings', JSON.stringify({
                 playerCount: 4,

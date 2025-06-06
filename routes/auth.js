@@ -2,6 +2,7 @@ const express = require('express');
 const passport = require('passport');
 const router = express.Router();
 const { User } = require('../models');
+const logger = require('../utils/logger');
 
 // Вспомогательная функция для логирования
 const logAuth = (step, data) => {
@@ -153,49 +154,71 @@ router.get('/telegram/callback',
   }
 );
 
-// Проверка Telegram-авторизации
-router.get('/telegram/check', async (req, res) => {
-  try {
-    logAuth('TELEGRAM_CHECK_START', { 
-      session: req.session,
-      user: req.user
-    });
+// Проверка статуса авторизации
+router.post('/telegram/check', async (req, res) => {
+    try {
+        const { initData, user } = req.body;
+        
+        if (!user) {
+            logger.auth({
+                event: 'auth_check_failed',
+                error: 'No user data provided'
+            });
+            return res.json({ 
+                success: false, 
+                error: 'Нет данных пользователя' 
+            });
+        }
 
-    if (!req.user) {
-      logAuth('TELEGRAM_CHECK_NO_USER', {});
-      return res.json({ success: false, telegramAvailable: false });
+        // Ищем пользователя
+        let dbUser = await User.findOne({
+            where: {
+                [User.sequelize.Op.or]: [
+                    { telegramId: user.id.toString() },
+                    { username: user.username }
+                ]
+            }
+        });
+
+        if (!dbUser) {
+            logger.auth({
+                event: 'new_user_detected',
+                telegramId: user.id,
+                username: user.username
+            });
+            return res.json({ 
+                success: false, 
+                redirect: '/register' 
+            });
+        }
+
+        logger.auth({
+            event: 'auth_check_success',
+            userId: dbUser.id,
+            username: dbUser.username
+        });
+
+        return res.json({
+            success: true,
+            user: {
+                id: dbUser.id,
+                username: dbUser.username,
+                telegramId: dbUser.telegramId,
+                rating: dbUser.rating,
+                coins: dbUser.coins,
+                level: dbUser.level
+            }
+        });
+    } catch (error) {
+        logger.error({
+            event: 'auth_check_error',
+            error: error.message
+        });
+        res.status(500).json({ 
+            success: false, 
+            error: 'Ошибка при проверке авторизации' 
+        });
     }
-
-    // Обновляем сессию
-    if (req.session) {
-      req.session.touch();
-      req.session.save((err) => {
-        if (err) logAuth('SESSION_TOUCH_ERROR', { error: err.message });
-      });
-    }
-
-    logAuth('TELEGRAM_CHECK_SUCCESS', { 
-      userId: req.user.id,
-      username: req.user.username
-    });
-
-    return res.json({
-      success: true,
-      user: {
-        id: req.user.id,
-        username: req.user.username,
-        rating: req.user.rating,
-        coins: req.user.coins,
-        avatar: req.user.avatar,
-        level: req.user.level,
-        school: req.user.school,
-        referralCode: req.user.referralCode
-      }
-    });
-  } catch (error) {
-    console.error('Ошибка в telegram check:', error);
-    res.json({ success: false });
-  }
 });
 
 // Форсированный вход через Telegram
