@@ -6,7 +6,7 @@ const expressSession = require('express-session');
 const config = require('./config/config');
 const path = require('path');
 const sequelize = require('./config/db');
-const { syncModels } = require('./models');
+const { initDatabase } = require('./models');
 const FileStore = require('session-file-store')(expressSession);
 const logger = require('./utils/logger');
 
@@ -80,13 +80,15 @@ if (config.telegram.botToken) {
 // Асинхронная функция запуска приложения
 async function startApp() {
   try {
-    // Проверка подключения к PostgreSQL
+    // Проверка подключения к PostgreSQL и инициализация базы данных
     try {
       await sequelize.authenticate();
-      await syncModels();
       console.log('Подключение к PostgreSQL успешно!');
+      
+      await initDatabase();
+      console.log('База данных успешно инициализирована');
     } catch (err) {
-      console.error('Ошибка подключения к PostgreSQL:', err);
+      console.error('Ошибка работы с базой данных:', err);
       process.exit(1);
     }
 

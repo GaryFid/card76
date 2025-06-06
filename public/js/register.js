@@ -109,121 +109,52 @@ document.addEventListener('DOMContentLoaded', function() {
 // JS для форм входа и регистрации P.I.D.R.
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Элементы форм
-    const authForm = document.getElementById('auth-form');
-    const registerForm = document.getElementById('register-form');
-    const registerModal = document.getElementById('registerModal');
-    const showRegisterBtn = document.getElementById('showRegisterBtn');
-    const closeRegisterBtn = document.getElementById('closeRegisterModal');
-    const errorMessage = document.getElementById('error-message');
-
-    // Элементы выбора даты
+    // Инициализация выпадающих списков для даты рождения
     const daySelect = document.getElementById('birth-day');
     const monthSelect = document.getElementById('birth-month');
     const yearSelect = document.getElementById('birth-year');
 
-    // Инициализация селектов даты рождения
-    const initDatePickers = () => {
-        // Дни
-        for (let i = 1; i <= 31; i++) {
-            const option = document.createElement('option');
-            option.value = i;
-            option.textContent = i.toString().padStart(2, '0');
-            daySelect.appendChild(option);
-        }
+    // Заполняем дни
+    for (let i = 1; i <= 31; i++) {
+        const option = document.createElement('option');
+        option.value = i;
+        option.textContent = i;
+        daySelect.appendChild(option);
+    }
 
-        // Месяцы
-        const months = [
-            'Январь', 'Февраль', 'Март', 'Апрель',
-            'Май', 'Июнь', 'Июль', 'Август',
-            'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
-        ];
-        months.forEach((month, index) => {
-            const option = document.createElement('option');
-            option.value = index + 1;
-            option.textContent = month;
-            monthSelect.appendChild(option);
-        });
-
-        // Годы (от текущего года - 100 до текущего года - 10)
-        const currentYear = new Date().getFullYear();
-        for (let i = currentYear - 10; i >= currentYear - 100; i--) {
-            const option = document.createElement('option');
-            option.value = i;
-            option.textContent = i;
-            yearSelect.appendChild(option);
-        }
-    };
-
-    // Функция показа ошибки
-    const showError = (message, element = errorMessage) => {
-        element.textContent = message;
-        element.style.display = 'block';
-        setTimeout(() => {
-            element.style.display = 'none';
-        }, 3000);
-    };
-
-    // Открытие модального окна
-    showRegisterBtn.addEventListener('click', () => {
-        registerModal.classList.add('active');
+    // Заполняем месяцы
+    const months = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 
+                   'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+    months.forEach((month, index) => {
+        const option = document.createElement('option');
+        option.value = index + 1;
+        option.textContent = month;
+        monthSelect.appendChild(option);
     });
 
-    // Закрытие модального окна
-    closeRegisterBtn.addEventListener('click', () => {
-        registerModal.classList.remove('active');
-    });
+    // Заполняем годы (от текущего года - 100 до текущего года)
+    const currentYear = new Date().getFullYear();
+    for (let i = currentYear; i >= currentYear - 100; i--) {
+        const option = document.createElement('option');
+        option.value = i;
+        option.textContent = i;
+        yearSelect.appendChild(option);
+    }
 
-    // Закрытие по клику вне модального окна
-    registerModal.addEventListener('click', (e) => {
-        if (e.target === registerModal) {
-            registerModal.classList.remove('active');
-        }
-    });
-
-    // Обработка входа
-    authForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
-
-        try {
-            const response = await fetch('/auth/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ username, password })
-            });
-
-            const data = await response.json();
-            if (data.success) {
-                window.location.href = '/';
-            } else {
-                showError(data.message);
-            }
-        } catch (error) {
-            showError('Ошибка при входе. Попробуйте позже.');
-        }
-    });
-
-    // Обработка регистрации
+    // Обработчик формы регистрации
+    const registerForm = document.getElementById('register-form');
     registerForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+
         const username = document.getElementById('reg-username').value;
         const email = document.getElementById('reg-email').value;
         const password = document.getElementById('reg-password').value;
-        const passwordConfirm = document.getElementById('reg-password-confirm').value;
-        const birthDate = `${yearSelect.value}-${monthSelect.value.toString().padStart(2, '0')}-${daySelect.value.toString().padStart(2, '0')}`;
+        const confirmPassword = document.getElementById('reg-password-confirm').value;
+        const birthDate = `${yearSelect.value}-${monthSelect.value.padStart(2, '0')}-${daySelect.value.padStart(2, '0')}`;
 
         // Валидация
-        if (password !== passwordConfirm) {
+        if (password !== confirmPassword) {
             showError('Пароли не совпадают');
-            return;
-        }
-
-        if (password.length < 6) {
-            showError('Пароль должен содержать минимум 6 символов');
             return;
         }
 
@@ -242,10 +173,10 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             const data = await response.json();
+
             if (data.success) {
-                registerModal.classList.remove('active');
-                showError('Регистрация успешна! Теперь вы можете войти.', errorMessage);
-                registerForm.reset();
+                // Успешная регистрация
+                window.location.href = '/check-updates.html';
             } else {
                 showError(data.message);
             }
@@ -254,38 +185,66 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Telegram авторизация
-    const tgLoginBtn = document.getElementById('tgLoginBtn');
-    tgLoginBtn.addEventListener('click', async () => {
-        try {
-            const tg = window.Telegram.WebApp;
-            if (tg.initDataUnsafe.user) {
-                const response = await fetch('/auth/telegram', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        telegramData: tg.initDataUnsafe
-                    })
-                });
+    // Обработчик формы входа
+    const loginForm = document.getElementById('auth-form');
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
 
-                const data = await response.json();
-                if (data.success) {
-                    window.location.href = '/';
-                } else {
-                    showError(data.message);
-                }
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+
+        try {
+            const response = await fetch('/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username,
+                    password
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                window.location.href = '/check-updates.html';
             } else {
-                showError('Ошибка авторизации через Telegram');
+                showError(data.message);
             }
         } catch (error) {
-            showError('Ошибка при входе через Telegram');
+            showError('Ошибка при входе. Попробуйте позже.');
         }
     });
 
-    // Инициализация селектов даты
-    initDatePickers();
+    // Показать/скрыть модальное окно регистрации
+    const showRegisterBtn = document.getElementById('showRegisterBtn');
+    const registerModal = document.getElementById('registerModal');
+    const closeRegisterModal = document.getElementById('closeRegisterModal');
+
+    showRegisterBtn.addEventListener('click', () => {
+        registerModal.classList.add('active');
+    });
+
+    closeRegisterModal.addEventListener('click', () => {
+        registerModal.classList.remove('active');
+    });
+
+    // Telegram авторизация
+    const tgLoginBtn = document.getElementById('tgLoginBtn');
+    tgLoginBtn.addEventListener('click', () => {
+        window.location.href = '/auth/telegram';
+    });
+
+    // Вспомогательная функция для отображения ошибок
+    function showError(message) {
+        const errorDiv = document.getElementById('error-message');
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+        setTimeout(() => {
+            errorDiv.style.display = 'none';
+        }, 5000);
+    }
 });
 
 // --- Кнопка и модалка для админа ---

@@ -20,7 +20,7 @@ const User = sequelize.define('User', {
   },
   email: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true,
     unique: true,
     validate: {
       isEmail: true
@@ -31,12 +31,8 @@ const User = sequelize.define('User', {
     allowNull: true // Может быть null для пользователей, авторизованных через соц. сети
   },
   birthDate: {
-    type: DataTypes.DATEONLY,
-    allowNull: false,
-    validate: {
-      isDate: true,
-      isBefore: new Date(new Date().setFullYear(new Date().getFullYear() - 10)).toISOString() // Минимум 10 лет
-    }
+    type: DataTypes.DATE,
+    allowNull: true // Делаем поле опциональным
   },
   registrationDate: {
     type: DataTypes.DATE,
