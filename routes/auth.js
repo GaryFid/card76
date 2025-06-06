@@ -304,13 +304,20 @@ router.post('/telegram/force-login', async (req, res) => {
         if (!user || !user.id) {
             logger.error({
                 event: 'force_login_error',
-                error: 'No user data provided'
+                error: 'No user data provided',
+                payload: req.body
             });
             return res.status(400).json({
                 success: false,
                 error: 'Не предоставлены данные пользователя'
             });
         }
+
+        logger.error({
+            event: 'force_login_attempt',
+            telegramId: user.id,
+            payload: user
+        });
 
         // Ищем существующего пользователя
         let dbUser = await User.findOne({
@@ -322,31 +329,46 @@ router.post('/telegram/force-login', async (req, res) => {
         if (!dbUser) {
             // Создаём нового пользователя
             const username = user.username || `user_${user.id}`;
-            const avatarUrl = user.photo_url || `https://t.me/i/userpic/320/${username}.jpg`;
+            const avatarUrl = user.photo_url || null;
 
-            dbUser = await User.create({
-                username: username,
-                telegram_id: user.id.toString(),
-                telegram_username: user.username,
-                display_name: user.first_name,
-                avatar_url: avatarUrl,
-                rating: 1000,
-                coins: 0,
-                level: 1,
-                authType: 'telegram'
+            logger.error({
+                event: 'creating_new_user',
+                username,
+                telegramId: user.id
             });
 
-            logger.info({
-                event: 'new_user_created',
-                userId: dbUser.id,
-                telegramId: user.id,
-                username: username
-            });
+            try {
+                dbUser = await User.create({
+                    username: username,
+                    telegram_id: user.id.toString(),
+                    telegram_username: user.username || null,
+                    display_name: user.first_name || username,
+                    avatar_url: avatarUrl,
+                    rating: 1000,
+                    coins: 0,
+                    level: 1,
+                    authType: 'telegram'
+                });
+
+                logger.error({
+                    event: 'new_user_created',
+                    userId: dbUser.id,
+                    telegramId: user.id,
+                    username: username
+                });
+            } catch (createError) {
+                logger.error({
+                    event: 'user_creation_error',
+                    error: createError.message,
+                    payload: user
+                });
+                throw createError;
+            }
         } else {
             // Обновляем существующего пользователя
             const updates = {
-                telegram_username: user.username,
-                display_name: user.first_name,
+                telegram_username: user.username || dbUser.telegram_username,
+                display_name: user.first_name || dbUser.display_name,
                 last_active: new Date()
             };
 
@@ -357,7 +379,7 @@ router.post('/telegram/force-login', async (req, res) => {
 
             await dbUser.update(updates);
 
-            logger.info({
+            logger.error({
                 event: 'user_updated',
                 userId: dbUser.id,
                 telegramId: user.id,
@@ -388,7 +410,8 @@ router.post('/telegram/force-login', async (req, res) => {
     } catch (error) {
         logger.error({
             event: 'force_login_error',
-            error: error.message
+            error: error.message,
+            stack: error.stack
         });
         res.status(500).json({
             success: false,
