@@ -235,7 +235,7 @@ router.post('/telegram/check', async (req, res) => {
         const { initData, user } = req.body;
         
         if (!user) {
-            logger.auth({
+            logger.error({
                 event: 'auth_check_failed',
                 error: 'No user data provided'
             });
@@ -256,7 +256,7 @@ router.post('/telegram/check', async (req, res) => {
         });
 
         if (!dbUser) {
-            logger.auth({
+            logger.error({
                 event: 'new_user_detected',
                 telegramId: user.id,
                 username: user.username
@@ -267,7 +267,7 @@ router.post('/telegram/check', async (req, res) => {
             });
         }
 
-        logger.auth({
+        logger.error({
             event: 'auth_check_success',
             userId: dbUser.id,
             username: dbUser.username

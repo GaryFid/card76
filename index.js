@@ -114,7 +114,11 @@ async function startApp() {
     app.use(passport.session());
 
     // Настройка для обслуживания статических файлов
-    app.use(express.static(path.join(__dirname, 'public')));
+    app.use(express.static(path.join(__dirname, 'public'), {
+      maxAge: '1d', // Кэширование на 1 день
+      etag: true,
+      lastModified: true
+    }));
 
     // Маршруты
     app.use('/auth', require('./routes/auth'));

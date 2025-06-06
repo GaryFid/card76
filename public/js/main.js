@@ -396,4 +396,84 @@ document.addEventListener('DOMContentLoaded', function() {
             if (profileModalMsg) profileModalMsg.textContent = '';
         });
     }
-}); 
+});
+
+// --- Модальное окно друзей ---
+window.showFriendsModal = async function() {
+  // Проверяем, нет ли уже открытого модального окна
+  if (document.getElementById('friends-modal-bg')) return;
+
+  // Создаем фон модального окна
+  const modalBg = document.createElement('div');
+  modalBg.id = 'friends-modal-bg';
+  modalBg.style.position = 'fixed';
+  modalBg.style.left = '0';
+  modalBg.style.top = '0';
+  modalBg.style.width = '100vw';
+  modalBg.style.height = '100vh';
+  modalBg.style.background = 'rgba(30,60,114,0.18)';
+  modalBg.style.zIndex = 3000;
+  modalBg.style.display = 'flex';
+  modalBg.style.alignItems = 'center';
+  modalBg.style.justifyContent = 'center';
+
+  // Бокс модального окна
+  const box = document.createElement('div');
+  box.style.background = '#fff';
+  box.style.borderRadius = '18px';
+  box.style.padding = '32px 24px';
+  box.style.maxWidth = '400px';
+  box.style.width = '95vw';
+  box.style.boxShadow = '0 8px 32px #1e3c72aa';
+  box.style.position = 'relative';
+  box.style.textAlign = 'center';
+
+  // Кнопка закрытия
+  const close = document.createElement('button');
+  close.textContent = '×';
+  close.style.position = 'absolute';
+  close.style.right = '18px';
+  close.style.top = '12px';
+  close.style.fontSize = '2em';
+  close.style.background = 'none';
+  close.style.border = 'none';
+  close.style.cursor = 'pointer';
+  close.style.color = '#2196f3';
+  close.onclick = () => modalBg.remove();
+  box.appendChild(close);
+
+  // Заголовок
+  const title = document.createElement('h2');
+  title.textContent = 'Ваши друзья';
+  title.style.marginBottom = '18px';
+  box.appendChild(title);
+
+  // Список друзей (заглушка)
+  const list = document.createElement('div');
+  list.style.textAlign = 'left';
+  list.style.maxHeight = '300px';
+  list.style.overflowY = 'auto';
+  list.innerHTML = '<div style="color:#888;">Здесь будет список ваших друзей.</div>';
+  box.appendChild(list);
+
+  // TODO: Заменить заглушку на реальный fetch друзей
+  // try {
+  //   const res = await fetch('/api/friends', { credentials: 'include' });
+  //   const json = await res.json();
+  //   if (json.success && Array.isArray(json.friends)) {
+  //     list.innerHTML = '';
+  //     json.friends.forEach(f => {
+  //       const item = document.createElement('div');
+  //       item.textContent = f.username || f.display_name || f.telegram_username || 'Без имени';
+  //       list.appendChild(item);
+  //     });
+  //   } else {
+  //     list.innerHTML = '<div style="color:#e53935">Ошибка загрузки друзей</div>';
+  //   }
+  // } catch (e) {
+  //   list.innerHTML = '<div style="color:#e53935">Ошибка загрузки друзей</div>';
+  // }
+
+  modalBg.appendChild(box);
+  document.body.appendChild(modalBg);
+} 

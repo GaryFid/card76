@@ -355,4 +355,41 @@ footer {
     outline: 3px solid #43ea6d;
     box-shadow: 0 0 16px 4px #43ea6d55;
     transition: outline 0.2s, box-shadow 0.2s;
+}
+
+.friends-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(90deg, #2196f3 60%, #21cbf3 100%);
+    color: #fff;
+    border: none;
+    border-radius: 50px;
+    padding: 8px 18px 8px 14px;
+    font-size: 1.08em;
+    font-weight: 700;
+    box-shadow: 0 2px 8px #2196f3aa;
+    cursor: pointer;
+    margin: 0 18px 0 0;
+    transition: background 0.2s, box-shadow 0.2s, transform 0.12s;
+    position: relative;
+    z-index: 10;
+}
+.friends-btn:hover, .friends-btn:focus {
+    background: linear-gradient(90deg, #21cbf3 0%, #2196f3 100%);
+    box-shadow: 0 4px 16px #2196f3cc;
+    transform: translateY(-2px) scale(1.04);
+}
+.friends-icon {
+    font-size: 1.3em;
+    margin-right: 2px;
+}
+.friends-text {
+    font-size: 1em;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+@media (max-width: 600px) {
+    .friends-btn { padding: 8px 10px 8px 10px; font-size: 1em; }
+    .friends-text { display: none; }
 } 
