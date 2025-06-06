@@ -10,8 +10,12 @@ const Game = sequelize.define('Game', {
     autoIncrement: true
   },
   status: {
-    type: DataTypes.ENUM('waiting', 'in_progress', 'finished'),
-    defaultValue: 'waiting'
+    type: DataTypes.STRING,
+    allowNull: false,
+    defaultValue: 'waiting',
+    validate: {
+      isIn: [['waiting', 'in_progress', 'finished']]
+    }
   },
   players: {
     type: DataTypes.JSONB,

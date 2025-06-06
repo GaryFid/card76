@@ -5,13 +5,36 @@ const Friendship = require('./friendship');
 
 async function initDatabase() {
     try {
-        // Проверяем существование таблицы users
+        // Проверяем существование таблиц
         const [tables] = await sequelize.query(
             "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';"
         );
         
         const usersTableExists = tables.some(table => table.table_name === 'users');
+        const gamesTableExists = tables.some(table => table.table_name === 'games');
         
+        if (gamesTableExists) {
+            // Проверяем тип колонки status
+            const [statusInfo] = await sequelize.query(
+                "SELECT data_type, udt_name FROM information_schema.columns WHERE table_name = 'games' AND column_name = 'status';"
+            );
+
+            // Если колонка status существует и это ENUM
+            if (statusInfo.length > 0 && statusInfo[0].data_type === 'USER-DEFINED') {
+                // Сначала преобразуем все значения в строки
+                await sequelize.query(
+                    'ALTER TABLE games ALTER COLUMN status TYPE VARCHAR(255) USING status::text;'
+                );
+                
+                // Удаляем тип ENUM если он существует
+                await sequelize.query(
+                    "DROP TYPE IF EXISTS enum_games_status;"
+                );
+                
+                console.log('Колонка status успешно преобразована в VARCHAR');
+            }
+        }
+
         if (usersTableExists) {
             // Проверяем существование колонок
             const [columns] = await sequelize.query(
@@ -35,17 +58,14 @@ async function initDatabase() {
             // Обработка registrationDate
             const registrationDateColumn = columns.find(col => col.column_name === 'registrationDate');
             if (!registrationDateColumn) {
-                // Сначала добавляем колонку как nullable
                 await sequelize.query(
                     'ALTER TABLE users ADD COLUMN "registrationDate" TIMESTAMP WITH TIME ZONE;'
                 );
-                // Затем заполняем её текущей датой
                 await sequelize.query(
-                    'UPDATE users SET "registrationDate" = CURRENT_TIMESTAMP;'
+                    'UPDATE users SET "registrationDate" = CURRENT_TIMESTAMP WHERE "registrationDate" IS NULL;'
                 );
                 console.log('Колонка registrationDate добавлена и заполнена');
             } else if (registrationDateColumn.is_nullable === 'NO') {
-                // Сначала заполняем NULL значения
                 await sequelize.query(
                     'UPDATE users SET "registrationDate" = CURRENT_TIMESTAMP WHERE "registrationDate" IS NULL;'
                 );
