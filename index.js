@@ -3,7 +3,7 @@ const express = require('express');
 const { Telegraf, Scenes, session } = require('telegraf');
 const passport = require('passport');
 const expressSession = require('express-session');
-const config = require('./config');
+const config = require('./config/config');
 const path = require('path');
 const sequelize = require('./config/db');
 const { syncModels } = require('./models');
@@ -22,10 +22,10 @@ const { shopScene } = require('./scenes/shop');
 // Импорт стратегий аутентификации
 require('./config/passport');
 
-// Инициализация бота Telegram (только если не в тестовом режиме)
+// Инициализация бота Telegram
 let bot;
-if (config.enableBot && !config.testMode) {
-  bot = new Telegraf(config.botToken);
+if (config.telegram.botToken) {
+  bot = new Telegraf(config.telegram.botToken);
 
   // Настройка сцен
   const stage = new Scenes.Stage([
@@ -68,6 +68,13 @@ if (config.enableBot && !config.testMode) {
         await ctx.reply('Получена неизвестная команда от мини-приложения.');
     }
   });
+
+  // Запускаем бота
+  bot.launch().then(() => {
+    console.log('Telegram бот запущен');
+  }).catch(err => {
+    console.error('Ошибка запуска бота:', err);
+  });
 }
 
 // Асинхронная функция запуска приложения
@@ -85,14 +92,14 @@ async function startApp() {
 
     // Веб-сервер для авторизации через OAuth
     const app = express();
-    const PORT = config.port;
+    const PORT = process.env.PORT || 3000;
 
     // Настройка сессий с использованием FileStore
     const sessionStore = new FileStore({
       path: './sessions',
       ttl: 604800, // 7 дней
       retries: 0,
-      secret: config.sessionSecret
+      secret: config.session.secret
     });
 
     // Настройка middleware
@@ -100,13 +107,10 @@ async function startApp() {
     app.use(express.urlencoded({ extended: true }));
     app.use(expressSession({
       store: sessionStore,
-      secret: config.sessionSecret,
+      secret: config.session.secret,
       resave: false,
       saveUninitialized: false,
-      cookie: {
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 604800000 // 7 дней в миллисекундах
-      }
+      cookie: config.session.cookie
     }));
 
     // Инициализация passport
@@ -115,7 +119,7 @@ async function startApp() {
 
     // Настройка для обслуживания статических файлов
     app.use(express.static(path.join(__dirname, 'public'), {
-      maxAge: '1d', // Кэширование на 1 день
+      maxAge: '1d',
       etag: true,
       lastModified: true
     }));
@@ -151,7 +155,9 @@ async function startApp() {
       logger.session({
         event: 'server_started',
         port: PORT,
-        mode: process.env.NODE_ENV || 'development'
+        mode: process.env.NODE_ENV || 'development',
+        appUrl: config.app.url,
+        baseUrl: config.app.baseUrl
       });
     });
 
@@ -160,7 +166,7 @@ async function startApp() {
       console.log('Выполняется graceful shutdown...');
       
       // Останавливаем бота если нужно
-      if (bot && bot.isPolling) {
+      if (bot) {
         console.log('Останавливаем бота...');
         await bot.stop();
         console.log('Бот остановлен');

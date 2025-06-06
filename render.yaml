@@ -1,22 +1,22 @@
 services:
   - type: web
-    name: card76
+    name: pidr-game
     env: node
     buildCommand: npm install
-    startCommand: npm start
+    startCommand: node index.js
     envVars:
+      - key: APP_URL
+        sync: false
+      - key: DATA_BASE
+        sync: false
       - key: BOT_TOKEN
         sync: false
       - key: BOT_USERNAME
         sync: false
-      - key: SESSION_SECRET
-        sync: false
       - key: BASE_URL
         sync: false
-      - key: PORT
-        value: 10000
-      - key: APP_URL
-        sync: false
+      - key: SESSION_SECRET
+        generateValue: true
       - key: NODE_ENV
         value: production
     healthCheckPath: /
