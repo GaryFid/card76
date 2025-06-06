@@ -20,5 +20,23 @@ module.exports = {
   
   // Настройки рейтинга
   ratingWinPoints: 10,
-  ratingLossPoints: 3
+  ratingLossPoints: 3,
+
+  database: {
+    url: process.env.DATABASE_URL || 'postgres://localhost:5432/pidr'
+  },
+
+  session: {
+    secret: process.env.SESSION_SECRET || 'default-secret-key-change-in-production'
+  },
+
+  telegram: {
+    enabled: false, // Telegram бот отключен по умолчанию
+    token: process.env.TELEGRAM_BOT_TOKEN || null,
+    username: process.env.BOT_USERNAME || null
+  },
+
+  server: {
+    port: process.env.PORT || 3000
+  }
 }; 

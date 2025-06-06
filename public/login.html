@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>P.I.D.R. - Регистрация</title>
+    <title>P.I.D.R. - Вход</title>
     <style>
         :root {
             --primary-color: #1976D2;
@@ -206,27 +206,21 @@
             <p>Punishment Inevitable: Dumb Rules<br>Карточная битва без пощады!</p>
         </div>
 
-        <form id="register-form">
+        <form id="login-form">
             <div class="form-group">
                 <label for="username">Логин</label>
-                <input type="text" id="username" name="username" required minlength="3" maxlength="30">
+                <input type="text" id="username" name="username" required>
                 <div class="error-message" id="username-error"></div>
             </div>
 
             <div class="form-group">
                 <label for="password">Пароль</label>
-                <input type="password" id="password" name="password" required minlength="6">
+                <input type="password" id="password" name="password" required>
                 <div class="error-message" id="password-error"></div>
             </div>
 
-            <div class="form-group">
-                <label for="confirm-password">Подтвердите пароль</label>
-                <input type="password" id="confirm-password" name="confirm-password" required>
-                <div class="error-message" id="confirm-password-error"></div>
-            </div>
-
-            <button type="submit" class="btn btn-primary">Зарегистрироваться</button>
-            <button type="button" class="btn btn-secondary" id="login-btn">Уже есть аккаунт?</button>
+            <button type="submit" class="btn btn-primary">Войти</button>
+            <button type="button" class="btn btn-secondary" id="register-btn">Создать аккаунт</button>
         </form>
 
         <div class="divider">
@@ -240,7 +234,7 @@
     </div>
 
     <script>
-        document.getElementById('register-form').addEventListener('submit', async (e) => {
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             
             // Очищаем предыдущие ошибки
@@ -251,30 +245,9 @@
             
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
-            const confirmPassword = document.getElementById('confirm-password').value;
-            
-            // Валидация
-            let hasErrors = false;
-            
-            if (username.length < 3) {
-                showError('username', 'Логин должен содержать минимум 3 символа');
-                hasErrors = true;
-            }
-            
-            if (password.length < 6) {
-                showError('password', 'Пароль должен содержать минимум 6 символов');
-                hasErrors = true;
-            }
-            
-            if (password !== confirmPassword) {
-                showError('confirm-password', 'Пароли не совпадают');
-                hasErrors = true;
-            }
-            
-            if (hasErrors) return;
             
             try {
-                const response = await fetch('/auth/register', {
+                const response = await fetch('/auth/login', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -294,8 +267,8 @@
             }
         });
 
-        document.getElementById('login-btn').addEventListener('click', () => {
-            window.location.href = '/login.html';
+        document.getElementById('register-btn').addEventListener('click', () => {
+            window.location.href = '/register.html';
         });
 
         document.getElementById('telegram-login').addEventListener('click', () => {

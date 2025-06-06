@@ -1,30 +1,16 @@
 const { Sequelize } = require('sequelize');
-const config = require('./config');
+const config = require('../config');
 
-let sequelize;
-
-try {
-    // Создаем экземпляр Sequelize с настройками из конфига
-    sequelize = new Sequelize(config.database.url, {
-        dialect: 'postgres',
-        dialectOptions: {
-            ssl: {
-                require: true,
-                rejectUnauthorized: false
-            }
-        },
-        logging: false,
-        pool: {
-            max: 5,
-            min: 0,
-            acquire: 30000,
-            idle: 10000
+const sequelize = new Sequelize(config.database.url, {
+    dialect: 'postgres',
+    dialectOptions: {
+        ssl: {
+            require: true,
+            rejectUnauthorized: false
         }
-    });
-} catch (error) {
-    console.error('Ошибка инициализации Sequelize:', error);
-    process.exit(1);
-}
+    },
+    logging: false
+});
 
 // Функция для проверки подключения
 async function testConnection() {

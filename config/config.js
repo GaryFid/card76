@@ -3,15 +3,15 @@ require('dotenv').config();
 module.exports = {
     app: {
         url: process.env.APP_URL || 'http://localhost:3000',
-        baseUrl: process.env.BASE_URL
+        baseUrl: process.env.BASE_URL || 'http://localhost:3000'
     },
     database: {
-        url: process.env.DATA_BASE,
+        url: process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/pidr',
         dialect: 'postgres',
-        ssl: true,
+        ssl: false,
         dialectOptions: {
             ssl: {
-                require: true,
+                require: false,
                 rejectUnauthorized: false
             }
         },
@@ -35,15 +35,19 @@ module.exports = {
     },
     telegram: {
         botToken: process.env.BOT_TOKEN,
-        botUsername: process.env.BOT_USERNAME
+        botUsername: process.env.BOT_USERNAME,
+        enabled: false
     },
     session: {
         secret: process.env.SESSION_SECRET || 'your-secret-key',
         cookie: {
             maxAge: 24 * 60 * 60 * 1000, // 24 часа
-            secure: true
+            secure: false
         },
         resave: false,
         saveUninitialized: false
+    },
+    server: {
+        port: process.env.PORT || 3000
     }
 }; 
