@@ -120,133 +120,38 @@ document.addEventListener('DOMContentLoaded', function() {
         '4_of_hearts','4_of_spades','4_of_diamonds','4_of_clubs',
         '5_of_hearts','5_of_spades','5_of_diamonds','5_of_clubs'
     ];
+    // Выбираем 5 случайных уникальных карт для header и main
+    let used = new Set();
+    let selectedCards = [];
+    for (let i = 0; i < 5; i++) {
+        let idx;
+        do { idx = Math.floor(Math.random() * cardNames.length); } while (used.has(idx));
+        used.add(idx);
+        selectedCards.push(cardNames[idx]);
+    }
+    // --- header-cards ---
     const headerCards = document.getElementById('header-cards');
     if (headerCards) {
         headerCards.innerHTML = '';
-        let used = new Set();
-        for (let i = 0; i < 5; i++) {
-            let idx;
-            do { idx = Math.floor(Math.random() * cardNames.length); } while (used.has(idx));
-            used.add(idx);
+        for (let i = 0; i < selectedCards.length; i++) {
             const card = document.createElement('img');
             card.className = 'header-card-img';
-            card.src = `img/cards/${cardNames[idx]}.png`;
-            card.alt = cardNames[idx];
+            card.src = `img/cards/${selectedCards[i]}.png`;
+            card.alt = selectedCards[i];
             headerCards.appendChild(card);
         }
     }
-    // --- Анимация полоски карт в main ---
+    // --- main-card-loader ---
     const mainLoader = document.getElementById('main-card-loader');
     if (mainLoader) {
         mainLoader.innerHTML = '';
-        // Массив для эмуляции руки игрока
-        let hand = [];
-        // Массив для эмуляции других игроков
-        let otherPlayers = ['Игрок 2', 'Игрок 3', 'Игрок 4'];
-        // Функция для обновления main-card-loader
-        function updateMainCardLoader() {
-            mainLoader.innerHTML = '';
-            const topIdx = Math.floor(Math.random() * cardNames.length);
-            const topCard = cardNames[topIdx];
-            // Сначала рубашка (лежит под верхней картой)
-            const back = document.createElement('img');
-            back.className = 'main-card-loader-img';
-            back.src = 'img/cards/back.png';
-            back.alt = 'back';
-            back.style.position = 'absolute';
-            back.style.left = '0';
-            back.style.top = '8px';
-            back.style.zIndex = '1';
-            mainLoader.style.position = 'relative';
-            mainLoader.appendChild(back);
-            // Затем верхняя карта (лицом вверх)
+        for (let i = 0; i < selectedCards.length; i++) {
             const card = document.createElement('img');
             card.className = 'main-card-loader-img';
-            card.src = `img/cards/${topCard}.png`;
-            card.alt = topCard;
-            card.style.position = 'absolute';
-            card.style.left = '0';
-            card.style.top = '0';
-            card.style.zIndex = '2';
+            card.src = `img/cards/${selectedCards[i]}.png`;
+            card.alt = selectedCards[i];
             mainLoader.appendChild(card);
-            // --- Кнопки ---
-            card.style.cursor = 'pointer';
-            let buttonsShown = false;
-            let btnTake = null;
-            let btnPlay = null;
-            function removeButtons() {
-                if (btnTake) btnTake.remove();
-                if (btnPlay) btnPlay.remove();
-                btnTake = null;
-                btnPlay = null;
-                buttonsShown = false;
-            }
-            card.addEventListener('click', function(e) {
-                e.stopPropagation();
-                if (buttonsShown) {
-                    removeButtons();
-                    return;
-                }
-                // Создаём кнопки
-                btnTake = document.createElement('button');
-                btnTake.textContent = 'Взять себе';
-                btnTake.style.position = 'absolute';
-                btnTake.style.left = '60px';
-                btnTake.style.top = '0px';
-                btnTake.style.zIndex = '10';
-                btnTake.style.padding = '8px 16px';
-                btnTake.style.borderRadius = '8px';
-                btnTake.style.background = '#43ea6d';
-                btnTake.style.color = '#fff';
-                btnTake.style.border = 'none';
-                btnTake.style.fontWeight = 'bold';
-                btnTake.style.cursor = 'pointer';
-                btnTake.style.boxShadow = '0 2px 8px rgba(30,80,220,0.13)';
-                btnTake.addEventListener('click', function(ev) {
-                    ev.stopPropagation();
-                    hand.push(topCard);
-                    alert('Вы взяли карту себе! Ваша рука: ' + hand.join(', '));
-                    removeButtons();
-                    updateMainCardLoader();
-                });
-                btnPlay = document.createElement('button');
-                btnPlay.textContent = 'Сыграть';
-                btnPlay.style.position = 'absolute';
-                btnPlay.style.left = '60px';
-                btnPlay.style.top = '40px';
-                btnPlay.style.zIndex = '10';
-                btnPlay.style.padding = '8px 16px';
-                btnPlay.style.borderRadius = '8px';
-                btnPlay.style.background = '#3390ec';
-                btnPlay.style.color = '#fff';
-                btnPlay.style.border = 'none';
-                btnPlay.style.fontWeight = 'bold';
-                btnPlay.style.cursor = 'pointer';
-                btnPlay.style.boxShadow = '0 2px 8px rgba(30,80,220,0.13)';
-                btnPlay.addEventListener('click', function(ev) {
-                    ev.stopPropagation();
-                    // Выбор игрока (эмулируем prompt)
-                    let target = prompt('Кому сыграть карту? Введите номер: 2, 3 или 4', '2');
-                    if (target && ['2','3','4'].includes(target)) {
-                        alert('Вы сыграли карту игроку ' + target + ': ' + topCard);
-                    } else {
-                        alert('Действие отменено');
-                    }
-                    removeButtons();
-                    updateMainCardLoader();
-                });
-                mainLoader.appendChild(btnTake);
-                mainLoader.appendChild(btnPlay);
-                buttonsShown = true;
-            });
-            // Скрывать кнопки при клике вне карты
-            document.addEventListener('click', function(e) {
-                if (buttonsShown) {
-                    removeButtons();
-                }
-            }, { once: true });
         }
-        updateMainCardLoader();
     }
     // --- Переходы между страницами ---
     // Проверка авторизации
