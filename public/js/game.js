@@ -1,4 +1,6 @@
-document.addEventListener('DOMContentLoaded', function() {
+import { getCurrentUser, apiRequest, showModal, goToPage, showToast } from './utils.js';
+
+document.addEventListener('DOMContentLoaded', async () => {
     // Инициализация Telegram WebApp
     const tgApp = window.Telegram.WebApp;
     tgApp.expand();
@@ -9,56 +11,39 @@ document.addEventListener('DOMContentLoaded', function() {
     document.documentElement.style.setProperty('--tg-theme-button-color', tgApp.themeParams.button_color || '#3390ec');
     document.documentElement.style.setProperty('--tg-theme-button-text-color', tgApp.themeParams.button_text_color || '#ffffff');
 
-    // Проверка авторизации и настроек игры
-    try {
-        const user = localStorage.getItem('user');
-        if (!user) {
-            window.location.href = '/register';
-            return;
-        }
-
-        const userData = JSON.parse(user);
-        if (!userData.id || !userData.username) {
-            localStorage.removeItem('user');
-            window.location.href = '/register';
-            return;
-        }
-
-        const gameSettingsStr = localStorage.getItem('gameSettings');
-        if (!gameSettingsStr) {
-            window.location.href = '/game-setup';
-            return;
-        }
-
-        const gameSettings = JSON.parse(gameSettingsStr);
-        if (!gameSettings.playerCount) {
-            localStorage.removeItem('gameSettings');
-            window.location.href = '/game-setup';
-            return;
-        }
-
-        // Инициализация игры с полученными настройками
-        initGame().then(() => {
-            console.log('Игра успешно инициализирована');
-        }).catch(error => {
-            console.error('Ошибка при инициализации игры:', error);
-            alert('Произошла ошибка при инициализации игры. Возвращаемся в меню настройки.');
-            window.location.href = '/game-setup';
-        });
-
-    } catch (error) {
-        console.error('Ошибка при проверке авторизации или настроек:', error);
-        localStorage.removeItem('user');
-        localStorage.removeItem('gameSettings');
-        window.location.href = '/register';
+    const user = getCurrentUser();
+    // Получаем id игры из URL
+    const params = new URLSearchParams(window.location.search);
+    const gameId = params.get('id');
+    if (!gameId) {
+        showToast('Не указан id игры!', 'error');
+        goToPage('/index.html');
         return;
     }
+    let game;
+    try {
+        const data = await apiRequest(`/api/games/${gameId}`);
+        game = data.game;
+        if (!game) throw new Error('Игра не найдена');
+    } catch (e) {
+        showToast('Ошибка загрузки игры: ' + e.message, 'error');
+        goToPage('/index.html');
+        return;
+    }
+    // Проверяем, что пользователь есть среди игроков (или он админ)
+    const isPlayer = game.players.some(p => p.userId == user.id || (user.username && p.username === user.username));
+    if (!isPlayer) {
+        showToast('Вы не являетесь участником этой игры!', 'error');
+        goToPage('/index.html');
+        return;
+    }
+    // Рендерим игроков и ботов
+    renderPlayers(game.players, user.id);
     
     // Получение настроек игры
     const gameSettings = JSON.parse(localStorage.getItem('gameSettings') || '{"playerCount": 4, "withAI": false}');
     
     // Глобальные переменные для игры
-    let game = null;
     let currentPlayerIndex = 0;
     let isMyTurn = false;
     let selectedCardIndex = -1;

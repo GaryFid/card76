@@ -99,7 +99,7 @@ document.getElementById('start-game').addEventListener('click', async () => {
         window.location.href = '/game-setup';
     } catch (error) {
         console.error('Ошибка при начале игры:', error);
-        alert('Произошла ошибка при начале игры. Попробуйте перезагрузить страницу.');
+        showToast('Произошла ошибка при начале игры. Попробуйте перезагрузить страницу.', 'error');
     }
 });
 
@@ -175,7 +175,7 @@ document.addEventListener('DOMContentLoaded', function() {
             window.location.href = '/game-setup';
         });
         document.getElementById('rating').addEventListener('click', () => {
-            alert('Рейтинг игроков будет доступен в ближайшее время!');
+            showToast('Рейтинг игроков будет доступен в ближайшее время!', 'info');
         });
         document.getElementById('rules').addEventListener('click', () => {
             showRules();

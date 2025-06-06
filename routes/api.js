@@ -46,6 +46,18 @@ const avatarStorage = multer.diskStorage({
 });
 const uploadAvatar = multer({ storage: avatarStorage, limits: { fileSize: 2 * 1024 * 1024 } });
 
+// Middleware: если нет req.user, но есть userId в query/body — ищем пользователя вручную
+router.use(async (req, res, next) => {
+  if (!req.user) {
+    const userId = req.query.userId || req.body.userId;
+    if (userId) {
+      const user = await User.findByPk(userId);
+      if (user) req.user = user;
+    }
+  }
+  next();
+});
+
 // Регистрация/авторизация пользователя
 router.post('/auth/register', async (req, res) => {
   try {
@@ -80,6 +92,9 @@ router.post('/auth/register', async (req, res) => {
 
 // Получить информацию о текущем пользователе
 router.get('/user/:id', async (req, res) => {
+  if (!req.user) {
+    return res.status(401).json({ success: false, error: 'Пользователь не авторизован' });
+  }
   try {
     const user = await User.findByPk(req.params.id);
     if (!user) {
@@ -278,70 +293,41 @@ router.post('/admin/delete-guests', async (req, res) => {
 router.post('/games/create', async (req, res) => {
     try {
         const { userId, username, playerCount, withAI } = req.body;
-
         if (!userId || !username) {
-            return res.status(400).json({
-                success: false,
-                error: 'Не указан пользователь'
-            });
+            return res.status(400).json({ success: false, error: 'Не указан пользователь' });
         }
-
-        // Проверяем существование пользователя
         const user = await User.findByPk(userId);
         if (!user) {
-            return res.status(404).json({
-                success: false,
-                error: 'Пользователь не найден'
-            });
+            return res.status(404).json({ success: false, error: 'Пользователь не найден' });
         }
-
-        // Создаем новую игру
+        const players = [{
+            userId,
+            username,
+            isHost: true,
+            isReady: true,
+            isBot: false
+        }];
+        if (withAI) {
+            for (let i = 1; i < (playerCount || 4); i++) {
+                players.push({
+                    userId: `bot_${i}`,
+                    username: `Bot ${i}`,
+                    isHost: false,
+                    isReady: true,
+                    isBot: true
+                });
+            }
+        }
         const game = await Game.create({
             status: 'waiting',
-            players: [{
-                userId,
-                username,
-                isHost: true,
-                isReady: true,
-                isBot: false
-            }],
+            players,
             playerCount: playerCount || 4,
-            withAI: withAI || false,
+            withAI: !!withAI,
             gameStage: 'waiting'
         });
-
-        logger.game({
-            event: 'game_created',
-            gameId: game.id,
-            creator: {
-                userId,
-                username
-            },
-            settings: {
-                playerCount,
-                withAI
-            }
-        });
-
-        res.json({
-            success: true,
-            game: {
-                id: game.id,
-                players: game.players,
-                status: game.status,
-                playerCount: game.playerCount,
-                withAI: game.withAI
-            }
-        });
+        res.json({ success: true, game: { id: game.id, ...game.toJSON() } });
     } catch (error) {
-        logger.error({
-            event: 'game_creation_error',
-            error: error.message
-        });
-        res.status(500).json({
-            success: false,
-            error: 'Ошибка при создании игры'
-        });
+        res.status(500).json({ success: false, error: 'Ошибка при создании игры' });
     }
 });
 
@@ -372,19 +358,20 @@ router.get('/users/search', async (req, res) => {
         if (!query) {
             return res.json({ users: [] });
         }
-
+        let where = {
+            [Op.or]: [
+                { username: { [Op.iLike]: `%${query}%` } },
+                { telegram_username: { [Op.iLike]: `%${query}%` } },
+                { display_name: { [Op.iLike]: `%${query}%` } }
+            ]
+        };
+        if (req.user && req.user.id) {
+            where.id = { [Op.ne]: req.user.id };
+        }
         const users = await User.findAll({
-            where: {
-                [Op.or]: [
-                    { username: { [Op.iLike]: `%${query}%` } },
-                    { telegram_username: { [Op.iLike]: `%${query}%` } },
-                    { display_name: { [Op.iLike]: `%${query}%` } }
-                ],
-                id: { [Op.ne]: req.user.id } // Исключаем текущего пользователя
-            },
+            where,
             limit: 10
         });
-
         res.json({
             users: users.map(user => ({
                 id: user.id,
@@ -406,6 +393,9 @@ router.get('/users/search', async (req, res) => {
 
 // Получение списка друзей
 router.get('/friends', async (req, res) => {
+    if (!req.user) {
+        return res.status(401).json({ success: false, error: 'Пользователь не авторизован' });
+    }
     try {
         const user = await User.findByPk(req.user.id, {
             include: [{

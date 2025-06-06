@@ -1,3 +1,5 @@
+import { showToast } from './utils.js';
+
 document.addEventListener('DOMContentLoaded', function() {
     // Получаем настройки игры (количество игроков)
     let settings = localStorage.getItem('gameSettings');
@@ -101,7 +103,7 @@ document.addEventListener('DOMContentLoaded', function() {
             loaderBar.className = 'table-loader-bar';
             loader.appendChild(loaderBar);
             table.appendChild(loader);
-            alert('Комната дополнена ботами!');
+            showToast('Комната дополнена ботами!', 'info');
         };
         document.querySelector('.wait-table-animation').appendChild(btn);
     }

@@ -1,3 +1,5 @@
+import { getCurrentUser, apiRequest, showModal, goToPage, showToast } from './utils.js';
+
 // Инициализация Telegram WebApp
 const tgApp = window.Telegram.WebApp;
 tgApp.expand();
@@ -8,63 +10,61 @@ document.documentElement.style.setProperty('--tg-theme-text-color', tgApp.themeP
 document.documentElement.style.setProperty('--tg-theme-button-color', tgApp.themeParams.button_color || '#3390ec');
 document.documentElement.style.setProperty('--tg-theme-button-text-color', tgApp.themeParams.button_text_color || '#ffffff');
 
-// Проверка авторизации при загрузке страницы
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', () => {
+  const user = getCurrentUser();
+  let playerCount = 4;
+  let withAI = false;
+
+  // Выбор стола
+  document.querySelectorAll('.oval-table').forEach(table => {
+    table.addEventListener('click', () => {
+      playerCount = +table.dataset.players;
+      document.querySelectorAll('.oval-table').forEach(t => t.classList.remove('selected'));
+      table.classList.add('selected');
+    });
+  });
+
+  // Переключатель ботов
+  const aiCheckbox = document.getElementById('with-ai');
+  if (aiCheckbox) {
+    aiCheckbox.addEventListener('change', e => {
+      withAI = e.target.checked;
+    });
+  }
+
+  // Кнопка "Начать игру"
+  document.getElementById('start-game-btn').addEventListener('click', async () => {
     try {
-        const user = localStorage.getItem('user');
-        const gameSettings = localStorage.getItem('gameSettings');
-
-        if (!user || !gameSettings) {
-            console.error('Нет данных пользователя или настроек игры');
-            window.location.href = '/';
-            return;
-        }
-
-        const userData = JSON.parse(user);
-        const settings = JSON.parse(gameSettings);
-
-        // Устанавливаем значения в форме
-        document.getElementById('player-count').value = settings.playerCount || 4;
-        document.getElementById('with-ai').checked = settings.withAI || false;
-
-        // Обработчик формы
-        document.getElementById('game-setup-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            const formData = {
-                playerCount: parseInt(document.getElementById('player-count').value),
-                withAI: document.getElementById('with-ai').checked,
-                userId: userData.id,
-                username: userData.username
-            };
-
-            try {
-                const response = await fetch('/api/games/create', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(formData)
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    localStorage.setItem('currentGame', JSON.stringify(data.game));
-                    window.location.href = '/game';
-                } else {
-                    alert(data.error || 'Ошибка при создании игры');
-                }
-            } catch (error) {
-                console.error('Ошибка при создании игры:', error);
-                alert('Произошла ошибка при создании игры');
-            }
-        });
-
-    } catch (error) {
-        console.error('Ошибка при инициализации страницы:', error);
-        window.location.href = '/';
+      const data = await apiRequest('/api/games/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          username: user.username,
+          playerCount,
+          withAI
+        })
+      });
+      if (data.game && data.game.id) {
+        window.location.href = `/game.html?id=${data.game.id}`;
+      }
+    } catch (e) {
+      showToast('Ошибка при создании игры: ' + e.message, 'error');
     }
+  });
+
+  // Кнопка "Назад"
+  document.getElementById('back-btn').addEventListener('click', () => {
+    window.location.href = '/index.html';
+  });
+
+  // Кнопка "Правила игры"
+  document.getElementById('rules-btn').addEventListener('click', () => {
+    document.getElementById('rules-modal').style.display = 'block';
+  });
+  document.querySelector('.close-modal').addEventListener('click', () => {
+    document.getElementById('rules-modal').style.display = 'none';
+  });
 });
 
 // Получение элементов интерфейса
@@ -164,6 +164,6 @@ startGameBtn.addEventListener('click', function() {
         window.location.href = '/game';
     } catch (error) {
         console.error('Ошибка при начале игры:', error);
-        alert('Произошла ошибка при начале игры. Пожалуйста, попробуйте еще раз.');
+        showToast('Произошла ошибка при начале игры. Пожалуйста, попробуйте еще раз.', 'error');
     }
 }); 

@@ -1,3 +1,5 @@
+import { showToast, showModal } from './utils.js';
+
 document.addEventListener('DOMContentLoaded', function() {
     // Инициализация Telegram WebApp
     const tgApp = window.Telegram.WebApp;
@@ -35,7 +37,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const user = tgApp.initDataUnsafe.user;
 
             if (!user) {
-                showError('Не удалось получить данные пользователя Telegram');
+                showToast('Не удалось получить данные пользователя Telegram', 'error');
                 return;
             }
 
@@ -64,17 +66,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Сохраняем данные пользователя
                 localStorage.setItem('user', JSON.stringify(data.user));
                 // Показываем сообщение об успехе
-                showSuccess('Успешная авторизация! Перенаправление...');
+                showToast('Успешная авторизация! Перенаправление...');
                 // Перенаправляем на главную страницу
                 setTimeout(() => {
                     window.location.href = '/webapp';
                 }, 1000);
             } else {
-                showError(data.error || 'Ошибка авторизации');
+                showToast(data.error || 'Ошибка авторизации', 'error');
             }
         } catch (error) {
             console.error('Ошибка при авторизации через Telegram:', error);
-            showError('Произошла ошибка при авторизации');
+            showToast('Произошла ошибка при авторизации', 'error');
         }
     });
 

@@ -1,0 +1,107 @@
+/* Универсальные стили модальных окон и уведомлений для P.I.D.R. */
+:root {
+  --modal-bg: var(--tg-theme-bg-color, #fff);
+  --modal-text: var(--tg-theme-text-color, #1e3c72);
+  --modal-shadow: 0 8px 32px #1e3c7233, 0 2px 8px #2222;
+  --modal-radius: 18px;
+  --modal-header-bg: #2196f3;
+  --modal-header-text: #fff;
+  --modal-close-color: #2196f3;
+  --toast-bg: rgba(30,60,114,0.95);
+  --toast-success: #4caf50;
+  --toast-error: #e53935;
+  --toast-info: #2196f3;
+}
+
+/* Модальное окно */
+.universal-modal-bg {
+  display: none;
+  position: fixed;
+  left: 0; top: 0; width: 100vw; height: 100vh;
+  background: rgba(30,60,114,0.18);
+  z-index: 4000;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.3s;
+}
+.universal-modal-bg.active { display: flex; }
+.universal-modal-box {
+  background: var(--modal-bg);
+  color: var(--modal-text);
+  border-radius: var(--modal-radius);
+  padding: 32px 24px;
+  max-width: 420px;
+  width: 95vw;
+  box-shadow: var(--modal-shadow);
+  position: relative;
+  text-align: center;
+  animation: slideIn 0.3s;
+}
+.universal-modal-header {
+  background: var(--modal-header-bg);
+  color: var(--modal-header-text);
+  border-radius: var(--modal-radius) var(--modal-radius) 0 0;
+  padding: 18px 24px 10px 24px;
+  font-size: 1.2em;
+  font-weight: 700;
+  margin: -32px -24px 18px -24px;
+  text-align: left;
+}
+.universal-modal-close {
+  position: absolute;
+  right: 18px;
+  top: 12px;
+  font-size: 2em;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--modal-close-color);
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+.universal-modal-close:hover { opacity: 1; }
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slideIn {
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Toast уведомления */
+.toast {
+  position: fixed;
+  left: 50%;
+  top: 8%;
+  transform: translateX(-50%) scale(0.95);
+  min-width: 220px;
+  max-width: 90vw;
+  background: var(--toast-bg);
+  color: #fff;
+  border-radius: 14px;
+  box-shadow: 0 4px 16px #1e3c7255;
+  padding: 16px 32px;
+  font-size: 1.1em;
+  font-weight: 600;
+  z-index: 5000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s, transform 0.3s;
+  text-align: center;
+}
+.toast.visible {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);
+  pointer-events: auto;
+}
+.toast.success { background: var(--toast-success); }
+.toast.error { background: var(--toast-error); }
+.toast.info { background: var(--toast-info); }
+
+@media (max-width: 600px) {
+  .universal-modal-box { padding: 18px 6px; max-width: 98vw; }
+  .universal-modal-header { padding: 12px 10px 8px 10px; font-size: 1em; }
+  .toast { padding: 10px 8vw; font-size: 1em; }
+} 
