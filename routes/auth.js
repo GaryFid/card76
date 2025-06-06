@@ -44,12 +44,20 @@ router.post('/register', async (req, res) => {
     // Проверяем существование пользователя
     const existingUser = await User.findOne({
       where: {
-        username: username
+        [Op.or]: [
+          { username: username },
+          { email: email }
+        ]
       }
     });
 
     if (existingUser) {
-      return res.status(400).json({ error: 'Пользователь с таким именем уже существует' });
+      if (existingUser.username === username) {
+        return res.status(400).json({ error: 'Пользователь с таким именем уже существует' });
+      }
+      if (existingUser.email === email) {
+        return res.status(400).json({ error: 'Пользователь с таким email уже существует' });
+      }
     }
 
     // Хешируем пароль
@@ -80,12 +88,15 @@ router.post('/register', async (req, res) => {
         return res.status(500).json({ error: 'Ошибка входа после регистрации' });
       }
       logAuth('LOGIN_SUCCESS', { userId: user.id });
-      return res.json(user.toPublicJSON());
+      return res.json({
+        success: true,
+        user: user.toPublicJSON()
+      });
     });
   } catch (error) {
     logAuth('REGISTER_ERROR', { error: error.message });
     console.error('Ошибка регистрации:', error);
-    res.status(500).json({ error: 'Ошибка при регистрации' });
+    res.status(500).json({ error: 'Ошибка при регистрации. Попробуйте позже.' });
   }
 });
 
@@ -96,10 +107,17 @@ router.post('/login', async (req, res) => {
 
     const { username, password } = req.body;
 
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Введите имя пользователя и пароль' });
+    }
+
     // Ищем пользователя
     const user = await User.findOne({
       where: {
-        username: username
+        [Op.or]: [
+          { username: username },
+          { email: username }
+        ]
       }
     });
 
@@ -125,12 +143,15 @@ router.post('/login', async (req, res) => {
         return res.status(500).json({ error: 'Ошибка входа' });
       }
       logAuth('LOGIN_SUCCESS', { userId: user.id });
-      return res.json(user.toPublicJSON());
+      return res.json({
+        success: true,
+        user: user.toPublicJSON()
+      });
     });
   } catch (error) {
     logAuth('LOGIN_ERROR', { error: error.message });
     console.error('Ошибка входа:', error);
-    res.status(500).json({ error: 'Ошибка при входе' });
+    res.status(500).json({ error: 'Ошибка при входе. Попробуйте позже.' });
   }
 });
 
@@ -233,6 +254,56 @@ router.post('/telegram/force-login', async (req, res) => {
     } catch (error) {
         console.error('Ошибка force-login:', error);
         res.json({ success: false, message: 'Ошибка сервера' });
+    }
+});
+
+// Telegram авторизация через Web App
+router.post('/telegram/login', async (req, res) => {
+    try {
+        const { telegramData } = req.body;
+        
+        if (!telegramData || !telegramData.id) {
+            return res.status(400).json({ error: 'Отсутствуют данные Telegram' });
+        }
+
+        // Ищем или создаем пользователя
+        let user = await User.findOne({
+            where: { telegramId: telegramData.id.toString() }
+        });
+
+        if (!user) {
+            // Создаем нового пользователя
+            user = await User.create({
+                username: telegramData.username || `user${telegramData.id}`,
+                telegramId: telegramData.id.toString(),
+                authType: 'telegram',
+                registrationDate: new Date(),
+                rating: 1000,
+                coins: 0,
+                level: 1,
+                experience: 0,
+                gamesPlayed: 0,
+                gamesWon: 0
+            });
+        }
+
+        // Обновляем данные пользователя если нужно
+        if (telegramData.username && telegramData.username !== user.username) {
+            await user.update({
+                username: telegramData.username
+            });
+        }
+
+        // Входим
+        req.login(user, (err) => {
+            if (err) {
+                return res.status(500).json({ error: 'Ошибка входа' });
+            }
+            return res.json(user.toPublicJSON());
+        });
+    } catch (error) {
+        console.error('Ошибка входа через Telegram:', error);
+        res.status(500).json({ error: 'Ошибка при входе через Telegram' });
     }
 });
 

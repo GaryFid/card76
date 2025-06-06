@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>P.I.D.R. - Регистрация</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
             --primary-color: #1976D2;
@@ -231,21 +232,41 @@
                 <div class="error-message" id="confirmPasswordError"></div>
             </div>
 
-            <button type="submit" class="btn btn-primary">Зарегистрироваться</button>
-            <button type="button" class="btn btn-secondary" onclick="window.location.href='/login'">Уже есть аккаунт?</button>
+            <button type="submit" class="btn btn-primary" id="registerButton">Зарегистрироваться</button>
+            <button type="button" class="btn btn-secondary" id="loginButton">Уже есть аккаунт?</button>
         </form>
 
         <div class="divider">
             <span>или</span>
         </div>
 
-        <button class="telegram-btn" onclick="handleTelegramAuth()">
+        <button class="telegram-btn" id="telegramAuthButton">
             <img src="https://telegram.org/img/t_logo.svg" alt="Telegram">
             Войти через Telegram
         </button>
     </div>
 
     <script>
+        let tg = window.Telegram.WebApp;
+        
+        // Инициализация Telegram Web App
+        document.addEventListener('DOMContentLoaded', function() {
+            tg.ready();
+            tg.expand();
+            
+            // Настраиваем кнопку "Главная кнопка" в Telegram
+            if (tg.MainButton) {
+                tg.MainButton.setText('Зарегистрироваться');
+                tg.MainButton.show();
+            }
+            
+            // Получаем данные пользователя из Telegram если есть
+            if (tg.initDataUnsafe?.user) {
+                const user = tg.initDataUnsafe.user;
+                document.getElementById('username').value = user.username || '';
+            }
+        });
+
         async function handleRegister(event) {
             event.preventDefault();
             
@@ -256,8 +277,8 @@
             });
             
             // Получаем данные формы
-            const username = document.getElementById('username').value;
-            const email = document.getElementById('email').value;
+            const username = document.getElementById('username').value.trim();
+            const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
             
@@ -285,6 +306,11 @@
             }
             
             if (hasErrors) return;
+
+            // Блокируем кнопку на время запроса
+            const registerButton = document.getElementById('registerButton');
+            registerButton.disabled = true;
+            registerButton.textContent = 'Регистрация...';
             
             try {
                 const response = await fetch('/auth/register', {
@@ -295,8 +321,10 @@
                     body: JSON.stringify({
                         username,
                         email,
-                        password
-                    })
+                        password,
+                        telegramData: tg.initDataUnsafe
+                    }),
+                    credentials: 'include'
                 });
                 
                 const data = await response.json();
@@ -305,10 +333,26 @@
                     throw new Error(data.error || 'Ошибка регистрации');
                 }
                 
-                // Успешная регистрация
-                window.location.href = '/webapp';
+                if (data.success && data.user) {
+                    // Сохраняем данные пользователя
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    
+                    // Закрываем Telegram Web App если он есть
+                    if (tg.MainButton) {
+                        tg.MainButton.hide();
+                    }
+                    
+                    // Перенаправляем на главную
+                    window.location.href = '/index.html';
+                } else {
+                    throw new Error('Неизвестная ошибка при регистрации');
+                }
             } catch (error) {
                 showError('usernameError', error.message);
+            } finally {
+                // Разблокируем кнопку
+                registerButton.disabled = false;
+                registerButton.textContent = 'Зарегистрироваться';
             }
         }
         
@@ -318,24 +362,59 @@
             errorElement.classList.add('visible');
         }
         
-        function handleTelegramAuth() {
-            // Открываем страницу авторизации через Telegram в новом окне
-            const width = 550;
-            const height = 470;
-            const left = (window.innerWidth - width) / 2;
-            const top = (window.innerHeight - height) / 2;
-            
-            window.open('/auth/telegram', 'telegram-auth',
-                `width=${width},height=${height},left=${left},top=${top},status=yes,scrollbars=yes`
-            );
-        }
+        // Обработчики кнопок
+        document.getElementById('registerButton').addEventListener('click', function() {
+            document.getElementById('registerForm').dispatchEvent(new Event('submit'));
+        });
         
-        // Слушаем сообщения от окна авторизации Telegram
-        window.addEventListener('message', function(event) {
-            if (event.data.type === 'telegram-auth-success') {
-                window.location.href = '/webapp';
+        document.getElementById('loginButton').addEventListener('click', function() {
+            window.location.href = '/login';
+        });
+        
+        document.getElementById('telegramAuthButton').addEventListener('click', function() {
+            if (tg.initDataUnsafe?.user) {
+                // Если уже есть данные пользователя Telegram
+                handleTelegramAuth(tg.initDataUnsafe.user);
+            } else {
+                // Иначе открываем страницу авторизации через Telegram
+                window.location.href = '/auth/telegram';
             }
         });
+        
+        async function handleTelegramAuth(telegramUser) {
+            try {
+                const response = await fetch('/auth/telegram/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        telegramData: telegramUser
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Ошибка входа через Telegram');
+                }
+                
+                // Успешный вход
+                if (tg.MainButton) {
+                    tg.MainButton.hide();
+                }
+                tg.close();
+            } catch (error) {
+                showError('usernameError', error.message);
+            }
+        }
+        
+        // Обработчик главной кнопки Telegram
+        if (tg.MainButton) {
+            tg.MainButton.onClick(function() {
+                document.getElementById('registerForm').dispatchEvent(new Event('submit'));
+            });
+        }
     </script>
 </body>
 </html> 
