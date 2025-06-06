@@ -506,34 +506,28 @@ router.post('/debug/clear-database', async (req, res) => {
         // Отключаем проверку внешних ключей
         await sequelize.query('SET CONSTRAINTS ALL DEFERRED;');
         
-        // Очищаем каждую таблицу
-        for (const model of Object.values(models)) {
-            if (model.tableName) {
-                try {
-                    await sequelize.query(`TRUNCATE TABLE "${model.tableName}" CASCADE;`);
-                } catch (err) {
-                    console.error(`Ошибка при очистке таблицы ${model.tableName}:`, err);
-                }
+        // Очищаем каждую таблицу используя методы Sequelize
+        for (const modelName of Object.keys(models)) {
+            try {
+                await models[modelName].destroy({
+                    where: {},
+                    force: true,
+                    truncate: true,
+                    cascade: true
+                });
+                console.log(`Таблица ${modelName} успешно очищена`);
+            } catch (err) {
+                console.error(`Ошибка при очистке таблицы ${modelName}:`, err);
             }
         }
         
         // Включаем обратно проверку внешних ключей
         await sequelize.query('SET CONSTRAINTS ALL IMMEDIATE;');
 
-        // Сбрасываем автоинкремент для всех таблиц
-        for (const model of Object.values(models)) {
-            if (model.tableName) {
-                try {
-                    await sequelize.query(`ALTER SEQUENCE IF EXISTS "${model.tableName}_id_seq" RESTART WITH 1;`);
-                } catch (err) {
-                    console.error(`Ошибка при сбросе sequence для ${model.tableName}:`, err);
-                }
-            }
-        }
-
         res.json({ 
             success: true, 
-            message: 'База данных успешно очищена' 
+            message: 'База данных успешно очищена',
+            clearedTables: Object.keys(models)
         });
     } catch (error) {
         console.error('Ошибка при очистке базы данных:', error);
