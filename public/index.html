@@ -105,6 +105,60 @@
     .profile-modal-close:hover {
       color: #e53935;
     }
+    /* Стили для кнопки меню и друзей */
+    .menu-friends-button {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        z-index: 1000;
+        cursor: pointer;
+    }
+
+    .menu-icon {
+        width: 40px;
+        height: 40px;
+        background: #ffffff;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        transition: all 0.3s ease;
+    }
+
+    .menu-icon:hover {
+        background: #f0f0f0;
+        transform: scale(1.05);
+    }
+
+    .menu-icon i {
+        font-size: 20px;
+        color: #333;
+    }
+
+    /* Стили для модального окна меню и друзей */
+    #menu-friends-modal .modal-content {
+        max-width: 500px;
+        width: 90%;
+    }
+
+    .modal-body {
+        padding: 20px;
+    }
+
+    .menu-section {
+        margin-bottom: 30px;
+    }
+
+    .friends-section {
+        border-top: 1px solid #eee;
+        padding-top: 20px;
+    }
+
+    .friends-section h3 {
+        margin-bottom: 15px;
+        color: #333;
+    }
     </style>
 </head>
 <body>
@@ -307,235 +361,33 @@
     }
     </script>
 
-    <!-- Бургер-меню -->
-    <div class="burger-menu">
-        <div class="burger-icon">
-            <span></span>
-            <span></span>
-            <span></span>
+    <!-- Кнопка меню и друзей -->
+    <div class="menu-friends-button">
+        <div class="menu-icon">
+            <i class="fas fa-bars"></i>
         </div>
     </div>
 
-    <!-- Модальное окно друзей -->
-    <div class="universal-modal" id="universal-modal">
+    <!-- Модальное окно меню и друзей -->
+    <div class="universal-modal" id="menu-friends-modal">
         <div class="modal-content">
             <div class="modal-header">
-                <div class="modal-title">Друзья</div>
+                <div class="modal-title">Меню</div>
                 <button class="close-modal">&times;</button>
             </div>
-            <div id="friendsListModal">
-                <!-- Результаты поиска будут добавлены динамически -->
+            <div class="modal-body">
+                <div class="menu-section">
+                    <!-- Здесь будут пункты меню -->
+                </div>
+                <div class="friends-section">
+                    <h3>Друзья</h3>
+                    <div id="friendsListModal">
+                        <!-- Результаты поиска друзей будут добавлены динамически -->
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-
-    <script>
-    // Обработчики для бургер-меню
-    document.querySelector('.burger-icon').addEventListener('click', function() {
-        this.classList.toggle('active');
-        document.querySelector('.side-menu').classList.toggle('active');
-    });
-
-    // Закрытие меню при клике вне его
-    document.addEventListener('click', function(e) {
-        const sideMenu = document.querySelector('.side-menu');
-        const burgerMenu = document.querySelector('.burger-menu');
-        if (!sideMenu.contains(e.target) && !burgerMenu.contains(e.target)) {
-            sideMenu.classList.remove('active');
-            document.querySelector('.burger-icon').classList.remove('active');
-        }
-    });
-
-    // Обработчики для модального окна добавления друга
-    const addFriendBtn = document.getElementById('addFriendBtn');
-    const addFriendModal = document.getElementById('addFriendModal');
-    const closeModal = document.querySelector('.close-modal');
-    const friendSearch = document.getElementById('friendSearch');
-
-    addFriendBtn.addEventListener('click', () => {
-        addFriendModal.classList.add('active');
-    });
-
-    closeModal.addEventListener('click', () => {
-        addFriendModal.classList.remove('active');
-    });
-
-    // Закрытие модального окна при клике вне его
-    addFriendModal.addEventListener('click', (e) => {
-        if (e.target === addFriendModal) {
-            addFriendModal.classList.remove('active');
-        }
-    });
-
-    // Поиск друзей
-    let searchTimeout;
-    friendSearch.addEventListener('input', (e) => {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-            searchUsers(e.target.value);
-        }, 300);
-    });
-
-    async function searchUsers(query) {
-        if (!query) {
-            document.getElementById('searchResults').innerHTML = '';
-            return;
-        }
-
-        try {
-            const response = await fetch(`/api/users/search?q=${encodeURIComponent(query)}`);
-            if (!response.ok) {
-                showToast('Ошибка поиска: ' + response.status, 'error');
-                document.getElementById('searchResults').innerHTML = '<div class="no-results">Ошибка поиска. Попробуйте позже.</div>';
-                return;
-            }
-            const data = await response.json();
-
-            const resultsHtml = data.users && data.users.length ? 
-                data.users.map(user => `
-                    <div class="friend-item">
-                        <img src="${user.avatar_url || '/images/default-avatar.png'}" class="friend-avatar" alt="${user.username}">
-                        <div class="friend-info">
-                            <div class="friend-name">${user.display_name || user.username}</div>
-                            <div class="friend-status">${user.telegram_username ? '@' + user.telegram_username : ''}</div>
-                        </div>
-                        <button class="friend-action-btn invite-btn" onclick="addFriend('${user.id}')">
-                            Добавить
-                        </button>
-                    </div>
-                `).join('') :
-                '<div class="no-results">Пользователи не найдены</div>';
-
-            document.getElementById('searchResults').innerHTML = resultsHtml;
-        } catch (error) {
-            showToast('Ошибка поиска', 'error');
-            document.getElementById('searchResults').innerHTML = 
-                '<div class="no-results">Ошибка поиска. Попробуйте позже.</div>';
-        }
-    }
-
-    // Загрузка списка друзей
-    async function loadFriends() {
-        try {
-            const response = await fetch('/api/friends');
-            if (!response.ok) {
-                showToast('Ошибка загрузки друзей: ' + response.status, 'error');
-                document.getElementById('friendsList').innerHTML = 
-                    '<div class="no-results">Ошибка загрузки. Попробуйте позже.</div>';
-                return;
-            }
-            const data = await response.json();
-
-            const friendsHtml = data.friends && data.friends.length ?
-                data.friends.map(friend => `
-                    <div class="friend-item">
-                        <img src="${friend.avatar_url || '/images/default-avatar.png'}" class="friend-avatar" alt="${friend.username}">
-                        <div class="friend-info">
-                            <div class="friend-name">${friend.display_name || friend.username}</div>
-                            <div class="friend-status ${friend.online ? 'online' : 'offline'}">
-                                ${friend.online ? 'В сети' : 'Не в сети'}
-                            </div>
-                        </div>
-                        <div class="friend-actions">
-                            <button class="friend-action-btn invite-btn" onclick="inviteFriend('${friend.id}')">
-                                <i class="fas fa-user-plus"></i>
-                            </button>
-                            <button class="friend-action-btn play-btn" onclick="playWithFriend('${friend.id}')">
-                                <i class="fas fa-gamepad"></i>
-                            </button>
-                        </div>
-                    </div>
-                `).join('') :
-                '<div class="no-results">У вас пока нет друзей</div>';
-
-            document.getElementById('friendsList').innerHTML = friendsHtml;
-        } catch (error) {
-            showToast('Ошибка загрузки друзей', 'error');
-            document.getElementById('friendsList').innerHTML = 
-                '<div class="no-results">Ошибка загрузки. Попробуйте позже.</div>';
-        }
-    }
-
-    // Функции для работы с друзьями
-    async function addFriend(userId) {
-        try {
-            const response = await fetch('/api/friends/add', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ userId })
-            });
-            if (!response.ok) {
-                showToast('Ошибка добавления друга: ' + response.status, 'error');
-                return;
-            }
-            const data = await response.json();
-            if (data.success) {
-                addFriendModal.classList.remove('active');
-                loadFriends();
-            } else {
-                showToast(data.error || 'Ошибка добавления друга', 'error');
-            }
-        } catch (error) {
-            showToast('Произошла ошибка. Попробуйте позже.', 'error');
-        }
-    }
-
-    async function inviteFriend(userId) {
-        try {
-            const response = await fetch('/api/friends/invite', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ userId })
-            });
-            if (!response.ok) {
-                showToast('Ошибка отправки приглашения: ' + response.status, 'error');
-                return;
-            }
-            const data = await response.json();
-            if (data.success) {
-                showToast('Приглашение отправлено!', 'success');
-            } else {
-                showToast(data.error || 'Ошибка отправки приглашения', 'error');
-            }
-        } catch (error) {
-            showToast('Произошла ошибка. Попробуйте позже.', 'error');
-        }
-    }
-
-    async function playWithFriend(userId) {
-        try {
-            const response = await fetch('/api/game/create', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ 
-                    type: 'friend',
-                    friendId: userId 
-                })
-            });
-            if (!response.ok) {
-                showToast('Ошибка создания игры: ' + response.status, 'error');
-                return;
-            }
-            const data = await response.json();
-            if (data.success) {
-                window.location.href = `/game.html?id=${data.gameId}`;
-            } else {
-                showToast(data.error || 'Ошибка создания игры', 'error');
-            }
-        } catch (error) {
-            showToast('Произошла ошибка. Попробуйте позже.', 'error');
-        }
-    }
-
-    // Загружаем список друзей при загрузке страницы
-    document.addEventListener('DOMContentLoaded', loadFriends);
-    </script>
 
     <!-- Модальное окно профиля -->
     <div class="universal-modal" id="universal-modal">
@@ -627,6 +479,69 @@
     // --- Навешиваем обработчики на кнопки ---
     document.getElementById('profile-page-btn').onclick = showProfileModal;
     document.getElementById('rules').onclick = showRulesModal;
+
+    // Обработчики для кнопки меню и друзей
+    const menuFriendsBtn = document.querySelector('.menu-friends-button');
+    const menuFriendsModal = document.getElementById('menu-friends-modal');
+    const closeModalBtn = menuFriendsModal.querySelector('.close-modal');
+
+    menuFriendsBtn.addEventListener('click', () => {
+        menuFriendsModal.classList.add('active');
+        loadFriends(); // Загружаем список друзей при открытии модального окна
+    });
+
+    closeModalBtn.addEventListener('click', () => {
+        menuFriendsModal.classList.remove('active');
+    });
+
+    // Закрытие модального окна при клике вне его
+    menuFriendsModal.addEventListener('click', (e) => {
+        if (e.target === menuFriendsModal) {
+            menuFriendsModal.classList.remove('active');
+        }
+    });
+
+    // Функция загрузки списка друзей
+    async function loadFriends() {
+        try {
+            const response = await fetch('/api/friends');
+            if (!response.ok) {
+                showToast('Ошибка загрузки друзей: ' + response.status, 'error');
+                document.getElementById('friendsListModal').innerHTML = 
+                    '<div class="no-results">Ошибка загрузки. Попробуйте позже.</div>';
+                return;
+            }
+            const data = await response.json();
+
+            const friendsHtml = data.friends && data.friends.length ?
+                data.friends.map(friend => `
+                    <div class="friend-item">
+                        <img src="${friend.avatar_url || '/images/default-avatar.png'}" class="friend-avatar" alt="${friend.username}">
+                        <div class="friend-info">
+                            <div class="friend-name">${friend.display_name || friend.username}</div>
+                            <div class="friend-status ${friend.online ? 'online' : 'offline'}">
+                                ${friend.online ? 'В сети' : 'Не в сети'}
+                            </div>
+                        </div>
+                        <div class="friend-actions">
+                            <button class="friend-action-btn invite-btn" onclick="inviteFriend('${friend.id}')">
+                                <i class="fas fa-user-plus"></i>
+                            </button>
+                            <button class="friend-action-btn play-btn" onclick="playWithFriend('${friend.id}')">
+                                <i class="fas fa-gamepad"></i>
+                            </button>
+                        </div>
+                    </div>
+                `).join('') :
+                '<div class="no-results">У вас пока нет друзей</div>';
+
+            document.getElementById('friendsListModal').innerHTML = friendsHtml;
+        } catch (error) {
+            showToast('Ошибка загрузки друзей', 'error');
+            document.getElementById('friendsListModal').innerHTML = 
+                '<div class="no-results">Ошибка загрузки. Попробуйте позже.</div>';
+        }
+    }
     </script>
 </body>
 </html> 
