@@ -1,14 +1,21 @@
-const { Scenes, Markup } = require('telegraf');
+const { Scenes } = require('telegraf');
 
 // Создаем сцену магазина
 const shopScene = new Scenes.BaseScene('shop');
 
 shopScene.enter(async (ctx) => {
   await ctx.reply(
-    'Добро пожаловать в магазин! Здесь вы можете приобрести различные товары для игры.\n\nВ будущем здесь появится красивый интерфейс и выбор товаров.',
-    Markup.keyboard([
-      ['⬅️ Назад в меню']
-    ]).resize()
+    'Магазин:\n\n' +
+    '1. Аватар - 100 монет\n' +
+    '2. Рамка - 200 монет\n' +
+    '3. Эмодзи - 50 монет\n\n' +
+    'Для возврата в меню нажмите кнопку "Назад"',
+    {
+      reply_markup: {
+        keyboard: [['Назад']],
+        resize_keyboard: true
+      }
+    }
   );
 });
 

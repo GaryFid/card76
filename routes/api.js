@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { User, Game } = require('../models');
+const { User, Game, Friendship } = require('../models');
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
@@ -392,98 +392,76 @@ router.get('/users/search', async (req, res) => {
 });
 
 // Получение списка друзей
-router.get('/friends', async (req, res) => {
-    if (!req.user) {
-        return res.status(401).json({ success: false, error: 'Пользователь не авторизован' });
-    }
+router.get('/friends', isAuthenticated, async (req, res) => {
     try {
         const user = await User.findByPk(req.user.id, {
             include: [{
                 model: User,
                 as: 'friends',
-                through: { attributes: [] }
+                through: { attributes: ['status'] }
             }]
         });
-
-        const friends = user.friends.map(friend => ({
-            id: friend.id,
-            username: friend.username,
-            display_name: friend.display_name,
-            avatar_url: friend.avatar_url,
-            online: friend.last_active && 
-                    (new Date() - new Date(friend.last_active)) < 5 * 60 * 1000 // 5 минут
-        }));
-
-        res.json({ friends });
+        res.json(user.friends.map(friend => ({
+            ...friend.toPublicJSON(),
+            status: friend.Friendship.status
+        })));
     } catch (error) {
-        logger.error({
-            event: 'friends_list_error',
-            error: error.message,
-            userId: req.user.id
-        });
-        res.status(500).json({ error: 'Ошибка получения списка друзей' });
+        console.error('Ошибка получения списка друзей:', error);
+        res.status(500).json({ error: 'Ошибка при получении списка друзей' });
     }
 });
 
 // Добавление друга
-router.post('/friends/add', async (req, res) => {
+router.post('/friends/:userId', isAuthenticated, async (req, res) => {
     try {
-        const { userId } = req.body;
-        const user = await User.findByPk(req.user.id);
-        const friend = await User.findByPk(userId);
+        const friendId = parseInt(req.params.userId);
+        if (friendId === req.user.id) {
+            return res.status(400).json({ error: 'Нельзя добавить себя в друзья' });
+        }
 
+        const friend = await User.findByPk(friendId);
         if (!friend) {
             return res.status(404).json({ error: 'Пользователь не найден' });
         }
 
-        await user.addFriend(friend);
-        
-        logger.info({
-            event: 'friend_added',
-            userId: req.user.id,
-            friendId: userId
+        const friendship = await Friendship.findOne({
+            where: {
+                userId: req.user.id,
+                friendId: friendId
+            }
         });
 
-        res.json({ success: true });
-    } catch (error) {
-        logger.error({
-            event: 'add_friend_error',
-            error: error.message,
+        if (friendship) {
+            return res.status(400).json({ error: 'Заявка уже отправлена' });
+        }
+
+        await Friendship.create({
             userId: req.user.id,
-            friendId: req.body.userId
+            friendId: friendId,
+            status: 'pending'
         });
-        res.status(500).json({ error: 'Ошибка добавления друга' });
+
+        res.json({ message: 'Заявка в друзья отправлена' });
+    } catch (error) {
+        console.error('Ошибка добавления друга:', error);
+        res.status(500).json({ error: 'Ошибка при добавлении друга' });
     }
 });
 
-// Отправка приглашения другу
-router.post('/friends/invite', async (req, res) => {
+// Получение статистики игр
+router.get('/stats', isAuthenticated, async (req, res) => {
     try {
-        const { userId } = req.body;
-        const friend = await User.findByPk(userId);
-
-        if (!friend) {
-            return res.status(404).json({ error: 'Пользователь не найден' });
-        }
-
-        // Здесь можно добавить логику отправки уведомления через бота
-        // или веб-сокеты, если они реализованы
-
-        logger.info({
-            event: 'friend_invited',
-            userId: req.user.id,
-            friendId: userId
+        const user = await User.findByPk(req.user.id);
+        res.json({
+            gamesPlayed: user.gamesPlayed,
+            gamesWon: user.gamesWon,
+            rating: user.rating,
+            level: user.level,
+            experience: user.experience
         });
-
-        res.json({ success: true });
     } catch (error) {
-        logger.error({
-            event: 'invite_friend_error',
-            error: error.message,
-            userId: req.user.id,
-            friendId: req.body.userId
-        });
-        res.status(500).json({ error: 'Ошибка отправки приглашения' });
+        console.error('Ошибка получения статистики:', error);
+        res.status(500).json({ error: 'Ошибка при получении статистики' });
     }
 });
 
@@ -538,6 +516,34 @@ router.get('/debug/users', async (req, res) => {
         res.json({ success: true, users });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Получение профиля пользователя
+router.get('/profile', isAuthenticated, async (req, res) => {
+    try {
+        const user = await User.findByPk(req.user.id);
+        res.json(user.toPublicJSON());
+    } catch (error) {
+        console.error('Ошибка получения профиля:', error);
+        res.status(500).json({ error: 'Ошибка при получении профиля' });
+    }
+});
+
+// Обновление профиля
+router.put('/profile', isAuthenticated, async (req, res) => {
+    try {
+        const { displayName, email } = req.body;
+        const user = await User.findByPk(req.user.id);
+        
+        if (displayName) user.displayName = displayName;
+        if (email) user.email = email;
+        
+        await user.save();
+        res.json(user.toPublicJSON());
+    } catch (error) {
+        console.error('Ошибка обновления профиля:', error);
+        res.status(500).json({ error: 'Ошибка при обновлении профиля' });
     }
 });
 

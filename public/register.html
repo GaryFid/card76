@@ -206,68 +206,81 @@
             <p>Punishment Inevitable: Dumb Rules<br>Карточная битва без пощады!</p>
         </div>
 
-        <form id="register-form">
+        <form id="registerForm" onsubmit="handleRegister(event)">
             <div class="form-group">
-                <label for="username">Логин</label>
+                <label for="username">Имя пользователя</label>
                 <input type="text" id="username" name="username" required minlength="3" maxlength="30">
-                <div class="error-message" id="username-error"></div>
+                <div class="error-message" id="usernameError"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" required>
+                <div class="error-message" id="emailError"></div>
             </div>
 
             <div class="form-group">
                 <label for="password">Пароль</label>
                 <input type="password" id="password" name="password" required minlength="6">
-                <div class="error-message" id="password-error"></div>
+                <div class="error-message" id="passwordError"></div>
             </div>
 
             <div class="form-group">
-                <label for="confirm-password">Подтвердите пароль</label>
-                <input type="password" id="confirm-password" name="confirm-password" required>
-                <div class="error-message" id="confirm-password-error"></div>
+                <label for="confirmPassword">Подтверждение пароля</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" required>
+                <div class="error-message" id="confirmPasswordError"></div>
             </div>
 
             <button type="submit" class="btn btn-primary">Зарегистрироваться</button>
-            <button type="button" class="btn btn-secondary" id="login-btn">Уже есть аккаунт?</button>
+            <button type="button" class="btn btn-secondary" onclick="window.location.href='/login'">Уже есть аккаунт?</button>
         </form>
 
         <div class="divider">
             <span>или</span>
         </div>
 
-        <button class="telegram-btn" id="telegram-login">
-            <img src="/img/telegram-logo.png" alt="Telegram">
+        <button class="telegram-btn" onclick="handleTelegramAuth()">
+            <img src="https://telegram.org/img/t_logo.svg" alt="Telegram">
             Войти через Telegram
         </button>
     </div>
 
     <script>
-        document.getElementById('register-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
+        async function handleRegister(event) {
+            event.preventDefault();
             
-            // Очищаем предыдущие ошибки
+            // Сбрасываем все сообщения об ошибках
             document.querySelectorAll('.error-message').forEach(el => {
                 el.textContent = '';
                 el.classList.remove('visible');
             });
             
+            // Получаем данные формы
             const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            const confirmPassword = document.getElementById('confirm-password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
             
             // Валидация
             let hasErrors = false;
             
             if (username.length < 3) {
-                showError('username', 'Логин должен содержать минимум 3 символа');
+                showError('usernameError', 'Имя пользователя должно быть не менее 3 символов');
+                hasErrors = true;
+            }
+            
+            if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+                showError('emailError', 'Введите корректный email');
                 hasErrors = true;
             }
             
             if (password.length < 6) {
-                showError('password', 'Пароль должен содержать минимум 6 символов');
+                showError('passwordError', 'Пароль должен быть не менее 6 символов');
                 hasErrors = true;
             }
             
             if (password !== confirmPassword) {
-                showError('confirm-password', 'Пароли не совпадают');
+                showError('confirmPasswordError', 'Пароли не совпадают');
                 hasErrors = true;
             }
             
@@ -279,45 +292,49 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ username, password })
+                    body: JSON.stringify({
+                        username,
+                        email,
+                        password
+                    })
                 });
                 
                 const data = await response.json();
                 
-                if (data.success) {
-                    window.location.href = '/game.html';
-                } else {
-                    showError('username', data.message);
+                if (!response.ok) {
+                    throw new Error(data.error || 'Ошибка регистрации');
                 }
+                
+                // Успешная регистрация
+                window.location.href = '/webapp';
             } catch (error) {
-                showError('username', 'Ошибка сервера. Попробуйте позже.');
+                showError('usernameError', error.message);
             }
-        });
-
-        document.getElementById('login-btn').addEventListener('click', () => {
-            window.location.href = '/login.html';
-        });
-
-        document.getElementById('telegram-login').addEventListener('click', () => {
-            window.location.href = '/auth/telegram';
-        });
-
-        function showError(field, message) {
-            const errorElement = document.getElementById(`${field}-error`);
+        }
+        
+        function showError(elementId, message) {
+            const errorElement = document.getElementById(elementId);
             errorElement.textContent = message;
             errorElement.classList.add('visible');
-            document.getElementById(field).classList.add('error');
         }
-
-        // Убираем класс error при фокусе на поле
-        document.querySelectorAll('input').forEach(input => {
-            input.addEventListener('focus', () => {
-                input.classList.remove('error');
-                const errorElement = document.getElementById(`${input.id}-error`);
-                if (errorElement) {
-                    errorElement.classList.remove('visible');
-                }
-            });
+        
+        function handleTelegramAuth() {
+            // Открываем страницу авторизации через Telegram в новом окне
+            const width = 550;
+            const height = 470;
+            const left = (window.innerWidth - width) / 2;
+            const top = (window.innerHeight - height) / 2;
+            
+            window.open('/auth/telegram', 'telegram-auth',
+                `width=${width},height=${height},left=${left},top=${top},status=yes,scrollbars=yes`
+            );
+        }
+        
+        // Слушаем сообщения от окна авторизации Telegram
+        window.addEventListener('message', function(event) {
+            if (event.data.type === 'telegram-auth-success') {
+                window.location.href = '/webapp';
+            }
         });
     </script>
 </body>

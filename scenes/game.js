@@ -263,7 +263,15 @@ async function makeBotMove(ctx, game, botIndex) {
 
 // Обработчик входа в сцену
 gameScene.enter(async (ctx) => {
-  await renderGameState(ctx);
+  await ctx.reply('Игра началась!', {
+    reply_markup: {
+      keyboard: [
+        ['Показать карты', 'Сделать ход'],
+        ['Завершить игру']
+      ],
+      resize_keyboard: true
+    }
+  });
 });
 
 // Обработчик кнопки "Обновить"

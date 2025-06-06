@@ -24,12 +24,25 @@ function log(type, data) {
     console.log(`[${type}]`, JSON.stringify(data, null, 2));
 }
 
+function formatLogMessage(type, data) {
+    const timestamp = new Date().toISOString();
+    return `[${timestamp}] [${type}] ${JSON.stringify(data)}`;
+}
+
 // Специальные функции для разных типов логов
 const logger = {
-    game: (data) => log('game', data),
-    auth: (data) => log('auth', data),
-    error: (data) => log('error', data),
-    session: (data) => log('session', data)
+    game: (data) => {
+        console.log(formatLogMessage('GAME', data));
+    },
+    auth: (data) => {
+        console.log(formatLogMessage('AUTH', data));
+    },
+    error: (data) => {
+        console.error(formatLogMessage('ERROR', data));
+    },
+    session: (data) => {
+        console.log(formatLogMessage('SESSION', data));
+    }
 };
 
 module.exports = logger; 

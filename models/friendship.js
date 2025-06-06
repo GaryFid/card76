@@ -2,11 +2,6 @@ const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
 
 const Friendship = sequelize.define('Friendship', {
-    id: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true
-    },
     userId: {
         type: DataTypes.INTEGER,
         allowNull: false,
@@ -24,8 +19,16 @@ const Friendship = sequelize.define('Friendship', {
         }
     },
     status: {
-        type: DataTypes.ENUM('pending', 'accepted', 'blocked'),
+        type: DataTypes.ENUM('pending', 'accepted', 'rejected'),
         defaultValue: 'pending'
+    },
+    requestedAt: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW
+    },
+    respondedAt: {
+        type: DataTypes.DATE,
+        allowNull: true
     }
 }, {
     tableName: 'friendships',

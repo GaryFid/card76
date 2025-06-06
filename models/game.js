@@ -10,7 +10,7 @@ const Game = sequelize.define('Game', {
     autoIncrement: true
   },
   status: {
-    type: DataTypes.STRING,
+    type: DataTypes.ENUM('waiting', 'in_progress', 'finished'),
     defaultValue: 'waiting'
   },
   players: {
@@ -31,7 +31,11 @@ const Game = sequelize.define('Game', {
   },
   winnerId: {
     type: DataTypes.INTEGER,
-    allowNull: true
+    allowNull: true,
+    references: {
+      model: 'users',
+      key: 'id'
+    }
   },
   withAI: {
     type: DataTypes.BOOLEAN,
@@ -44,6 +48,26 @@ const Game = sequelize.define('Game', {
   gameStage: {
     type: DataTypes.STRING,
     defaultValue: 'init'
+  },
+  currentPlayerId: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'users',
+      key: 'id'
+    }
+  },
+  startTime: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  endTime: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  gameData: {
+    type: DataTypes.JSONB,
+    defaultValue: {}
   }
 }, {
   tableName: 'games',

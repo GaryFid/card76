@@ -1,4 +1,4 @@
-const { Scenes, Markup } = require('telegraf');
+const { Scenes } = require('telegraf');
 const User = require('../models/user');
 
 // Создаем сцену авторизации
@@ -6,24 +6,16 @@ const authScene = new Scenes.BaseScene('auth');
 
 // Обработчик входа в сцену
 authScene.enter(async (ctx) => {
-  try {
-    await ctx.reply(
-      '👋 Привет! Это карточная игра P.I.D.R. — сыграем партию?\n\nВыберите способ входа или регистрации:',
-      {
-        reply_markup: {
-          inline_keyboard: [
-            [
-              { text: '🌐 Открыть сайт', url: 'https://card76.onrender.com/register' },
-              { text: '🎲 Открыть мини-приложение', web_app: { url: 'https://card76.onrender.com/webapp' } }
-            ]
-          ]
-        }
-      }
-    );
-  } catch (error) {
-    console.error('Ошибка авторизации:', error);
-    await ctx.reply('Произошла ошибка при авторизации. Пожалуйста, попробуйте снова.');
-  }
+  await ctx.reply('Добро пожаловать в P.I.D.R.! Выберите действие:', {
+    reply_markup: {
+      keyboard: [
+        ['Войти через Telegram'],
+        ['Правила игры'],
+        ['О игре']
+      ],
+      resize_keyboard: true
+    }
+  });
 });
 
 authScene.hears('Войти через Telegram', async (ctx) => {

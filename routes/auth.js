@@ -20,115 +20,118 @@ router.get('/register', (req, res) => {
 // Регистрация через форму
 router.post('/register', async (req, res) => {
   try {
-    const { username, email, password, birthDate } = req.body;
+    logAuth('REGISTER_START', { body: req.body });
 
-    // Проверка наличия обязательных полей
-    if (!username || !email || !password || !birthDate) {
-      return res.json({ 
-        success: false, 
-        message: 'Все поля обязательны для заполнения' 
-      });
+    const { username, email, password } = req.body;
+
+    // Валидация
+    if (!username || !email || !password) {
+      return res.status(400).json({ error: 'Все поля обязательны для заполнения' });
     }
 
-    // Валидация email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.json({ 
-        success: false, 
-        message: 'Некорректный email адрес' 
-      });
+    if (username.length < 3) {
+      return res.status(400).json({ error: 'Имя пользователя должно быть не менее 3 символов' });
     }
 
-    // Проверка возраста (минимум 10 лет)
-    const birthDateObj = new Date(birthDate);
-    const today = new Date();
-    const age = today.getFullYear() - birthDateObj.getFullYear();
-    if (age < 10) {
-      return res.json({ 
-        success: false, 
-        message: 'Минимальный возраст для регистрации - 10 лет' 
-      });
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Пароль должен быть не менее 6 символов' });
     }
 
-    // Проверка существования пользователя
-    const existingUser = await User.findOne({ 
-      where: { 
-        [Op.or]: [
-          { username: username },
-          { email: email }
-        ]
-      } 
+    if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      return res.status(400).json({ error: 'Введите корректный email' });
+    }
+
+    // Проверяем существование пользователя
+    const existingUser = await User.findOne({
+      where: {
+        username: username
+      }
     });
-    
+
     if (existingUser) {
-      return res.json({ 
-        success: false, 
-        message: existingUser.username === username ? 
-          'Пользователь с таким логином уже существует' : 
-          'Пользователь с таким email уже существует'
-      });
+      return res.status(400).json({ error: 'Пользователь с таким именем уже существует' });
     }
 
-    // Хеширование пароля
+    // Хешируем пароль
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Создание пользователя
+    // Создаем нового пользователя
     const user = await User.create({
       username,
       email,
       password: hashedPassword,
-      birthDate,
-      registrationDate: new Date()
+      authType: 'local',
+      registrationDate: new Date(),
+      rating: 1000,
+      coins: 0,
+      level: 1,
+      experience: 0,
+      gamesPlayed: 0,
+      gamesWon: 0
     });
 
-    res.json({ 
-      success: true, 
-      message: 'Регистрация успешна' 
-    });
+    logAuth('USER_CREATED', { userId: user.id, username: user.username });
 
+    // Автоматически входим после регистрации
+    req.login(user, (err) => {
+      if (err) {
+        logAuth('LOGIN_ERROR', { error: err.message });
+        return res.status(500).json({ error: 'Ошибка входа после регистрации' });
+      }
+      logAuth('LOGIN_SUCCESS', { userId: user.id });
+      return res.json(user.toPublicJSON());
+    });
   } catch (error) {
-    console.error('Ошибка при регистрации:', error);
-    res.json({ 
-      success: false, 
-      message: 'Ошибка при регистрации. Попробуйте позже.' 
-    });
+    logAuth('REGISTER_ERROR', { error: error.message });
+    console.error('Ошибка регистрации:', error);
+    res.status(500).json({ error: 'Ошибка при регистрации' });
   }
 });
 
-// Вход через форму
-router.post('/login', async (req, res, next) => {
-  passport.authenticate('local', (err, user, info) => {
-    if (err) {
-      console.error('Ошибка при входе:', err);
-      return res.json({ 
-        success: false, 
-        message: 'Ошибка при входе. Попробуйте позже.' 
-      });
-    }
+// Вход
+router.post('/login', async (req, res) => {
+  try {
+    logAuth('LOGIN_START', { username: req.body.username });
+
+    const { username, password } = req.body;
+
+    // Ищем пользователя
+    const user = await User.findOne({
+      where: {
+        username: username
+      }
+    });
 
     if (!user) {
-      return res.json({ 
-        success: false, 
-        message: info.message || 'Неверный логин или пароль' 
-      });
+      return res.status(401).json({ error: 'Неверное имя пользователя или пароль' });
     }
 
-    req.logIn(user, (err) => {
-      if (err) {
-        console.error('Ошибка при создании сессии:', err);
-        return res.json({ 
-          success: false, 
-          message: 'Ошибка при входе. Попробуйте позже.' 
-        });
-      }
+    // Проверяем пароль
+    const isValid = await bcrypt.compare(password, user.password);
+    if (!isValid) {
+      return res.status(401).json({ error: 'Неверное имя пользователя или пароль' });
+    }
 
-      res.json({ 
-        success: true, 
-        message: 'Вход выполнен успешно' 
-      });
+    // Обновляем дату последнего входа
+    await user.update({
+      lastLoginDate: new Date()
     });
-  })(req, res, next);
+
+    // Входим
+    req.login(user, (err) => {
+      if (err) {
+        logAuth('LOGIN_ERROR', { error: err.message });
+        return res.status(500).json({ error: 'Ошибка входа' });
+      }
+      logAuth('LOGIN_SUCCESS', { userId: user.id });
+      return res.json(user.toPublicJSON());
+    });
+  } catch (error) {
+    logAuth('LOGIN_ERROR', { error: error.message });
+    console.error('Ошибка входа:', error);
+    res.status(500).json({ error: 'Ошибка при входе' });
+  }
 });
 
 // API для регистрации/авторизации
@@ -268,12 +271,21 @@ router.get('/failure', (req, res) => {
 });
 
 // Выход из аккаунта
-router.get('/logout', (req, res) => {
-  req.logout();
-  res.json({ 
-    success: true, 
-    message: 'Выход выполнен успешно' 
+router.post('/logout', (req, res) => {
+  const userId = req.user?.id;
+  req.logout(() => {
+    logAuth('LOGOUT', { userId });
+    res.json({ message: 'Выход выполнен успешно' });
   });
+});
+
+// Проверка аутентификации
+router.get('/check', (req, res) => {
+  if (req.isAuthenticated()) {
+    res.json(req.user.toPublicJSON());
+  } else {
+    res.status(401).json({ error: 'Не аутентифицирован' });
+  }
 });
 
 module.exports = router; 

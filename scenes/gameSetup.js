@@ -7,57 +7,15 @@ const gameSetupScene = new Scenes.BaseScene('gameSetup');
 
 // Обработчик входа в сцену
 gameSetupScene.enter(async (ctx) => {
-  // Если выбрана игра с ИИ
-  if (ctx.session.withAI) {
-    await ctx.reply(
-      'Выберите количество игроков (включая вас):',
-      Markup.inlineKeyboard([
-        [
-          Markup.button.callback('4', 'players_4'),
-          Markup.button.callback('5', 'players_5'),
-          Markup.button.callback('6', 'players_6')
-        ],
-        [
-          Markup.button.callback('7', 'players_7'),
-          Markup.button.callback('8', 'players_8'),
-          Markup.button.callback('9', 'players_9')
-        ],
-        [Markup.button.callback('Отмена', 'cancel')]
-      ])
-    );
-  } else {
-    // Создаем новую игру для игры с реальными игроками
-    try {
-      const game = new Game({
-        players: [{
-          userId: ctx.session.user._id,
-          cards: [],
-          score: 0,
-          isBot: false
-        }],
-        status: 'waiting'
-      });
-      
-      await game.save();
-      
-      ctx.session.gameId = game._id;
-      
-      await ctx.reply(
-        'Игра создана!\n\n' +
-        'Поделитесь ссылкой с друзьями, чтобы они могли присоединиться к игре:\n' +
-        `https://t.me/${ctx.botInfo.username}?start=join_${game._id}\n\n` +
-        'Когда будете готовы начать игру, нажмите кнопку "Начать игру"',
-        Markup.inlineKeyboard([
-          [Markup.button.callback('Начать игру', 'start_game')],
-          [Markup.button.callback('Отмена', 'cancel')]
-        ])
-      );
-    } catch (error) {
-      console.error('Ошибка создания игры:', error);
-      await ctx.reply('Произошла ошибка при создании игры. Попробуйте еще раз.');
-      return ctx.scene.enter('menu');
+  await ctx.reply('Настройка игры:', {
+    reply_markup: {
+      keyboard: [
+        ['Создать игру', 'Присоединиться к игре'],
+        ['Вернуться в меню']
+      ],
+      resize_keyboard: true
     }
-  }
+  });
 });
 
 // Обработчики выбора количества игроков для игры с ИИ
