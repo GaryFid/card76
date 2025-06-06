@@ -3,67 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Регистрация - P.I.D.R.</title>
+    <title>P.I.D.R. - Вход</title>
     <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-    <div class="container">
-        <h1>Регистрация в игре P.I.D.R.</h1>
-        
-        <form id="register-form" class="auth-form">
-            <div class="form-group">
-                <label for="username">Логин:</label>
-                <input type="text" id="username" name="username" required>
-            </div>
+    <div class="auth-container">
+        <div class="game-logo">P.I.D.R.</div>
+        <div class="game-slogan">
+            Punishment Inevitable: Dumb Rules<br>
+            Карточная битва без пощады!
+        </div>
+
+        <!-- Форма входа -->
+        <form id="login-form" class="auth-form">
+            <input type="text" id="username" placeholder="Логин" required>
+            <input type="password" id="password" placeholder="Пароль" required>
             
-            <div class="form-group">
-                <label for="email">Email:</label>
-                <input type="email" id="email" name="email" required>
-            </div>
-            
-            <div class="form-group">
-                <label>Дата рождения:</label>
-                <div class="date-select">
-                    <select id="birth-day" required>
-                        <option value="">День</option>
-                    </select>
-                    <select id="birth-month" required>
-                        <option value="">Месяц</option>
-                    </select>
-                    <select id="birth-year" required>
-                        <option value="">Год</option>
-                    </select>
-                </div>
-            </div>
-            
-            <div class="form-group">
-                <label for="password">Пароль:</label>
-                <input type="password" id="password" name="password" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="confirm-password">Подтвердите пароль:</label>
-                <input type="password" id="confirm-password" name="confirm-password" required>
-            </div>
-            
-            <button type="submit" class="btn btn-primary">Зарегистрироваться</button>
+            <button type="submit" class="btn btn-primary">Войти</button>
+            <button type="button" id="register-btn" class="btn btn-secondary">Зарегистрироваться</button>
         </form>
-        
-        <div class="auth-alternatives">
-            <p>или</p>
-            <button id="telegram-login" class="btn btn-telegram">
-                Войти через Telegram
-            </button>
+
+        <div class="auth-separator">
+            <span>или</span>
         </div>
-        
-        <div class="auth-links">
-            <p>Уже есть аккаунт? <a href="/login">Войти</a></p>
-        </div>
+
+        <!-- Кнопка входа через Telegram -->
+        <button id="telegram-login" class="btn btn-telegram">
+            <img src="/img/telegram-icon.svg" alt="Telegram">
+            Войти через Telegram
+        </button>
+
+        <div id="error-message" class="error-message"></div>
     </div>
 
     <!-- Сначала подключаем утилиты -->
     <script src="/js/utils.js"></script>
-    <!-- Затем основной скрипт регистрации -->
+    <!-- Затем основной скрипт -->
     <script src="/js/register.js"></script>
 </body>
 </html> 

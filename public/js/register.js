@@ -155,7 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const day = daySelect.value;
         const month = monthSelect.value;
         const year = yearSelect.value;
-        const birthDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        const birthDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
         // Валидация
         if (password !== confirmPassword) {
@@ -164,22 +164,33 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const response = await window.apiRequest('/auth/register', 'POST', {
-                username,
-                email,
-                password,
-                birthDate
+            const response = await fetch('/auth/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username,
+                    email,
+                    password,
+                    birthDate,
+                    registrationDate: new Date()
+                })
             });
 
-            if (response.success) {
+            const data = await response.json();
+
+            if (data.success) {
                 window.showToast('Регистрация успешна!', 'success');
-                window.goToPage('/');
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 1500);
             } else {
-                window.showToast(response.message || 'Ошибка регистрации', 'error');
+                window.showToast(data.message || 'Ошибка регистрации', 'error');
             }
         } catch (error) {
-            window.showToast('Ошибка при регистрации', 'error');
             console.error('Ошибка:', error);
+            window.showToast('Ошибка при регистрации', 'error');
         }
     });
 

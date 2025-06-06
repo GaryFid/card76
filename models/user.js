@@ -36,7 +36,7 @@ const User = sequelize.define('User', {
   },
   registrationDate: {
     type: DataTypes.DATE,
-    allowNull: false,
+    allowNull: true,
     defaultValue: DataTypes.NOW
   },
   telegramId: {

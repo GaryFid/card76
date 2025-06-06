@@ -13,32 +13,55 @@ async function initDatabase() {
         const usersTableExists = tables.some(table => table.table_name === 'users');
         
         if (usersTableExists) {
-            // Проверяем существование колонки birthDate
+            // Проверяем существование колонок
             const [columns] = await sequelize.query(
                 "SELECT column_name, is_nullable FROM information_schema.columns WHERE table_name = 'users';"
             );
             
+            // Обработка birthDate
             const birthDateColumn = columns.find(col => col.column_name === 'birthDate');
-            
             if (!birthDateColumn) {
-                // Если колонки нет, добавляем её
                 await sequelize.query(
                     'ALTER TABLE users ADD COLUMN "birthDate" DATE;'
                 );
                 console.log('Колонка birthDate добавлена');
             } else if (birthDateColumn.is_nullable === 'NO') {
-                // Если колонка существует и NOT NULL, делаем её nullable
                 await sequelize.query(
                     'ALTER TABLE users ALTER COLUMN "birthDate" DROP NOT NULL;'
                 );
                 console.log('Колонка birthDate обновлена до nullable');
             }
+
+            // Обработка registrationDate
+            const registrationDateColumn = columns.find(col => col.column_name === 'registrationDate');
+            if (!registrationDateColumn) {
+                // Сначала добавляем колонку как nullable
+                await sequelize.query(
+                    'ALTER TABLE users ADD COLUMN "registrationDate" TIMESTAMP WITH TIME ZONE;'
+                );
+                // Затем заполняем её текущей датой
+                await sequelize.query(
+                    'UPDATE users SET "registrationDate" = CURRENT_TIMESTAMP;'
+                );
+                console.log('Колонка registrationDate добавлена и заполнена');
+            } else if (registrationDateColumn.is_nullable === 'NO') {
+                // Сначала заполняем NULL значения
+                await sequelize.query(
+                    'UPDATE users SET "registrationDate" = CURRENT_TIMESTAMP WHERE "registrationDate" IS NULL;'
+                );
+                console.log('Пустые значения registrationDate заполнены');
+            }
         }
 
-        // Синхронизируем модели
-        await User.sync({ alter: true });
-        await Game.sync({ alter: true });
-        await Friendship.sync({ alter: true });
+        // Синхронизируем модели с force: false и alter: true
+        const syncOptions = {
+            alter: true,
+            force: false
+        };
+
+        await User.sync(syncOptions);
+        await Game.sync(syncOptions);
+        await Friendship.sync(syncOptions);
         
         console.log('База данных успешно инициализирована');
     } catch (error) {
