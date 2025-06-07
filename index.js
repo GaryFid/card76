@@ -204,7 +204,7 @@ async function startApp() {
     });
 
     // Запуск сервера
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0', () => {
       console.log(`Сервер запущен на порту ${PORT}`);
       logger.session({
         event: 'server_started',
