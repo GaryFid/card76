@@ -138,9 +138,6 @@ async function startApp() {
       process.exit(1);
     }
 
-    // Инициализация бота
-    await initBot();
-
     // Веб-сервер для авторизации через OAuth
     const app = express();
     const PORT = process.env.PORT || 3000;
@@ -203,9 +200,8 @@ async function startApp() {
       res.sendFile(path.join(__dirname, 'public', 'game.html'));
     });
 
-    // Лог перед запуском сервера
+    // Запуск сервера СРАЗУ, до запуска бота
     console.log('Готов к запуску сервера, сейчас будет listen...');
-    // Запуск сервера
     app.listen(PORT, '0.0.0.0', () => {
       console.log('Сервер реально слушает порт!');
       console.log(`Сервер запущен на порту ${PORT}`);
@@ -217,6 +213,9 @@ async function startApp() {
         baseUrl: config.app.baseUrl
       });
     });
+
+    // А потом уже запуск бота (асинхронно, не блокируя сервер)
+    initBot();
 
     // Graceful shutdown
     async function cleanup() {
