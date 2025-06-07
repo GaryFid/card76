@@ -255,7 +255,7 @@
     <script>
     // Проверка авторизации при запуске приложения
     async function checkAuth() {
-        try {
+    try {
             const response = await fetch('/auth/check', {
                 credentials: 'include'
             });
@@ -275,8 +275,8 @@
             }
         } catch (error) {
             console.error('Ошибка проверки авторизации:', error);
-            window.location.href = '/register.html';
-        }
+        window.location.href = '/register.html';
+      }
     }
 
     // Выполняем проверку при загрузке страницы
@@ -289,7 +289,7 @@
                 method: 'POST',
                 credentials: 'include' 
             });
-            window.location.href = '/register.html';
+      window.location.href = '/register.html';
         } catch (error) {
             console.error('Ошибка при выходе:', error);
         }

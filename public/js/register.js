@@ -1,20 +1,22 @@
-import { showToast, showModal } from './utils.js';
+// --- register.js без import/export ---
 
 document.addEventListener('DOMContentLoaded', function() {
     // Инициализация Telegram WebApp
-    const tgApp = window.Telegram.WebApp;
-    tgApp.expand();
+    var tgApp = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+    if (tgApp) tgApp.expand();
 
     // Настройка основных цветов из Telegram
-    document.documentElement.style.setProperty('--tg-theme-bg-color', tgApp.themeParams.bg_color || '#ffffff');
-    document.documentElement.style.setProperty('--tg-theme-text-color', tgApp.themeParams.text_color || '#000000');
-    document.documentElement.style.setProperty('--tg-theme-button-color', tgApp.themeParams.button_color || '#3390ec');
-    document.documentElement.style.setProperty('--tg-theme-button-text-color', tgApp.themeParams.button_text_color || '#ffffff');
+    if (tgApp && tgApp.themeParams) {
+        document.documentElement.style.setProperty('--tg-theme-bg-color', tgApp.themeParams.bg_color || '#ffffff');
+        document.documentElement.style.setProperty('--tg-theme-text-color', tgApp.themeParams.text_color || '#000000');
+        document.documentElement.style.setProperty('--tg-theme-button-color', tgApp.themeParams.button_color || '#3390ec');
+        document.documentElement.style.setProperty('--tg-theme-button-text-color', tgApp.themeParams.button_text_color || '#ffffff');
+    }
 
     // Получаем элементы формы
-    const registerForm = document.getElementById('register-form');
-    const tgLoginBtn = document.getElementById('tgLoginBtn');
-    const errorMessage = document.createElement('div');
+    var registerForm = document.getElementById('register-form');
+    var tgLoginBtn = document.getElementById('tgLoginBtn');
+    var errorMessage = document.createElement('div');
     errorMessage.className = 'error-message';
     errorMessage.style.color = 'red';
     errorMessage.style.marginTop = '10px';
@@ -22,7 +24,7 @@ document.addEventListener('DOMContentLoaded', function() {
     registerForm.appendChild(errorMessage);
 
     // Проверяем наличие сохраненного пользователя
-    const savedUser = localStorage.getItem('user');
+    var savedUser = localStorage.getItem('user');
     if (savedUser) {
         // Перенаправляем на главную, если пользователь уже авторизован
         window.location.href = '/webapp';
@@ -30,55 +32,34 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Обработчик клика по кнопке Telegram
-    tgLoginBtn.addEventListener('click', async function() {
-        try {
-            // Получаем данные пользователя из Telegram WebApp
-            const initData = tgApp.initData;
-            const user = tgApp.initDataUnsafe.user;
-
+    if (tgLoginBtn && tgApp) {
+        tgLoginBtn.addEventListener('click', async function() {
+            var user = tgApp.initDataUnsafe && tgApp.initDataUnsafe.user;
             if (!user) {
-                showToast('Не удалось получить данные пользователя Telegram', 'error');
+                window.showToast('Не удалось получить данные пользователя Telegram', 'error');
                 return;
             }
-
-            // Отправляем запрос на сервер для регистрации/авторизации
-            const response = await fetch('/auth/telegram/force-login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    initData,
-                    user: {
-                        id: user.id,
-                        first_name: user.first_name,
-                        last_name: user.last_name,
-                        username: user.username,
-                        language_code: user.language_code,
-                        photo_url: user.photo_url
-                    }
-                })
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                // Сохраняем данные пользователя
-                localStorage.setItem('user', JSON.stringify(data.user));
-                // Показываем сообщение об успехе
-                showToast('Успешная авторизация! Перенаправление...');
-                // Перенаправляем на главную страницу
-                setTimeout(() => {
-                    window.location.href = '/webapp';
-                }, 1000);
-            } else {
-                showToast(data.error || 'Ошибка авторизации', 'error');
+            try {
+                var response = await fetch('/auth/telegram/force-login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user }),
+                    credentials: 'include'
+                });
+                var data = await response.json();
+                if (data.success && data.user) {
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    window.showToast('Успешная авторизация! Перенаправление...');
+                    setTimeout(function() { window.location.href = '/webapp'; }, 1000);
+                } else {
+                    window.showToast(data.error || 'Ошибка авторизации', 'error');
+                }
+            } catch (error) {
+                console.error('Ошибка при авторизации через Telegram:', error);
+                window.showToast('Произошла ошибка при авторизации', 'error');
             }
-        } catch (error) {
-            console.error('Ошибка при авторизации через Telegram:', error);
-            showToast('Произошла ошибка при авторизации', 'error');
-        }
-    });
+        });
+    }
 
     // Функция отображения ошибки
     function showError(message) {
@@ -143,56 +124,58 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Обработчик формы регистрации
     const form = document.getElementById('register-form');
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
+    if (form) {
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            var username = document.getElementById('username').value;
+            var email = document.getElementById('email').value;
+            var password = document.getElementById('password').value;
+            var confirmPassword = document.getElementById('confirm-password').value;
+            
+            // Собираем дату рождения
+            const day = daySelect.value;
+            const month = monthSelect.value;
+            const year = yearSelect.value;
+            const birthDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
-        const username = document.getElementById('username').value;
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-        const confirmPassword = document.getElementById('confirm-password').value;
-        
-        // Собираем дату рождения
-        const day = daySelect.value;
-        const month = monthSelect.value;
-        const year = yearSelect.value;
-        const birthDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-
-        // Валидация
-        if (password !== confirmPassword) {
-            window.showToast('Пароли не совпадают', 'error');
-            return;
-        }
-
-        try {
-            const response = await fetch('/auth/register', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    username,
-                    email,
-                    password,
-                    birthDate,
-                    registrationDate: new Date()
-                })
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                window.showToast('Регистрация успешна!', 'success');
-                setTimeout(() => {
-                    window.location.href = '/';
-                }, 1500);
-            } else {
-                window.showToast(data.message || 'Ошибка регистрации', 'error');
+            // Валидация
+            if (!username || username.length < 3) {
+                window.showToast('Имя пользователя должно быть не менее 3 символов', 'error');
+                return;
             }
-        } catch (error) {
-            console.error('Ошибка:', error);
-            window.showToast('Ошибка при регистрации', 'error');
-        }
-    });
+            if (!email || !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+                window.showToast('Введите корректный email', 'error');
+                return;
+            }
+            if (!password || password.length < 6) {
+                window.showToast('Пароль должен быть не менее 6 символов', 'error');
+                return;
+            }
+            if (password !== confirmPassword) {
+                window.showToast('Пароли не совпадают', 'error');
+                return;
+            }
+            try {
+                var response = await fetch('/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email, password, birthDate }),
+                    credentials: 'include'
+                });
+                var data = await response.json();
+                if (data.success && data.user) {
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    window.showToast('Регистрация успешна!', 'success');
+                    setTimeout(function() { window.location.href = '/webapp'; }, 1000);
+                } else {
+                    window.showToast(data.error || 'Ошибка регистрации', 'error');
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                window.showToast('Ошибка при регистрации', 'error');
+            }
+        });
+    }
 
     // Кнопка входа через Telegram
     const telegramButton = document.getElementById('telegram-login');

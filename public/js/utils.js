@@ -1,7 +1,7 @@
 // Универсальные утилиты для клиента P.I.D.R.
 
 // Функция для отображения всплывающего уведомления
-function showToast(message, type = 'info') {
+window.showToast = function(message, type = 'info') {
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
     toast.textContent = message;
@@ -10,10 +10,10 @@ function showToast(message, type = 'info') {
     setTimeout(() => {
         toast.remove();
     }, 3000);
-}
+};
 
 // Функция для отображения модального окна
-function showModal(title, content) {
+window.showModal = function(title, content) {
     const modal = document.createElement('div');
     modal.className = 'modal';
     modal.innerHTML = `
@@ -24,56 +24,29 @@ function showModal(title, content) {
         </div>
     `;
     document.body.appendChild(modal);
-}
+};
 
-// Функция для перехода на другую страницу
-function goToPage(page) {
-    window.location.href = page;
-}
+// Пример глобальной функции для перехода по страницам
+window.goToPage = function(url) {
+    window.location.href = url;
+};
 
-// Функция для получения текущего пользователя
-async function getCurrentUser() {
+// Пример глобальной функции для получения текущего пользователя (заглушка)
+window.getCurrentUser = function() {
+    // Здесь должна быть логика получения пользователя из сессии или API
     try {
-        const response = await fetch('/api/current-user');
-        if (!response.ok) throw new Error('Ошибка получения данных пользователя');
-        return await response.json();
-    } catch (error) {
-        console.error('Ошибка:', error);
+        const user = JSON.parse(localStorage.getItem('user'));
+        return user;
+    } catch (e) {
         return null;
     }
-}
+};
 
-// Функция для выполнения API запросов
-async function apiRequest(endpoint, method = 'GET', data = null) {
-    try {
-        const options = {
-            method,
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        };
-        
-        if (data) {
-            options.body = JSON.stringify(data);
-        }
-        
-        const response = await fetch(endpoint, options);
-        const result = await response.json();
-        
-        if (!response.ok) {
-            throw new Error(result.message || 'Ошибка запроса');
-        }
-        
-        return result;
-    } catch (error) {
-        console.error('API ошибка:', error);
-        throw error;
-    }
-}
-
-// Экспортируем функции как свойства window для доступа из других скриптов
-window.showToast = showToast;
-window.showModal = showModal;
-window.goToPage = goToPage;
-window.getCurrentUser = getCurrentUser;
-window.apiRequest = apiRequest; 
+// Пример глобального API-запроса
+window.apiRequest = async function(url, options = {}) {
+    const res = await fetch(url, {
+        credentials: 'include',
+        ...options
+    });
+    return await res.json();
+}; 

@@ -1,106 +1,65 @@
 // Инициализация Telegram WebApp
-const tgApp = window.Telegram.WebApp;
-tgApp.expand();
+var tgApp = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+if (tgApp) tgApp.expand();
 
 // Настройка основного цвета из Telegram
-document.documentElement.style.setProperty('--tg-theme-bg-color', tgApp.themeParams.bg_color || '#ffffff');
-document.documentElement.style.setProperty('--tg-theme-text-color', tgApp.themeParams.text_color || '#000000');
-document.documentElement.style.setProperty('--tg-theme-button-color', tgApp.themeParams.button_color || '#3390ec');
-document.documentElement.style.setProperty('--tg-theme-button-text-color', tgApp.themeParams.button_text_color || '#ffffff');
+if (tgApp && tgApp.themeParams) {
+    document.documentElement.style.setProperty('--tg-theme-bg-color', tgApp.themeParams.bg_color || '#ffffff');
+    document.documentElement.style.setProperty('--tg-theme-text-color', tgApp.themeParams.text_color || '#000000');
+    document.documentElement.style.setProperty('--tg-theme-button-color', tgApp.themeParams.button_color || '#3390ec');
+    document.documentElement.style.setProperty('--tg-theme-button-text-color', tgApp.themeParams.button_text_color || '#ffffff');
+}
 
 // Проверка авторизации при загрузке страницы
-document.addEventListener('DOMContentLoaded', async () => {
+window.addEventListener('DOMContentLoaded', function() {
     try {
-        // Получаем данные пользователя из Telegram WebApp
-        const initData = tgApp.initData || '';
-        const initDataUnsafe = tgApp.initDataUnsafe || {};
-        
-        if (!initData) {
-            console.error('Нет данных инициализации Telegram WebApp');
-            return;
-        }
-
-        // Отправляем запрос на сервер для проверки/создания пользователя
-        const response = await fetch('/auth/telegram/check', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                initData,
-                user: initDataUnsafe.user
-            })
-        });
-
-        const data = await response.json();
-        
-        if (data.success) {
-            // Сохраняем данные пользователя
-            localStorage.setItem('user', JSON.stringify(data.user));
-            console.log('Пользователь авторизован:', data.user);
-        } else {
-            console.error('Ошибка авторизации:', data.error);
-            if (data.redirect) {
-                window.location.href = data.redirect;
-            }
-        }
-    } catch (error) {
-        console.error('Ошибка при проверке авторизации:', error);
-    }
-});
-
-// Обработчик кнопки "Начать игру"
-document.getElementById('start-game').addEventListener('click', async () => {
-    try {
-        const user = localStorage.getItem('user');
+        var user = localStorage.getItem('user');
         if (!user) {
-            console.error('Пользователь не авторизован');
-            // Пробуем получить данные из Telegram WebApp
-            const initDataUnsafe = tgApp.initDataUnsafe || {};
-            if (initDataUnsafe.user) {
-                // Отправляем запрос на автоматическую авторизацию
-                const response = await fetch('/auth/telegram/force-login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        user: initDataUnsafe.user
-                    })
-                });
-
-                const data = await response.json();
-                if (data.success) {
-                    localStorage.setItem('user', JSON.stringify(data.user));
-                    window.location.href = '/game-setup';
-                    return;
-                }
-            }
             window.location.href = '/register';
             return;
         }
-
-        // Проверяем валидность данных пользователя
-        const userData = JSON.parse(user);
+        var userData = JSON.parse(user);
         if (!userData.id || !userData.username) {
-            console.error('Некорректные данные пользователя');
             localStorage.removeItem('user');
             window.location.href = '/register';
             return;
         }
-
-        // Сохраняем базовые настройки игры
-        localStorage.setItem('gameSettings', JSON.stringify({
-            playerCount: 4,
-            withAI: false
-        }));
-
-        // Переходим к настройке игры
-        window.location.href = '/game-setup';
     } catch (error) {
-        console.error('Ошибка при начале игры:', error);
-        showToast('Произошла ошибка при начале игры. Попробуйте перезагрузить страницу.', 'error');
+        localStorage.removeItem('user');
+        window.location.href = '/register';
     }
+});
+
+// Обработчик кнопки "Начать игру"
+document.getElementById('start-game').addEventListener('click', function() {
+    var user = localStorage.getItem('user');
+    if (!user) {
+        window.location.href = '/register';
+        return;
+    }
+    localStorage.setItem('gameSettings', JSON.stringify({ playerCount: 4, withAI: false }));
+    window.location.href = '/game-setup';
+});
+
+document.getElementById('play-ai').addEventListener('click', function() {
+    localStorage.setItem('gameSettings', JSON.stringify({ playerCount: 4, withAI: true }));
+    window.location.href = '/game-setup';
+});
+
+document.getElementById('shop').addEventListener('click', function() {
+    window.location.href = '/shop.html';
+});
+
+document.getElementById('profile-page-btn').addEventListener('click', function() {
+    window.location.href = '/profile.html';
+});
+
+document.getElementById('rules').addEventListener('click', function() {
+    window.showModal('Правила', '<p>Правила игры будут здесь.</p>');
+});
+
+document.getElementById('rating').addEventListener('click', function() {
+    window.showToast('Рейтинг игроков будет доступен в ближайшее время!', 'info');
 });
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -152,123 +111,6 @@ document.addEventListener('DOMContentLoaded', function() {
             card.alt = selectedCards[i];
             mainLoader.appendChild(card);
         }
-    }
-    // --- Переходы между страницами ---
-    // Проверка авторизации
-    const user = localStorage.getItem('user');
-    if (!user) {
-        window.location.href = '/register';
-        return;
-    }
-    try {
-        const userData = JSON.parse(user);
-        if (!userData.id || !userData.username) {
-            localStorage.removeItem('user');
-            window.location.href = '/register';
-            return;
-        }
-        document.getElementById('play-ai').addEventListener('click', () => {
-            localStorage.setItem('gameSettings', JSON.stringify({
-                playerCount: 4,
-                withAI: true
-            }));
-            window.location.href = '/game-setup';
-        });
-        document.getElementById('rating').addEventListener('click', () => {
-            showToast('Рейтинг игроков будет доступен в ближайшее время!', 'info');
-        });
-        document.getElementById('rules').addEventListener('click', () => {
-            showRules();
-        });
-        function showRules() {
-            // Создаем элементы модального окна
-            const modal = document.createElement('div');
-            modal.className = 'rules-modal';
-            modal.style.position = 'fixed';
-            modal.style.top = '0';
-            modal.style.left = '0';
-            modal.style.width = '100%';
-            modal.style.height = '100%';
-            modal.style.backgroundColor = 'rgba(0,0,0,0.7)';
-            modal.style.display = 'flex';
-            modal.style.justifyContent = 'center';
-            modal.style.alignItems = 'center';
-            modal.style.zIndex = '1000';
-            
-            const modalContent = document.createElement('div');
-            modalContent.className = 'rules-content';
-            modalContent.style.backgroundColor = 'var(--tg-theme-bg-color)';
-            modalContent.style.borderRadius = '12px';
-            modalContent.style.padding = '20px';
-            modalContent.style.width = '90%';
-            modalContent.style.maxWidth = '600px';
-            modalContent.style.maxHeight = '80%';
-            modalContent.style.overflow = 'auto';
-            modalContent.style.boxShadow = '0 5px 20px rgba(0,0,0,0.3)';
-            
-            const closeBtn = document.createElement('button');
-            closeBtn.innerHTML = '&times;';
-            closeBtn.style.position = 'absolute';
-            closeBtn.style.top = '10px';
-            closeBtn.style.right = '10px';
-            closeBtn.style.fontSize = '24px';
-            closeBtn.style.border = 'none';
-            closeBtn.style.background = 'none';
-            closeBtn.style.cursor = 'pointer';
-            closeBtn.style.color = 'var(--tg-theme-text-color)';
-            
-            const title = document.createElement('h2');
-            title.textContent = 'Правила игры "P.I.D.R. - Punishment Inevitable: Dumb Rules"';
-            title.style.textAlign = 'center';
-            title.style.marginBottom = '20px';
-            
-            const rules = document.createElement('div');
-            rules.innerHTML = `
-                <h3>Цель игры</h3>
-                <p>Избавиться от всех карт на руке раньше других игроков.</p>
-                <h3>Колода и подготовка</h3>
-                <p>Игра ведется стандартной колодой из 52 карт (от 2 до туза).</p>
-                <p>Каждому игроку раздаются 3 карты: 2 закрытые и 1 открытая.</p>
-                <h3>Ход игры</h3>
-                <p><strong>Стадия 1:</strong> Выкладка карт</p>
-                <ul>
-                    <li>Игроки ходят по очереди. Начинает игрок с самой старшей открытой картой.</li>
-                    <li>В свой ход игрок может положить только верхнюю карту своей стопки на открытую карту любого оппонента, если она на 1 ранг выше (например, 7 на 6, 2 на туза).</li>
-                    <li>После успешного хода игрок сразу берёт новую карту из колоды (если есть) и продолжает ходить, пока есть возможность.</li>
-                    <li>Если некуда положить верхнюю карту — берётся одна карта из колоды. Если и её некуда положить — игрок оставляет её себе и передаёт ход дальше.</li>
-                    <li>Игрок не может остаться без открытой карты в первой стадии.</li>
-                    <li>Стадия заканчивается, когда колода заканчивается.</li>
-                </ul>
-                <p><strong>Стадия 2:</strong> Игра с картами на руках</p>
-                <ul>
-                    <li>Закрытые карты остаются закрытыми.</li>
-                    <li>Игроки продолжают играть с теми картами, что у них на руках.</li>
-                    <li>Первым ходит тот, кто последним взял карту из колоды в первой стадии.</li>
-                    <li>Дальнейшие правила определяются по договорённости или по сценарию игры.</li>
-                </ul>
-                <h3>Победа</h3>
-                <p>Побеждает игрок, который первым избавится от всех своих карт.</p>
-            `;
-            // Добавляем элементы в DOM
-            modalContent.appendChild(closeBtn);
-            modalContent.appendChild(title);
-            modalContent.appendChild(rules);
-            modal.appendChild(modalContent);
-            document.body.appendChild(modal);
-            // Обработчик закрытия модального окна
-            closeBtn.addEventListener('click', () => {
-                document.body.removeChild(modal);
-            });
-            // Закрытие при клике вне модального окна
-            modal.addEventListener('click', (event) => {
-                if (event.target === modal) {
-                    document.body.removeChild(modal);
-                }
-            });
-        }
-    } catch (error) {
-        localStorage.removeItem('user');
-        window.location.href = '/register';
     }
     // --- Кошелек: бургер-меню ---
     const walletBlock = document.getElementById('wallet-block');

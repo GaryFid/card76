@@ -1,95 +1,73 @@
-import { getCurrentUser, apiRequest, showModal, goToPage, showToast } from './utils.js';
+// --- game-setup.js без import/export ---
 
-// Инициализация Telegram WebApp
-const tgApp = window.Telegram.WebApp;
-tgApp.expand();
-
-// Настройка основного цвета из Telegram
-document.documentElement.style.setProperty('--tg-theme-bg-color', tgApp.themeParams.bg_color || '#ffffff');
-document.documentElement.style.setProperty('--tg-theme-text-color', tgApp.themeParams.text_color || '#000000');
-document.documentElement.style.setProperty('--tg-theme-button-color', tgApp.themeParams.button_color || '#3390ec');
-document.documentElement.style.setProperty('--tg-theme-button-text-color', tgApp.themeParams.button_text_color || '#ffffff');
-
-document.addEventListener('DOMContentLoaded', () => {
-  const user = getCurrentUser();
-  let playerCount = 4;
-  let withAI = false;
-
-  // Выбор стола
-  document.querySelectorAll('.oval-table').forEach(table => {
-    table.addEventListener('click', () => {
-      playerCount = +table.dataset.players;
-      document.querySelectorAll('.oval-table').forEach(t => t.classList.remove('selected'));
-      table.classList.add('selected');
-    });
-  });
-
-  // Переключатель ботов
-  const aiCheckbox = document.getElementById('with-ai');
-  if (aiCheckbox) {
-    aiCheckbox.addEventListener('change', e => {
-      withAI = e.target.checked;
-    });
-  }
-
-  // Кнопка "Начать игру"
-  document.getElementById('start-game-btn').addEventListener('click', async () => {
-    try {
-      const data = await apiRequest('/api/games/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: user.id,
-          username: user.username,
-          playerCount,
-          withAI
-        })
-      });
-      if (data.game && data.game.id) {
-        window.location.href = `/game.html?id=${data.game.id}`;
-      }
-    } catch (e) {
-      showToast('Ошибка при создании игры: ' + e.message, 'error');
+document.addEventListener('DOMContentLoaded', function() {
+    var tgApp = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+    if (tgApp) tgApp.expand();
+    if (tgApp && tgApp.themeParams) {
+        document.documentElement.style.setProperty('--tg-theme-bg-color', tgApp.themeParams.bg_color || '#ffffff');
+        document.documentElement.style.setProperty('--tg-theme-text-color', tgApp.themeParams.text_color || '#000000');
+        document.documentElement.style.setProperty('--tg-theme-button-color', tgApp.themeParams.button_color || '#3390ec');
+        document.documentElement.style.setProperty('--tg-theme-button-text-color', tgApp.themeParams.button_text_color || '#ffffff');
     }
-  });
-
-  // Кнопка "Назад"
-  document.getElementById('back-btn').addEventListener('click', () => {
-    window.location.href = '/index.html';
-  });
-
-  // Кнопка "Правила игры"
-  document.getElementById('rules-btn').addEventListener('click', () => {
-    window.safeShowModal(`
-      <div class="rules-content" style="color:var(--tg-theme-text-color,#1e3c72);text-align:left;max-height:60vh;overflow-y:auto;">
-        <h3 style="color:#2196f3;">Правила игры "P.I.D.R. - Punishment Inevitable: Dumb Rules"</h3>
-        <h4>Общие правила:</h4>
-        <ul>
-          <li>В игре используется колода из 36 карт (от 6 до туза)</li>
-          <li>Игра поддерживает от 4 до 9 игроков</li>
-          <li>В начале игры каждому игроку раздаётся по 4 карты</li>
-        </ul>
-        <h4>Стадия 1:</h4>
-        <ul>
-          <li>Игроки кладут карты на 1 ранг выше на карты других игроков или свои карты</li>
-          <li>Туз считается старшей картой, на него можно положить только 2</li>
-          <li>Игрок продолжает ходить, пока у него есть возможность сделать ход</li>
-          <li>После каждого хода игрок берет новую карту из колоды</li>
-        </ul>
-        <h4>Кнопки в игре:</h4>
-        <ul>
-          <li><strong>Взять из колоды</strong> - взять карту из колоды</li>
-          <li><strong>Сыграть</strong> - положить карту на карту другого игрока</li>
-          <li><strong>Положить себе</strong> - положить карту на свою карту</li>
-        </ul>
-        <h4>Победа:</h4>
-        <p>Побеждает игрок, который первым избавится от всех своих карт.</p>
-      </div>
-    `, {
-      title: 'Правила',
-      onClose: () => {},
+    var user = window.getCurrentUser ? window.getCurrentUser() : null;
+    var playerCount = 4;
+    var withAI = false;
+    // Выбор стола
+    var tables = document.querySelectorAll('.oval-table');
+    tables.forEach(function(table) {
+        table.addEventListener('click', function() {
+            playerCount = +table.dataset.players;
+            tables.forEach(function(t) { t.classList.remove('selected'); });
+            table.classList.add('selected');
+        });
     });
-  });
+    // Переключатель ботов
+    var aiCheckbox = document.getElementById('with-ai');
+    if (aiCheckbox) {
+        aiCheckbox.addEventListener('change', function(e) {
+            withAI = e.target.checked;
+        });
+    }
+    // Кнопка "Начать игру"
+    var startBtn = document.getElementById('start-game-btn');
+    if (startBtn) {
+        startBtn.addEventListener('click', async function() {
+            try {
+                var res = await fetch('/api/games/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: user && user.id,
+                        username: user && user.username,
+                        playerCount: playerCount,
+                        withAI: withAI
+                    })
+                });
+                var data = await res.json();
+                if (data.game && data.game.id) {
+                    window.location.href = '/game.html?id=' + data.game.id;
+                } else {
+                    window.showToast('Ошибка при создании игры', 'error');
+                }
+            } catch (e) {
+                window.showToast('Ошибка при создании игры', 'error');
+            }
+        });
+    }
+    // Кнопка "Назад"
+    var backBtn = document.getElementById('back-btn');
+    if (backBtn) {
+        backBtn.addEventListener('click', function() {
+            window.location.href = '/index.html';
+        });
+    }
+    // Кнопка "Правила игры"
+    var rulesBtn = document.getElementById('rules-btn');
+    if (rulesBtn) {
+        rulesBtn.addEventListener('click', function() {
+            window.showModal('Правила', '<p>Правила игры будут здесь.</p>');
+        });
+    }
 });
 
 // Получение элементов интерфейса
