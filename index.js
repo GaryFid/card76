@@ -203,8 +203,11 @@ async function startApp() {
       res.sendFile(path.join(__dirname, 'public', 'game.html'));
     });
 
+    // Лог перед запуском сервера
+    console.log('Готов к запуску сервера, сейчас будет listen...');
     // Запуск сервера
     app.listen(PORT, '0.0.0.0', () => {
+      console.log('Сервер реально слушает порт!');
       console.log(`Сервер запущен на порту ${PORT}`);
       logger.session({
         event: 'server_started',
