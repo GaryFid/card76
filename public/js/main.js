@@ -28,17 +28,6 @@ window.addEventListener('DOMContentLoaded', async function() {
             document.body.removeChild(loader);
             return;
         }
-        // Если нет пользователя в localStorage — пробуем через сервер
-        const response = await fetch('/auth/check', { credentials: 'include' });
-        const data = await response.json();
-        console.log('[main.js] Ответ /auth/check:', data);
-        if (data.authenticated && data.user && data.user.id && data.user.username) {
-            localStorage.setItem('user', JSON.stringify(data.user));
-            if (window.showToast) window.showToast('Авторизация по сессии', 'success');
-            console.log('[main.js] Авторизация по сессии:', data.user);
-            document.body.removeChild(loader);
-            return;
-        }
         // Если не авторизован — редирект на регистрацию
         if (window.showToast) window.showToast('Не авторизован, редирект', 'error');
         console.warn('[main.js] Не авторизован, редирект на регистрацию');
