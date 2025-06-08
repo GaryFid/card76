@@ -50,10 +50,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data.success && data.user) {
                     localStorage.setItem('user', JSON.stringify(data.user));
                     console.log('user saved to localStorage:', data.user);
-                    window.showToast('Успешная авторизация! Перенаправление...');
+                    if (window.showToast) {
+                        window.showToast('Успешная авторизация! Перенаправление...');
+                    } else {
+                        alert('Успешная авторизация! Перенаправление...');
+                    }
                     setTimeout(function() { window.location.replace('/index.html'); }, 1000);
                 } else {
-                    window.showToast(data.error || 'Ошибка авторизации', 'error');
+                    if (window.showToast) {
+                        window.showToast(data.error || 'Ошибка авторизации', 'error');
+                    } else {
+                        alert(data.error || 'Ошибка авторизации');
+                    }
                 }
             } catch (error) {
                 console.error('Ошибка при авторизации через Telegram:', error);

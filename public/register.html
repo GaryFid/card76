@@ -344,7 +344,7 @@
                         tg.MainButton.hide();
                     }
                     // Перенаправляем на главную
-                    window.location.href = '/index.html';
+                    window.location.replace('/index.html');
                 } else {
                     throw new Error('Неизвестная ошибка при регистрации');
                 }
@@ -386,10 +386,8 @@
         
         document.getElementById('telegramAuthButton').addEventListener('click', function() {
             if (tg.initDataUnsafe?.user) {
-                // Если уже есть данные пользователя Telegram
                 handleTelegramAuth(tg.initDataUnsafe.user);
             } else {
-                // Показываем ошибку, не делаем переход!
                 if (window.showToast) {
                     window.showToast('Откройте WebApp через Telegram для входа', 'error');
                 } else {
@@ -420,7 +418,7 @@
                 if (tg.MainButton) {
                     tg.MainButton.hide();
                 }
-                window.location.href = '/index.html';
+                window.location.replace('/index.html');
             } catch (error) {
                 showError('usernameError', error.message);
             }
