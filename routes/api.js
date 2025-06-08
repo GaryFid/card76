@@ -510,7 +510,7 @@ router.post('/debug/clear-database', async (req, res) => {
 router.get('/debug/users', async (req, res) => {
     try {
         const users = await User.findAll({
-            attributes: ['id', 'username', 'email', 'telegram_id', 'rating', 'createdAt'],
+            attributes: ['id', 'username', 'telegram_id', 'rating', 'createdAt'],
             raw: true
         });
         res.json({ success: true, users });
@@ -533,11 +533,10 @@ router.get('/profile', isAuthenticated, async (req, res) => {
 // Обновление профиля
 router.put('/profile', isAuthenticated, async (req, res) => {
     try {
-        const { displayName, email } = req.body;
+        const { displayName } = req.body;
         const user = await User.findByPk(req.user.id);
         
         if (displayName) user.displayName = displayName;
-        if (email) user.email = email;
         
         await user.save();
         res.json(user.toPublicJSON());

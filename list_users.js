@@ -12,7 +12,6 @@ const { initDatabase } = require('./models');
       console.log({
         id: user.id,
         username: user.username,
-        email: user.email,
         registrationDate: user.registrationDate,
         authType: user.authType
       });

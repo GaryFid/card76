@@ -18,14 +18,6 @@ const User = sequelize.define('User', {
       notEmpty: true
     }
   },
-  email: {
-    type: DataTypes.STRING,
-    allowNull: true,
-    unique: true,
-    validate: {
-      isEmail: true
-    }
-  },
   password: {
     type: DataTypes.STRING,
     allowNull: true // Может быть null для пользователей, авторизованных через соц. сети

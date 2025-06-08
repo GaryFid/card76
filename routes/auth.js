@@ -294,7 +294,7 @@ router.post('/telegram/login', async (req, res) => {
 });
 
 // Google OAuth
-router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+router.get('/google', passport.authenticate('google', { scope: ['profile'] }));
 
 router.get('/google/callback',
   passport.authenticate('google', { failureRedirect: '/auth/register' }),
