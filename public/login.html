@@ -252,12 +252,13 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
+                    credentials: 'include',
                     body: JSON.stringify({ username, password })
                 });
                 
                 const data = await response.json();
                 
-                if (data.success && data.user) {
+                if (data.success && data.user && data.user.id && data.user.username) {
                     localStorage.setItem('user', JSON.stringify(data.user));
                     window.location.replace('/index.html');
                 } else {

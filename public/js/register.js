@@ -6,9 +6,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     var tgLoader = document.getElementById('tg-loader');
     // Проверяем, есть ли данные Telegram
     if (tgApp && tgApp.initDataUnsafe && tgApp.initDataUnsafe.user) {
+        console.log('[register.js] Найдены данные Telegram:', tgApp.initDataUnsafe.user);
         // Скрываем форму регистрации, показываем лоадер
         if (registerForm) registerForm.style.display = 'none';
         if (tgLoader) tgLoader.style.display = '';
+        if (window.showToast) window.showToast('Пробуем авторизацию через Telegram...', 'info');
         // Авторизация через Telegram
         try {
             const response = await fetch('/auth/telegram/login', {
@@ -18,8 +20,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                 credentials: 'include'
             });
             const data = await response.json();
-            if (data.success && data.user) {
+            console.log('[register.js] Ответ /auth/telegram/login:', data);
+            if (data.success && data.user && data.user.id && data.user.username) {
                 localStorage.setItem('user', JSON.stringify(data.user));
+                if (window.showToast) window.showToast('Успешная авторизация через Telegram!', 'success');
                 window.location.replace('/index.html');
             } else {
                 if (window.showToast) window.showToast(data.error || 'Ошибка авторизации через Telegram', 'error');
@@ -27,12 +31,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                 // Показываем форму регистрации, скрываем лоадер
                 if (registerForm) registerForm.style.display = '';
                 if (tgLoader) tgLoader.style.display = 'none';
+                console.warn('[register.js] Ошибка авторизации через Telegram:', data);
             }
         } catch (error) {
             if (window.showToast) window.showToast('Ошибка при авторизации через Telegram', 'error');
             else alert('Ошибка при авторизации через Telegram');
             if (registerForm) registerForm.style.display = '';
             if (tgLoader) tgLoader.style.display = 'none';
+            console.error('[register.js] Ошибка при авторизации через Telegram:', error);
         }
     } else {
         // Если не через Telegram — показываем обычную форму регистрации, скрываем лоадер
@@ -60,6 +66,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Проверяем наличие сохраненного пользователя
     var savedUser = localStorage.getItem('user');
     if (savedUser) {
+        console.log('[register.js] Пользователь уже авторизован:', savedUser);
         // Перенаправляем на главную, если пользователь уже авторизован
         window.location.href = '/index.html';
         return;
@@ -69,6 +76,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (tgLoginBtn && tgApp) {
         tgLoginBtn.addEventListener('click', async function() {
             var user = tgApp.initDataUnsafe && tgApp.initDataUnsafe.user;
+            console.log('[register.js] Клик по кнопке Telegram, user:', user);
             if (!user) {
                 if (window.showToast) window.showToast('Не удалось получить данные пользователя Telegram', 'error');
                 else alert('Не удалось получить данные пользователя Telegram');
@@ -82,7 +90,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                     credentials: 'include'
                 });
                 var data = await response.json();
-                if (data.success && data.user) {
+                console.log('[register.js] Ответ /auth/telegram/force-login:', data);
+                if (data.success && data.user && data.user.id && data.user.username) {
                     localStorage.setItem('user', JSON.stringify(data.user));
                     if (window.showToast) window.showToast('Успешная авторизация! Перенаправление...');
                     else alert('Успешная авторизация! Перенаправление...');
@@ -90,6 +99,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 } else {
                     if (window.showToast) window.showToast(data.message || data.error || 'Ошибка авторизации', 'error');
                     else alert(data.message || data.error || 'Ошибка авторизации');
+                    console.warn('[register.js] Ошибка force-login:', data);
                 }
             } catch (error) {
                 console.error('Ошибка при авторизации через Telegram:', error);
@@ -175,6 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const month = monthSelect.value;
             const year = yearSelect.value;
             const birthDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            console.log('[register.js] Попытка регистрации:', { username, email, password, birthDate });
 
             // Валидация
             if (!username || username.length < 3) {
@@ -205,7 +216,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     credentials: 'include'
                 });
                 var data = await response.json();
-                if (data.success && data.user) {
+                console.log('[register.js] Ответ /auth/register:', data);
+                if (data.success && data.user && data.user.id && data.user.username) {
                     localStorage.setItem('user', JSON.stringify(data.user));
                     if (window.showToast) window.showToast('Регистрация успешна!', 'success');
                     else alert('Регистрация успешна!');
@@ -213,6 +225,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     if (window.showToast) window.showToast(data.error || 'Ошибка регистрации', 'error');
                     else alert(data.error || 'Ошибка регистрации');
+                    console.warn('[register.js] Ошибка регистрации:', data);
                 }
             } catch (error) {
                 console.error('Ошибка:', error);
@@ -322,4 +335,4 @@ async function showAdminUsersModal() {
   document.body.appendChild(modal);
 }
 
-showAdminUsersButtonIfAdmin(); 
+showAdminUsersButtonIfAdmin();

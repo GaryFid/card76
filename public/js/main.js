@@ -15,21 +15,30 @@ window.addEventListener('DOMContentLoaded', async function() {
     try {
         var user = localStorage.getItem('user');
         var userData = user ? JSON.parse(user) : null;
+        console.log('[main.js] Проверка localStorage user:', userData);
         if (userData && userData.id && userData.username) {
-            // Пользователь найден в localStorage, не делаем лишний fetch
+            if (window.showToast) window.showToast('Авторизация по localStorage', 'success');
+            console.log('[main.js] Авторизация по localStorage:', userData);
             return;
         }
         // Если нет пользователя в localStorage — пробуем через сервер
         const response = await fetch('/auth/check', { credentials: 'include' });
         const data = await response.json();
+        console.log('[main.js] Ответ /auth/check:', data);
         if (data.authenticated && data.user && data.user.id && data.user.username) {
             localStorage.setItem('user', JSON.stringify(data.user));
+            if (window.showToast) window.showToast('Авторизация по сессии', 'success');
+            console.log('[main.js] Авторизация по сессии:', data.user);
             return;
         }
         // Если не авторизован — редирект на регистрацию
+        if (window.showToast) window.showToast('Не авторизован, редирект', 'error');
+        console.warn('[main.js] Не авторизован, редирект на регистрацию');
         localStorage.removeItem('user');
         window.location.replace('/register.html');
     } catch (error) {
+        if (window.showToast) window.showToast('Ошибка проверки авторизации', 'error');
+        console.error('[main.js] Ошибка проверки авторизации:', error);
         localStorage.removeItem('user');
         window.location.replace('/register.html');
     }
