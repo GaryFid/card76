@@ -257,10 +257,11 @@
                 
                 const data = await response.json();
                 
-                if (data.success) {
-                    window.location.href = '/game.html';
+                if (data.success && data.user) {
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    window.location.replace('/index.html');
                 } else {
-                    showError('username', data.message);
+                    showError('username', data.error || 'Ошибка входа');
                 }
             } catch (error) {
                 showError('username', 'Ошибка сервера. Попробуйте позже.');

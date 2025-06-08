@@ -54,6 +54,6 @@ document.addEventListener('DOMContentLoaded', function() {
         loader.appendChild(card);
     }
     setTimeout(function() {
-        window.location.href = '/webapp';
+        window.location.href = '/index.html';
     }, 2500);
 }); 

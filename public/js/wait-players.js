@@ -117,6 +117,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     // Имитация ожидания 2.5 сек, потом переход к игре
     setTimeout(function() {
-        window.location.href = '/game';
+        window.location.href = '/game.html';
     }, 2500);
 }); 

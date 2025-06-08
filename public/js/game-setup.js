@@ -136,7 +136,7 @@ window.addEventListener('click', function(event) {
 
 // Обработчик кнопки "Назад"
 backBtn.addEventListener('click', function() {
-    window.location.href = '/webapp';
+    window.location.href = '/index.html';
 });
 
 // Обработчик кнопки "Начать игру"
