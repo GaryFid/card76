@@ -25,49 +25,35 @@ router.post('/register', async (req, res) => {
     const { username, email, password } = req.body;
 
     // Валидация
-    if (!username || !email || !password) {
-      return res.status(400).json({ error: 'Все поля обязательны для заполнения' });
+    if (!username || !password) {
+      logAuth('REGISTER_ERROR', { error: 'Имя пользователя и пароль обязательны' });
+      return res.status(400).json({ error: 'Имя пользователя и пароль обязательны' });
     }
-
     if (username.length < 3) {
+      logAuth('REGISTER_ERROR', { error: 'Имя пользователя должно быть не менее 3 символов' });
       return res.status(400).json({ error: 'Имя пользователя должно быть не менее 3 символов' });
     }
-
     if (password.length < 6) {
+      logAuth('REGISTER_ERROR', { error: 'Пароль должен быть не менее 6 символов' });
       return res.status(400).json({ error: 'Пароль должен быть не менее 6 символов' });
     }
-
-    if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+    if (email && !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      logAuth('REGISTER_ERROR', { error: 'Введите корректный email' });
       return res.status(400).json({ error: 'Введите корректный email' });
     }
-
     // Проверяем существование пользователя
-    const existingUser = await User.findOne({
-      where: {
-        [Op.or]: [
-          { username: username },
-          { email: email }
-        ]
-      }
-    });
-
+    const existingUser = await User.findOne({ where: { username } });
     if (existingUser) {
-      if (existingUser.username === username) {
-        return res.status(400).json({ error: 'Пользователь с таким именем уже существует' });
-      }
-      if (existingUser.email === email) {
-        return res.status(400).json({ error: 'Пользователь с таким email уже существует' });
-      }
+      logAuth('REGISTER_ERROR', { error: 'Пользователь с таким именем уже существует' });
+      return res.status(400).json({ error: 'Пользователь с таким именем уже существует' });
     }
-
     // Хешируем пароль
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-
     // Создаем нового пользователя
     const user = await User.create({
       username,
-      email,
+      email: email || null,
       password: hashedPassword,
       authType: 'local',
       registrationDate: new Date(),
@@ -78,10 +64,7 @@ router.post('/register', async (req, res) => {
       gamesPlayed: 0,
       gamesWon: 0
     });
-
     logAuth('USER_CREATED', { userId: user.id, username: user.username });
-
-    // Автоматически входим после регистрации
     req.login(user, (err) => {
       if (err) {
         logAuth('LOGIN_ERROR', { error: err.message });
@@ -104,39 +87,26 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     logAuth('LOGIN_START', { username: req.body.username });
-
     const { username, password } = req.body;
-
     if (!username || !password) {
+      logAuth('LOGIN_ERROR', { error: 'Введите имя пользователя и пароль' });
       return res.status(400).json({ error: 'Введите имя пользователя и пароль' });
     }
-
-    // Ищем пользователя
-    const user = await User.findOne({
-      where: {
-        [Op.or]: [
-          { username: username },
-          { email: username }
-        ]
-      }
-    });
-
+    // Ищем пользователя только по username
+    const user = await User.findOne({ where: { username } });
+    logAuth('LOGIN_USER_FOUND', { user: user ? user.toPublicJSON() : null });
     if (!user) {
+      logAuth('LOGIN_ERROR', { error: 'Пользователь не найден' });
       return res.status(401).json({ error: 'Неверное имя пользователя или пароль' });
     }
-
     // Проверяем пароль
     const isValid = await bcrypt.compare(password, user.password);
+    logAuth('LOGIN_PASSWORD_CHECK', { isValid });
     if (!isValid) {
+      logAuth('LOGIN_ERROR', { error: 'Пароль не совпадает' });
       return res.status(401).json({ error: 'Неверное имя пользователя или пароль' });
     }
-
-    // Обновляем дату последнего входа
-    await user.update({
-      lastLoginDate: new Date()
-    });
-
-    // Входим
+    await user.update({ lastLoginDate: new Date() });
     req.login(user, (err) => {
       if (err) {
         logAuth('LOGIN_ERROR', { error: err.message });
