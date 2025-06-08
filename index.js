@@ -8,6 +8,7 @@ const path = require('path');
 const sequelize = require('./config/db');
 const { initDatabase } = require('./models');
 const logger = require('./utils/logger');
+const { Pool } = require('pg');
 const pgSession = require('connect-pg-simple')(expressSession);
 
 // Импорт сцен и обработчиков
@@ -26,6 +27,12 @@ require('./config/passport');
 let bot;
 let botStartAttempts = 0;
 const MAX_BOT_START_ATTEMPTS = 3;
+
+// Создаём отдельный pool для сессий
+const pgPool = new Pool({
+  connectionString: process.env.DATABASE_URL || process.env.DATA_BASE,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+});
 
 async function initBot() {
   if (!config.telegram.botToken) {
@@ -149,7 +156,7 @@ async function startApp() {
     // Настройка сессий с использованием PostgreSQL
     app.use(expressSession({
       store: new pgSession({
-        pool: sequelize, 
+        pool: pgPool, // Используем pg.Pool, а не Sequelize!
         tableName: 'session',
         createTableIfMissing: true,
         pruneSessionInterval: 60
