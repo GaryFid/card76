@@ -240,6 +240,11 @@
             <span>или</span>
         </div>
 
+        <button class="telegram-btn" id="telegramLoginButton" style="margin-bottom: 12px;">
+            <img src="https://telegram.org/img/t_logo.svg" alt="Telegram">
+            Авторизоваться через Telegram
+        </button>
+
         <button class="telegram-btn" id="telegramAuthButton">
             <img src="https://telegram.org/img/t_logo.svg" alt="Telegram">
             Войти через Telegram
@@ -367,13 +372,29 @@
             window.location.href = '/login.html';
         });
         
+        document.getElementById('telegramLoginButton').addEventListener('click', function() {
+            if (tg.initDataUnsafe?.user) {
+                handleTelegramAuth(tg.initDataUnsafe.user);
+            } else {
+                if (window.showToast) {
+                    window.showToast('Откройте WebApp через Telegram для авторизации', 'error');
+                } else {
+                    alert('Откройте WebApp через Telegram для авторизации');
+                }
+            }
+        });
+        
         document.getElementById('telegramAuthButton').addEventListener('click', function() {
             if (tg.initDataUnsafe?.user) {
                 // Если уже есть данные пользователя Telegram
                 handleTelegramAuth(tg.initDataUnsafe.user);
             } else {
-                // Иначе открываем страницу авторизации через Telegram
-                window.location.href = '/auth/telegram';
+                // Показываем ошибку, не делаем переход!
+                if (window.showToast) {
+                    window.showToast('Откройте WebApp через Telegram для входа', 'error');
+                } else {
+                    alert('Откройте WebApp через Telegram для входа');
+                }
             }
         });
         
