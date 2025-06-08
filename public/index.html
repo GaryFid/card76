@@ -506,29 +506,34 @@
     };
 
     // --- Навешиваем обработчики на кнопки ---
-    document.getElementById('profile-page-btn').onclick = showProfileModal;
-    document.getElementById('rules').onclick = showRulesModal;
+    var profilePageBtn = document.getElementById('profile-page-btn');
+    if (profilePageBtn) profilePageBtn.onclick = showProfileModal;
+    var rulesBtn = document.getElementById('rules');
+    if (rulesBtn) rulesBtn.onclick = showRulesModal;
 
     // Обработчики для кнопки меню и друзей
     const menuFriendsBtn = document.querySelector('.menu-friends-button');
     const menuFriendsModal = document.getElementById('menu-friends-modal');
-    const closeModalBtn = menuFriendsModal.querySelector('.close-modal');
+    const closeModalBtn = menuFriendsModal ? menuFriendsModal.querySelector('.close-modal') : null;
 
-    menuFriendsBtn.addEventListener('click', () => {
-        menuFriendsModal.classList.add('active');
-        loadFriends(); // Загружаем список друзей при открытии модального окна
-    });
-
-    closeModalBtn.addEventListener('click', () => {
-        menuFriendsModal.classList.remove('active');
-    });
-
-    // Закрытие модального окна при клике вне его
-    menuFriendsModal.addEventListener('click', (e) => {
-        if (e.target === menuFriendsModal) {
-            menuFriendsModal.classList.remove('active');
-        }
-    });
+    if (menuFriendsBtn && menuFriendsModal) {
+      menuFriendsBtn.addEventListener('click', () => {
+          menuFriendsModal.classList.add('active');
+          loadFriends(); // Загружаем список друзей при открытии модального окна
+      });
+    }
+    if (closeModalBtn && menuFriendsModal) {
+      closeModalBtn.addEventListener('click', () => {
+          menuFriendsModal.classList.remove('active');
+      });
+    }
+    if (menuFriendsModal) {
+      menuFriendsModal.addEventListener('click', (e) => {
+          if (e.target === menuFriendsModal) {
+              menuFriendsModal.classList.remove('active');
+          }
+      });
+    }
 
     // Функция загрузки списка друзей
     async function loadFriends() {

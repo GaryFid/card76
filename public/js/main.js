@@ -11,20 +11,24 @@ if (tgApp && tgApp.themeParams) {
 }
 
 // Проверка авторизации при загрузке страницы
-window.addEventListener('DOMContentLoaded', function() {
+window.addEventListener('DOMContentLoaded', async function() {
     try {
         var user = localStorage.getItem('user');
         var userData = user ? JSON.parse(user) : null;
-        if (!userData || !userData.id || !userData.username) {
-            if (window.showToast) {
-                window.showToast('Сначала зарегистрируйтесь или войдите', 'error');
-            } else {
-                alert('Сначала зарегистрируйтесь или войдите');
-            }
-            localStorage.removeItem('user');
-            window.location.replace('/register.html');
+        if (userData && userData.id && userData.username) {
+            // Пользователь найден в localStorage, не делаем лишний fetch
             return;
         }
+        // Если нет пользователя в localStorage — пробуем через сервер
+        const response = await fetch('/auth/check', { credentials: 'include' });
+        const data = await response.json();
+        if (data.authenticated && data.user && data.user.id && data.user.username) {
+            localStorage.setItem('user', JSON.stringify(data.user));
+            return;
+        }
+        // Если не авторизован — редирект на регистрацию
+        localStorage.removeItem('user');
+        window.location.replace('/register.html');
     } catch (error) {
         localStorage.removeItem('user');
         window.location.replace('/register.html');
