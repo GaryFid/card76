@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var savedUser = localStorage.getItem('user');
     if (savedUser) {
         // Перенаправляем на главную, если пользователь уже авторизован
-        window.location.href = '/webapp';
+        window.location.href = '/index.html';
         return;
     }
 
@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data.success && data.user) {
                     localStorage.setItem('user', JSON.stringify(data.user));
                     window.showToast('Успешная авторизация! Перенаправление...');
-                    setTimeout(function() { window.location.href = '/webapp'; }, 1000);
+                    setTimeout(function() { window.location.href = '/index.html'; }, 1000);
                 } else {
                     window.showToast(data.error || 'Ошибка авторизации', 'error');
                 }
@@ -166,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data.success && data.user) {
                     localStorage.setItem('user', JSON.stringify(data.user));
                     window.showToast('Регистрация успешна!', 'success');
-                    setTimeout(function() { window.location.href = '/webapp'; }, 1000);
+                    setTimeout(function() { window.location.href = '/index.html'; }, 1000);
                 } else {
                     window.showToast(data.error || 'Ошибка регистрации', 'error');
                 }

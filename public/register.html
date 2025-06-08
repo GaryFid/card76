@@ -339,7 +339,7 @@
                         tg.MainButton.hide();
                     }
                     // Перенаправляем на главную
-                    window.location.href = '/webapp';
+                    window.location.href = '/index.html';
                 } else {
                     throw new Error('Неизвестная ошибка при регистрации');
                 }
@@ -364,7 +364,7 @@
         });
         
         document.getElementById('loginButton').addEventListener('click', function() {
-            window.location.href = '/login';
+            window.location.href = '/login.html';
         });
         
         document.getElementById('telegramAuthButton').addEventListener('click', function() {
@@ -399,7 +399,7 @@
                 if (tg.MainButton) {
                     tg.MainButton.hide();
                 }
-                window.location.href = '/webapp';
+                window.location.href = '/index.html';
             } catch (error) {
                 showError('usernameError', error.message);
             }
