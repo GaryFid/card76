@@ -14,11 +14,12 @@ if (tgApp && tgApp.themeParams) {
 window.addEventListener('DOMContentLoaded', function() {
     try {
         var user = localStorage.getItem('user');
+        var userData = user ? JSON.parse(user) : null;
+        console.log('user in localStorage:', userData);
         if (!user) {
             window.location.href = '/register.html';
             return;
         }
-        var userData = JSON.parse(user);
         if (!userData.id || !userData.username) {
             localStorage.removeItem('user');
             window.location.href = '/register.html';

@@ -49,8 +49,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 var data = await response.json();
                 if (data.success && data.user) {
                     localStorage.setItem('user', JSON.stringify(data.user));
+                    console.log('user saved to localStorage:', data.user);
                     window.showToast('Успешная авторизация! Перенаправление...');
-                    setTimeout(function() { window.location.href = '/index.html'; }, 1000);
+                    setTimeout(function() { window.location.replace('/index.html'); }, 1000);
                 } else {
                     window.showToast(data.error || 'Ошибка авторизации', 'error');
                 }
@@ -165,8 +166,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 var data = await response.json();
                 if (data.success && data.user) {
                     localStorage.setItem('user', JSON.stringify(data.user));
+                    console.log('user saved to localStorage:', data.user);
                     window.showToast('Регистрация успешна!', 'success');
-                    setTimeout(function() { window.location.href = '/index.html'; }, 1000);
+                    setTimeout(function() { window.location.replace('/index.html'); }, 1000);
                 } else {
                     window.showToast(data.error || 'Ошибка регистрации', 'error');
                 }
