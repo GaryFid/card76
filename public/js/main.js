@@ -15,17 +15,12 @@ window.addEventListener('DOMContentLoaded', function() {
     try {
         var user = localStorage.getItem('user');
         var userData = user ? JSON.parse(user) : null;
-        console.log('user in localStorage:', userData);
-        if (!user || !userData.id) {
+        if (!userData || !userData.id || !userData.username) {
             if (window.showToast) {
                 window.showToast('Сначала зарегистрируйтесь или войдите', 'error');
             } else {
                 alert('Сначала зарегистрируйтесь или войдите');
             }
-            window.location.replace('/register.html');
-            return;
-        }
-        if (!userData.username) {
             localStorage.removeItem('user');
             window.location.replace('/register.html');
             return;

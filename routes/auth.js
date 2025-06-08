@@ -230,28 +230,53 @@ router.get('/telegram/check', (req, res) => {
     }
 });
 
-// Принудительный вход через Telegram (если уже есть данные в сессии)
+// Принудительный вход через Telegram (если уже есть данные в сессии или в теле запроса)
 router.post('/telegram/force-login', async (req, res) => {
     try {
+        let telegramId = null;
         if (req.session && req.session.telegramId) {
-            const user = await User.findOne({
-                where: { telegramId: req.session.telegramId.toString() }
-            });
-            
-            if (user) {
-                req.login(user, (err) => {
-                    if (err) {
-                        return res.json({ success: false, message: 'Ошибка входа' });
-                    }
-                    return res.json({ success: true, user });
-                });
-            } else {
-                res.json({ success: false, message: 'Пользователь не найден' });
-            }
-        } else {
-            res.json({ success: false, message: 'Нет данных Telegram в сессии' });
+            telegramId = req.session.telegramId.toString();
+        } else if (req.body && req.body.user && req.body.user.id) {
+            telegramId = req.body.user.id.toString();
         }
+        if (!telegramId) {
+            return res.json({ success: false, message: 'Нет данных Telegram в сессии или запросе' });
+        }
+        // Ищем пользователя сначала по telegramId, потом по username
+        let user = await User.findOne({ where: { telegramId } });
+        if (!user && req.body && req.body.user && req.body.user.username) {
+            user = await User.findOne({ where: { username: req.body.user.username } });
+        }
+        if (!user) {
+            // Создаём нового пользователя
+            user = await User.create({
+                username: (req.body && req.body.user && req.body.user.username) ? req.body.user.username : `user${telegramId}`,
+                telegramId,
+                authType: 'telegram',
+                registrationDate: new Date(),
+                rating: 1000,
+                coins: 0,
+                level: 1,
+                experience: 0,
+                gamesPlayed: 0,
+                gamesWon: 0
+            });
+        } else {
+            // Обновляем username, если он изменился
+            if (req.body && req.body.user && req.body.user.username && req.body.user.username !== user.username) {
+                await user.update({ username: req.body.user.username });
+            }
+        }
+        req.login(user, (err) => {
+            if (err) {
+                return res.json({ success: false, message: 'Ошибка входа' });
+            }
+            return res.json({ success: true, user: user.toPublicJSON() });
+        });
     } catch (error) {
+        if (error.name === 'SequelizeUniqueConstraintError') {
+            return res.json({ success: false, message: 'Пользователь с таким именем уже существует. Попробуйте войти через Telegram.' });
+        }
         console.error('Ошибка force-login:', error);
         res.json({ success: false, message: 'Ошибка сервера' });
     }
@@ -261,18 +286,16 @@ router.post('/telegram/force-login', async (req, res) => {
 router.post('/telegram/login', async (req, res) => {
     try {
         const { telegramData } = req.body;
-        
         if (!telegramData || !telegramData.id) {
             return res.status(400).json({ error: 'Отсутствуют данные Telegram' });
         }
-
-        // Ищем или создаем пользователя
-        let user = await User.findOne({
-            where: { telegramId: telegramData.id.toString() }
-        });
-
+        // Ищем пользователя сначала по telegramId, потом по username
+        let user = await User.findOne({ where: { telegramId: telegramData.id.toString() } });
+        if (!user && telegramData.username) {
+            user = await User.findOne({ where: { username: telegramData.username } });
+        }
         if (!user) {
-            // Создаем нового пользователя
+            // Создаём нового пользователя
             user = await User.create({
                 username: telegramData.username || `user${telegramData.id}`,
                 telegramId: telegramData.id.toString(),
@@ -285,23 +308,23 @@ router.post('/telegram/login', async (req, res) => {
                 gamesPlayed: 0,
                 gamesWon: 0
             });
+        } else {
+            // Обновляем username, если он изменился
+            if (telegramData.username && telegramData.username !== user.username) {
+                await user.update({ username: telegramData.username });
+            }
         }
-
-        // Обновляем данные пользователя если нужно
-        if (telegramData.username && telegramData.username !== user.username) {
-            await user.update({
-                username: telegramData.username
-            });
-        }
-
         // Входим
         req.login(user, (err) => {
             if (err) {
                 return res.status(500).json({ error: 'Ошибка входа' });
             }
-            return res.json(user.toPublicJSON());
+            return res.json({ success: true, user: user.toPublicJSON() });
         });
     } catch (error) {
+        if (error.name === 'SequelizeUniqueConstraintError') {
+            return res.status(400).json({ error: 'Пользователь с таким именем уже существует. Попробуйте войти через Telegram.' });
+        }
         console.error('Ошибка входа через Telegram:', error);
         res.status(500).json({ error: 'Ошибка при входе через Telegram' });
     }

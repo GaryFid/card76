@@ -1,9 +1,44 @@
 // --- register.js без import/export ---
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Инициализация Telegram WebApp
+document.addEventListener('DOMContentLoaded', async function() {
     var tgApp = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
-    if (tgApp) tgApp.expand();
+    var registerForm = document.getElementById('register-form') || document.getElementById('registerForm');
+    var tgLoader = document.getElementById('tg-loader');
+    // Проверяем, есть ли данные Telegram
+    if (tgApp && tgApp.initDataUnsafe && tgApp.initDataUnsafe.user) {
+        // Скрываем форму регистрации, показываем лоадер
+        if (registerForm) registerForm.style.display = 'none';
+        if (tgLoader) tgLoader.style.display = '';
+        // Авторизация через Telegram
+        try {
+            const response = await fetch('/auth/telegram/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ telegramData: tgApp.initDataUnsafe.user }),
+                credentials: 'include'
+            });
+            const data = await response.json();
+            if (data.success && data.user) {
+                localStorage.setItem('user', JSON.stringify(data.user));
+                window.location.replace('/index.html');
+            } else {
+                if (window.showToast) window.showToast(data.error || 'Ошибка авторизации через Telegram', 'error');
+                else alert(data.error || 'Ошибка авторизации через Telegram');
+                // Показываем форму регистрации, скрываем лоадер
+                if (registerForm) registerForm.style.display = '';
+                if (tgLoader) tgLoader.style.display = 'none';
+            }
+        } catch (error) {
+            if (window.showToast) window.showToast('Ошибка при авторизации через Telegram', 'error');
+            else alert('Ошибка при авторизации через Telegram');
+            if (registerForm) registerForm.style.display = '';
+            if (tgLoader) tgLoader.style.display = 'none';
+        }
+    } else {
+        // Если не через Telegram — показываем обычную форму регистрации, скрываем лоадер
+        if (registerForm) registerForm.style.display = '';
+        if (tgLoader) tgLoader.style.display = 'none';
+    }
 
     // Настройка основных цветов из Telegram
     if (tgApp && tgApp.themeParams) {
@@ -14,7 +49,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Получаем элементы формы
-    var registerForm = document.getElementById('register-form');
     var tgLoginBtn = document.getElementById('tgLoginBtn');
     var errorMessage = document.createElement('div');
     errorMessage.className = 'error-message';
@@ -36,7 +70,8 @@ document.addEventListener('DOMContentLoaded', function() {
         tgLoginBtn.addEventListener('click', async function() {
             var user = tgApp.initDataUnsafe && tgApp.initDataUnsafe.user;
             if (!user) {
-                window.showToast('Не удалось получить данные пользователя Telegram', 'error');
+                if (window.showToast) window.showToast('Не удалось получить данные пользователя Telegram', 'error');
+                else alert('Не удалось получить данные пользователя Telegram');
                 return;
             }
             try {
@@ -49,23 +84,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 var data = await response.json();
                 if (data.success && data.user) {
                     localStorage.setItem('user', JSON.stringify(data.user));
-                    console.log('user saved to localStorage:', data.user);
-                    if (window.showToast) {
-                        window.showToast('Успешная авторизация! Перенаправление...');
-                    } else {
-                        alert('Успешная авторизация! Перенаправление...');
-                    }
+                    if (window.showToast) window.showToast('Успешная авторизация! Перенаправление...');
+                    else alert('Успешная авторизация! Перенаправление...');
                     setTimeout(function() { window.location.replace('/index.html'); }, 1000);
                 } else {
-                    if (window.showToast) {
-                        window.showToast(data.error || 'Ошибка авторизации', 'error');
-                    } else {
-                        alert(data.error || 'Ошибка авторизации');
-                    }
+                    if (window.showToast) window.showToast(data.message || data.error || 'Ошибка авторизации', 'error');
+                    else alert(data.message || data.error || 'Ошибка авторизации');
                 }
             } catch (error) {
                 console.error('Ошибка при авторизации через Telegram:', error);
-                window.showToast('Произошла ошибка при авторизации', 'error');
+                if (window.showToast) window.showToast('Произошла ошибка при авторизации', 'error');
+                else alert('Произошла ошибка при авторизации');
             }
         });
     }
@@ -149,19 +178,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Валидация
             if (!username || username.length < 3) {
-                window.showToast('Имя пользователя должно быть не менее 3 символов', 'error');
+                if (window.showToast) window.showToast('Имя пользователя должно быть не менее 3 символов', 'error');
+                else alert('Имя пользователя должно быть не менее 3 символов');
                 return;
             }
             if (!email || !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-                window.showToast('Введите корректный email', 'error');
+                if (window.showToast) window.showToast('Введите корректный email', 'error');
+                else alert('Введите корректный email');
                 return;
             }
             if (!password || password.length < 6) {
-                window.showToast('Пароль должен быть не менее 6 символов', 'error');
+                if (window.showToast) window.showToast('Пароль должен быть не менее 6 символов', 'error');
+                else alert('Пароль должен быть не менее 6 символов');
                 return;
             }
             if (password !== confirmPassword) {
-                window.showToast('Пароли не совпадают', 'error');
+                if (window.showToast) window.showToast('Пароли не совпадают', 'error');
+                else alert('Пароли не совпадают');
                 return;
             }
             try {
@@ -174,15 +207,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 var data = await response.json();
                 if (data.success && data.user) {
                     localStorage.setItem('user', JSON.stringify(data.user));
-                    console.log('user saved to localStorage:', data.user);
-                    window.showToast('Регистрация успешна!', 'success');
+                    if (window.showToast) window.showToast('Регистрация успешна!', 'success');
+                    else alert('Регистрация успешна!');
                     setTimeout(function() { window.location.replace('/index.html'); }, 1000);
                 } else {
-                    window.showToast(data.error || 'Ошибка регистрации', 'error');
+                    if (window.showToast) window.showToast(data.error || 'Ошибка регистрации', 'error');
+                    else alert(data.error || 'Ошибка регистрации');
                 }
             } catch (error) {
                 console.error('Ошибка:', error);
-                window.showToast('Ошибка при регистрации', 'error');
+                if (window.showToast) window.showToast('Ошибка при регистрации', 'error');
+                else alert('Ошибка при регистрации');
             }
         });
     }
