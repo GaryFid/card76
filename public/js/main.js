@@ -15,18 +15,18 @@ window.addEventListener('DOMContentLoaded', function() {
     try {
         var user = localStorage.getItem('user');
         if (!user) {
-            window.location.href = '/webapp';
+            window.location.href = '/register.html';
             return;
         }
         var userData = JSON.parse(user);
         if (!userData.id || !userData.username) {
             localStorage.removeItem('user');
-            window.location.href = '/webapp';
+            window.location.href = '/register.html';
             return;
         }
     } catch (error) {
         localStorage.removeItem('user');
-        window.location.href = '/webapp';
+        window.location.href = '/register.html';
     }
 });
 
@@ -34,7 +34,7 @@ window.addEventListener('DOMContentLoaded', function() {
 document.getElementById('start-game').addEventListener('click', function() {
     var user = localStorage.getItem('user');
     if (!user) {
-        window.location.href = '/register';
+        window.location.href = '/register.html';
         return;
     }
     localStorage.setItem('gameSettings', JSON.stringify({ playerCount: 4, withAI: false }));
