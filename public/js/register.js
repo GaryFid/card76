@@ -4,7 +4,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     var tgApp = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
     var registerForm = document.getElementById('register-form') || document.getElementById('registerForm');
     var tgLoader = document.getElementById('tg-loader');
-    // Если WebApp открыт в Telegram, сразу пробуем авторизацию через Telegram и после успеха делаем window.location.replace('/index.html');
+    // Если WebApp открыт в Telegram, сразу редиректим на check-updates.html для авторизации через Telegram
+    if (tgApp && tgApp.initDataUnsafe && tgApp.initDataUnsafe.user) {
+        window.location.replace('/check-updates.html');
+        return;
+    }
     // Обычная форма регистрации/логина показывается только если НЕ в Telegram WebApp
     if (tgApp && tgApp.initDataUnsafe && tgApp.initDataUnsafe.user) {
         console.log('[register.js] Найдены данные Telegram:', tgApp.initDataUnsafe.user);

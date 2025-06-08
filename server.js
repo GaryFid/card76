@@ -1,7 +1,7 @@
 const express = require('express');
 const path = require('path');
 const session = require('express-session');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const { User, initDatabase } = require('./models');
 const config = require('./config');
 
@@ -63,22 +63,18 @@ app.post('/auth/login', async (req, res) => {
 app.post('/auth/register', async (req, res) => {
     try {
         const { username, password } = req.body;
-        
-        const existingUser = await User.findOne({
-            where: { username }
-        });
-
+        const existingUser = await User.findOne({ where: { username } });
         if (existingUser) {
             return res.json({ success: false, message: 'Пользователь уже существует' });
         }
-
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
         const user = await User.create({
             username,
-            password,
+            password: hashedPassword,
             authType: 'local',
             registrationDate: new Date()
         });
-
         req.session.userId = user.id;
         res.json({ success: true, user: user.toPublicJSON() });
     } catch (error) {
