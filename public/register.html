@@ -338,9 +338,8 @@
                     if (tg.MainButton) {
                         tg.MainButton.hide();
                     }
-                    
                     // Перенаправляем на главную
-                    window.location.href = '/index.html';
+                    window.location.href = '/webapp';
                 } else {
                     throw new Error('Неизвестная ошибка при регистрации');
                 }
@@ -400,7 +399,7 @@
                 if (tg.MainButton) {
                     tg.MainButton.hide();
                 }
-                tg.close();
+                window.location.href = '/webapp';
             } catch (error) {
                 showError('usernameError', error.message);
             }

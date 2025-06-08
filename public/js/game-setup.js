@@ -150,7 +150,6 @@ startGameBtn.addEventListener('click', function() {
         };
         localStorage.setItem('gameSettings', JSON.stringify(gameSettings));
         console.log(`Сохранены настройки игры: ${JSON.stringify(gameSettings)}`);
-        
         // Если используем Telegram WebApp, отправляем данные в бота
         if (tgApp && tgApp.isExpanded) {
             const userData = JSON.parse(user);
@@ -162,9 +161,8 @@ startGameBtn.addEventListener('click', function() {
                 aiTestMode: aiTestModeToggle.checked
             }));
         }
-        
         // Переходим на страницу игры
-        window.location.href = '/game';
+        window.location.href = '/game.html';
     } catch (error) {
         console.error('Ошибка при начале игры:', error);
         showToast('Произошла ошибка при начале игры. Пожалуйста, попробуйте еще раз.', 'error');

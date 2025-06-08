@@ -15,18 +15,18 @@ window.addEventListener('DOMContentLoaded', function() {
     try {
         var user = localStorage.getItem('user');
         if (!user) {
-            window.location.href = '/register';
+            window.location.href = '/webapp';
             return;
         }
         var userData = JSON.parse(user);
         if (!userData.id || !userData.username) {
             localStorage.removeItem('user');
-            window.location.href = '/register';
+            window.location.href = '/webapp';
             return;
         }
     } catch (error) {
         localStorage.removeItem('user');
-        window.location.href = '/register';
+        window.location.href = '/webapp';
     }
 });
 
