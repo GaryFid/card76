@@ -268,6 +268,7 @@
 
     <script>
         let tg = window.Telegram.WebApp;
+        const BOT_LINK = 'https://t.me/YOUR_BOT_USERNAME'; // Заменить на имя своего бота
         
         // Инициализация Telegram Web App
         document.addEventListener('DOMContentLoaded', function() {
@@ -284,6 +285,16 @@
             if (tg.initDataUnsafe?.user) {
                 const user = tg.initDataUnsafe.user;
                 document.getElementById('username').value = user.username || '';
+            }
+
+            // Скрываем кнопки Telegram, если мы в Telegram WebApp
+            if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                document.getElementById('telegramLoginButton').style.display = 'none';
+                document.getElementById('telegramAuthButton').style.display = 'none';
+            } else {
+                // На сайте — кнопки ведут на бота
+                document.getElementById('telegramLoginButton').onclick = () => { window.open(BOT_LINK, '_blank'); };
+                document.getElementById('telegramAuthButton').onclick = () => { window.open(BOT_LINK, '_blank'); };
             }
         });
 
