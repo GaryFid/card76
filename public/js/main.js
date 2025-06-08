@@ -12,6 +12,12 @@ if (tgApp && tgApp.themeParams) {
 
 // Проверка авторизации при загрузке страницы
 window.addEventListener('DOMContentLoaded', async function() {
+    // Показываем лоадер
+    let loader = document.createElement('div');
+    loader.id = 'main-auth-loader';
+    loader.style = 'position:fixed;left:0;top:0;width:100vw;height:100vh;background:rgba(255,255,255,0.95);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;';
+    loader.innerHTML = '<div class="loader" style="border:6px solid #f3f3f3;border-top:6px solid #2196f3;border-radius:50%;width:48px;height:48px;animation:spin 1s linear infinite;"></div><div style="margin-top:18px;color:#2196f3;font-size:1.2em;">Проверка авторизации...</div>';
+    document.body.appendChild(loader);
     try {
         var user = localStorage.getItem('user');
         var userData = user ? JSON.parse(user) : null;
@@ -19,6 +25,7 @@ window.addEventListener('DOMContentLoaded', async function() {
         if (userData && userData.id && userData.username) {
             if (window.showToast) window.showToast('Авторизация по localStorage', 'success');
             console.log('[main.js] Авторизация по localStorage:', userData);
+            document.body.removeChild(loader);
             return;
         }
         // Если нет пользователя в localStorage — пробуем через сервер
@@ -29,6 +36,7 @@ window.addEventListener('DOMContentLoaded', async function() {
             localStorage.setItem('user', JSON.stringify(data.user));
             if (window.showToast) window.showToast('Авторизация по сессии', 'success');
             console.log('[main.js] Авторизация по сессии:', data.user);
+            document.body.removeChild(loader);
             return;
         }
         // Если не авторизован — редирект на регистрацию

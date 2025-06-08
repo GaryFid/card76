@@ -21,9 +21,7 @@ router.get('/register', (req, res) => {
 router.post('/register', async (req, res) => {
   try {
     logAuth('REGISTER_START', { body: req.body });
-
-    const { username, email, password } = req.body;
-
+    const { username, password } = req.body;
     // Валидация
     if (!username || !password) {
       logAuth('REGISTER_ERROR', { error: 'Имя пользователя и пароль обязательны' });
@@ -37,10 +35,6 @@ router.post('/register', async (req, res) => {
       logAuth('REGISTER_ERROR', { error: 'Пароль должен быть не менее 6 символов' });
       return res.status(400).json({ error: 'Пароль должен быть не менее 6 символов' });
     }
-    if (email && !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-      logAuth('REGISTER_ERROR', { error: 'Введите корректный email' });
-      return res.status(400).json({ error: 'Введите корректный email' });
-    }
     // Проверяем существование пользователя
     const existingUser = await User.findOne({ where: { username } });
     if (existingUser) {
@@ -53,7 +47,6 @@ router.post('/register', async (req, res) => {
     // Создаем нового пользователя
     const user = await User.create({
       username,
-      email: email || null,
       password: hashedPassword,
       authType: 'local',
       registrationDate: new Date(),

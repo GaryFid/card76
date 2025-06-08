@@ -233,6 +233,11 @@
         </button>
     </div>
 
+    <div id="login-loader" style="display:none; text-align:center; margin-top:32px;">
+        <div class="loader"></div>
+        <div style="margin-top:12px; color:#2196f3; font-size:1.1em;">Выполняется вход...</div>
+    </div>
+
     <script>
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -245,6 +250,8 @@
             
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
+            const loginLoader = document.getElementById('login-loader');
+            if (loginLoader) loginLoader.style.display = '';
             
             try {
                 const response = await fetch('/auth/login', {
@@ -266,6 +273,8 @@
                 }
             } catch (error) {
                 showError('username', 'Ошибка сервера. Попробуйте позже.');
+            } finally {
+                if (loginLoader) loginLoader.style.display = 'none';
             }
         });
 

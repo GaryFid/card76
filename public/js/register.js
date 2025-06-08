@@ -171,31 +171,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Обработчик формы регистрации
-    const form = document.getElementById('register-form');
+    const form = document.getElementById('register-form') || document.getElementById('registerForm');
     if (form) {
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
             var username = document.getElementById('username').value;
-            var email = document.getElementById('email').value;
             var password = document.getElementById('password').value;
-            var confirmPassword = document.getElementById('confirm-password').value;
-            
-            // Собираем дату рождения
-            const day = daySelect.value;
-            const month = monthSelect.value;
-            const year = yearSelect.value;
-            const birthDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-            console.log('[register.js] Попытка регистрации:', { username, email, password, birthDate });
-
+            var confirmPassword = document.getElementById('confirmPassword').value;
             // Валидация
             if (!username || username.length < 3) {
                 if (window.showToast) window.showToast('Имя пользователя должно быть не менее 3 символов', 'error');
                 else alert('Имя пользователя должно быть не менее 3 символов');
-                return;
-            }
-            if (!email || !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-                if (window.showToast) window.showToast('Введите корректный email', 'error');
-                else alert('Введите корректный email');
                 return;
             }
             if (!password || password.length < 6) {
@@ -208,29 +194,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 else alert('Пароли не совпадают');
                 return;
             }
+            // Показываем лоадер
+            var tgLoader = document.getElementById('tg-loader');
+            if (tgLoader) tgLoader.style.display = '';
             try {
                 var response = await fetch('/auth/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, email, password, birthDate }),
+                    body: JSON.stringify({ username, password }),
                     credentials: 'include'
                 });
                 var data = await response.json();
-                console.log('[register.js] Ответ /auth/register:', data);
                 if (data.success && data.user && data.user.id && data.user.username) {
                     localStorage.setItem('user', JSON.stringify(data.user));
                     if (window.showToast) window.showToast('Регистрация успешна!', 'success');
-                    else alert('Регистрация успешна!');
                     setTimeout(function() { window.location.replace('/index.html'); }, 1000);
                 } else {
                     if (window.showToast) window.showToast(data.error || 'Ошибка регистрации', 'error');
                     else alert(data.error || 'Ошибка регистрации');
-                    console.warn('[register.js] Ошибка регистрации:', data);
                 }
             } catch (error) {
-                console.error('Ошибка:', error);
                 if (window.showToast) window.showToast('Ошибка при регистрации', 'error');
                 else alert('Ошибка при регистрации');
+            } finally {
+                if (tgLoader) tgLoader.style.display = 'none';
             }
         });
     }
